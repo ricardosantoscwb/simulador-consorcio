@@ -114,7 +114,7 @@ main{max-width:1180px;margin:0 auto;padding:16px 16px 96px}
   nav.tabs{display:none}
   #s-estrategia details.adv:not([data-keep]){}
 
-  .bnav{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:20;background:#fff;border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+  .bnav{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;left:0;right:0;bottom:0;z-index:20;background:#fff;border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
   .bnav button{border:0;background:transparent;padding:6px 2px;border-radius:10px;color:var(--muted);font-size:11px;font-weight:500;display:grid;gap:2px;justify-items:center}
   .bnav button b{font-size:16px;line-height:1}.bnav button.on{color:var(--accent);background:var(--accent-soft)}
   .q{font-size:20px}
@@ -124,7 +124,7 @@ body.present main{padding-top:10px}
 body.present .path .bignum{font-size:38px}body.present .path .why,body.present .glossary,body.present .criteria,body.present .path .mini span{font-size:13px}body.present .path .why{display:none}body.present .al.info{display:none}
 .present-bar{display:none;position:fixed;top:10px;right:10px;z-index:30}
 body.present .present-bar{display:flex;gap:6px}
-@media print{.top,.bnav,.no-present,.present-bar{display:none!important}body{background:#fff}main{padding:0;max-width:none}.card{box-shadow:none;break-inside:avoid}.screen{display:none}.screen#s-laudo{display:block}body.print-estr .screen#s-laudo{display:none}body.print-estr .screen#s-estrategia{display:block}.grid.c3{grid-template-columns:repeat(3,1fr)}}
+@media print{.top,.bnav,.no-present,.present-bar{display:none!important}body{background:#fff}main{padding:0;max-width:none}.card{box-shadow:none;break-inside:avoid}.screen{display:none}.screen#s-oferta{display:block}.grid.c3{grid-template-columns:repeat(3,1fr)}}
 .toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 14px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:40}
 .toast.on{opacity:1}
 .dlg-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
@@ -133,8 +133,8 @@ details.adv{margin-top:6px}details.adv summary{cursor:pointer;font-size:13px;col
 </head>
 <body>
 <header class="top"><div class="in">
-  <div class="brand"><div class="dot">∑</div><div>Simulador de Consórcio<small>entrevista · laudo · detalhe</small></div></div>
-  <nav class="tabs"><button data-go="entrevista">Entrevista</button><button data-go="laudo">Laudo</button><button data-go="estrategia">Estratégia</button><button data-go="detalhe">Detalhe</button><button data-go="grupos">Grupos</button></nav>
+  <div class="brand"><div class="dot">∑</div><div>Simulador de Consórcio<small>grupos · pedido · cotas · oferta</small></div></div>
+  <nav class="tabs"><button data-go="grupos">Grupos</button><button data-go="estrategia">Pedido</button><button data-go="cotas">Cotas</button><button data-go="oferta">Oferta</button></nav>
   <button class="btn primary" id="btnPresent">Apresentar</button>
   <a class="btn ghost small" id="lnkAdmin" href="/admin" style="display:none">Usuários</a>
   <button class="btn ghost small" id="btnSair" title="Sair" style="display:none">Sair</button>
@@ -188,35 +188,56 @@ details.adv{margin-top:6px}details.adv summary{cursor:pointer;font-size:13px;col
 
 <!-- ================= ESTRATÉGIA ================= -->
 <section class="screen" id="s-estrategia">
-  <div class="grid c21">
-    <div class="card inputs no-present">
-      <h2>Estratégia de compra <span class="tag muted">monta a partir da tabela de grupos</span></h2>
-      <p class="sub">Diga quanto o cliente precisa. O app escolhe grupos e cotas pela tabela colada e devolve: bruto, lance, parcela até a contemplação e depois.</p>
-      <div class="two">
-        <div class="f"><label>O que você sabe</label><select id="e-modo"><option value="liquido">Preciso de X líquido (após embutido)</option><option value="bruto">Vou comprar X bruto (total das cartas)</option></select></div>
-        <div class="f"><label>Valor (R$)</label><input id="e-valor" type="number" min="0" step="10000" inputmode="decimal" placeholder="ex.: 650000"></div>
-      </div>
-      <div class="two">
-        <div class="f"><label>Tipo de grupo</label><select id="e-tipo"><option>Imobiliário</option><option>Veículos Leves</option><option>Veículos Pesados</option><option value="">Qualquer</option></select></div>
-        <div class="f"><label>Máximo de cotas por grupo</label><input id="e-max" type="number" min="1" max="20" step="1" inputmode="numeric" value="3"></div>
-      </div>
-      <div class="two">
-        <div class="f"><label>Lance alvo</label><select id="e-alvo"><option value="lmin">Menor contemplado na última assembleia</option><option value="lmed">Média das 3 últimas</option><option value="lmax">Maior contemplado na última</option></select></div>
-        <div class="f"><label>Usar lance embutido</label><select id="e-emb"><option value="1">Sim, no máximo do grupo</option><option value="0">Não</option></select></div>
-      </div>
-      <div class="why"><b>Como o app escolhe:</b> por R$ 1 de crédito líquido, qual grupo pede menos lance do bolso (A), menos parcela (B), nenhum lance (C), menos cartas (D) ou menor prazo (E). Cotas são do tamanho máximo da faixa do grupo; a última cota é ajustada para fechar o valor. Lance alvo é histórico do grupo, não previsão.</div>
-      <button class="btn primary" id="e-go">Montar estratégia</button>
+  <div class="wiz"><div class="card inputs no-present">
+    <div class="q">Quanto o cliente precisa?<small>O app escolhe grupos e cotas pela tabela colada e diz onde buscar as cotas.</small></div>
+    <div id="e-aviso"></div>
+    <div class="two">
+      <div class="f"><label>Valor (R$)</label><input id="e-valor" class="bigin" type="number" min="0" step="10000" inputmode="decimal" placeholder="650000"></div>
+      <div class="f"><label>Esse valor é</label><select id="e-modo"><option value="liquido">Líquido (o que ele recebe)</option><option value="bruto">Bruto (total das cartas)</option></select></div>
     </div>
-    <div class="card no-present">
-      <h2>Cabe no bolso? <span class="tag muted">opcional</span></h2>
-      <div class="f"><label>Quanto o cliente junta para lance (R$)</label><input id="e-rec" type="number" min="0" step="5000" inputmode="decimal"></div>
-      <div class="f"><label>Quanto cabe por mês até a contemplação (R$)</label><input id="e-p1" type="number" min="0" step="100" inputmode="decimal"></div>
-      <div class="f"><label>Quanto cabe por mês depois (R$)</label><input id="e-p2" type="number" min="0" step="100" inputmode="decimal"></div>
-      <div class="f"><label>Nome do cliente (não vai no link)</label><input id="e-nome"></div>
+    <div class="f"><label>Tipo</label><div class="chips" id="e-tipo-chips"><button class="chip" data-v="Imobiliário">Imóvel</button><button class="chip" data-v="Veículos Leves">Veículo leve</button><button class="chip" data-v="Veículos Pesados">Pesado</button><button class="chip" data-v="">Qualquer</button></div><select id="e-tipo" hidden><option>Imobiliário</option><option>Veículos Leves</option><option>Veículos Pesados</option><option value="">Qualquer</option></select></div>
+    <details class="adv"><summary>Ajustes (cotas por grupo, lance alvo, embutido, bolso do cliente)</summary>
+      <div class="two">
+        <div class="f"><label>Máximo de cotas por grupo</label><input id="e-max" type="number" min="1" max="20" step="1" inputmode="numeric" value="3"></div>
+        <div class="f"><label>Lance alvo (histórico do grupo)</label><select id="e-alvo"><option value="lmin">Menor contemplado na última</option><option value="lmed">Média das 3 últimas</option><option value="lmax">Maior contemplado na última</option></select></div>
+      </div>
+      <div class="two">
+        <div class="f"><label>Usar lance embutido</label><select id="e-emb"><option value="1">Sim, no máximo do grupo</option><option value="0">Não</option></select></div>
+        <div class="f"><label>Lance fixo: % do grupo que participa <span class="hint">regra de bolso sua</span></label><input id="e-lf" type="number" min="0" max="100" step="1" inputmode="numeric" placeholder="ex.: 20"></div>
+      </div>
+      <div class="two">
+        <div class="f"><label>Cliente junta para lance (R$)</label><input id="e-rec" type="number" min="0" step="5000" inputmode="decimal"></div>
+        <div class="f"><label>Cabe por mês até contemplar (R$)</label><input id="e-p1" type="number" min="0" step="100" inputmode="decimal"></div>
+      </div>
+      <div class="two">
+        <div class="f"><label>Cabe por mês depois (R$)</label><input id="e-p2" type="number" min="0" step="100" inputmode="decimal"></div>
+        <div class="f"><label>Nome do cliente (não vai no link)</label><input id="e-nome"></div>
+      </div>
+    </details>
+    <div class="wiz-actions"><span></span><button class="btn primary" id="e-go">Montar oferta</button></div>
+  </div></div>
+</section>
+
+<!-- ================= COTAS ================= -->
+<section class="screen" id="s-cotas">
+  <div class="grid c2">
+    <div class="card">
+      <h2>Cotas do sistema <span class="tag muted">em preparação</span></h2>
+      <p class="sub">Depois de montar o pedido, busque no sistema de vendas as cotas nas faixas e grupos indicados e cole a tabela aqui. A oferta final usa a carta e a parcela reais de cada cota.</p>
+      <div id="c-busca" class="why">Monte um pedido primeiro: a instrução de busca aparece aqui.</div>
+      <div class="f"><label>Colar tabela de cotas</label><textarea id="c-paste" rows="6" placeholder="Cole aqui o texto da tela de cotas do sistema de vendas."></textarea><div class="hint" id="c-msg"></div></div>
+      <button class="btn" id="c-save">Guardar colagem</button>
+    </div>
+    <div class="card">
+      <h2>Cotas guardadas</h2>
+      <p class="sub">O leitor dessa tabela entra assim que tivermos um exemplo real do texto. Por enquanto a colagem fica guardada neste aparelho.</p>
+      <div id="c-lista" class="empty">Nada colado ainda.</div>
     </div>
   </div>
-  <div id="e-out" style="margin-top:14px"></div>
 </section>
+
+<!-- ================= OFERTA ================= -->
+<section class="screen" id="s-oferta"><div id="e-out"></div></section>
 
 <!-- ================= DETALHE ================= -->
 <section class="screen" id="s-detalhe">
@@ -230,13 +251,13 @@ details.adv{margin-top:6px}details.adv summary{cursor:pointer;font-size:13px;col
   <div class="grid c2">
     <div class="card">
       <h2>Grupos <button class="btn small primary" id="btnNewGroup" style="margin-left:auto">+ Novo grupo</button></h2>
-      <p class="sub">Dados digitados ou colados por você a partir do sistema oficial. Grupo sem fonte e data fica marcado.</p>
+      <p class="sub">Dados digitados ou colados por você a partir do sistema oficial. Grupo sem fonte e data fica marcado. Cole a tabela ao lado; edite um grupo clicando nele.</p>
       <div class="two" style="margin-bottom:10px"><div class="f" style="margin:0"><input id="g-busca" placeholder="Buscar por código ou descrição"></div><div class="f" style="margin:0"><select id="g-filtro"><option value="">Todos os tipos</option><option>Imobiliário</option><option>Veículos Leves</option><option>Veículos Pesados</option><option>Serviços</option><option>Outro</option></select></div></div>
       <div id="g-exemplos" style="display:none;margin-bottom:10px"><button class="btn small danger" id="btnDelExemplos">Excluir os 3 grupos de exemplo</button></div>
       <div class="glist" id="glist"></div>
-      <h2 style="margin-top:18px">Ranking para o cliente atual <span class="tag muted">quanto de lance resolve em cada grupo</span></h2>
+      <details class="adv" style="margin-top:18px"><summary>Ranking por grupo (para o valor do pedido)</summary><h2 style="margin-top:8px">Ranking <span class="tag muted">quanto de lance resolve em cada grupo</span></h2>
       <p class="sub">Para cada grupo: carta dimensionada para o crédito líquido cobrir o bem (limitada à faixa), embutido no máximo, e o lance do bolso necessário para igualar o menor lance contemplado na última assembleia. Ordenado pelo menor lance do bolso. Histórico, não previsão.</p>
-      <div class="cmp-wrap"><table class="cmp" id="rank"></table></div>
+      <div class="cmp-wrap"><table class="cmp" id="rank"></table></div></details>
     </div>
     <div class="card" id="gform-card">
       <h2 id="gform-title">Novo grupo</h2>
@@ -248,6 +269,7 @@ details.adv{margin-top:6px}details.adv summary{cursor:pointer;font-size:13px;col
         <div class="f"><label>Fonte</label><input id="b-fonte" placeholder="ex.: sistema oficial"></div>
         <button class="btn primary small" id="btnBatch">Importar <span id="b-n">0</span> grupos</button>
       </div>
+      <details class="adv" id="g-manual"><summary>Campos do grupo (edição manual)</summary>
       <div class="two">
         <div class="f"><label>Código</label><input id="g-cod"></div>
         <div class="f"><label>Tipo</label><select id="g-tipo"><option>Imobiliário</option><option>Veículos Leves</option><option>Veículos Pesados</option><option>Serviços</option><option>Outro</option></select></div>
@@ -284,6 +306,7 @@ details.adv{margin-top:6px}details.adv summary{cursor:pointer;font-size:13px;col
         <div class="f"><label>Fonte</label><input id="g-fonte" placeholder="ex.: sistema oficial"></div>
         <div class="f"><label>Data dos dados</label><input id="g-data" type="date"></div>
       </div>
+      </details>
       <div class="dlg-actions">
         <button class="btn danger small" id="btnDelGroup" style="margin-right:auto;display:none">Excluir</button>
         <button class="btn" id="btnCancelGroup">Limpar</button>
@@ -294,7 +317,7 @@ details.adv{margin-top:6px}details.adv summary{cursor:pointer;font-size:13px;col
 </section>
 </main>
 
-<nav class="bnav"><button data-go="entrevista"><b>?</b>Entrevista</button><button data-go="laudo"><b>★</b>Laudo</button><button data-go="estrategia"><b>∑</b>Estratégia</button><button data-go="detalhe"><b>⇄</b>Detalhe</button><button data-go="grupos"><b>▦</b>Grupos</button></nav>
+<nav class="bnav"><button data-go="grupos"><b>▦</b>Grupos</button><button data-go="estrategia"><b>?</b>Pedido</button><button data-go="cotas"><b>≡</b>Cotas</button><button data-go="oferta"><b>★</b>Oferta</button></nav>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -372,7 +395,7 @@ function recomendar(rs){let el=rs.map((r,i)=>({i,r})).filter(x=>x.r.ok);if(!el.l
   el.sort((a,b)=>(a.r.indice-b.r.indice)||(a.r.recursoProprio-b.r.recursoProprio));return el[0].i;}
 
 /* ===================== geração automática dos caminhos ===================== */
-function candidatos(){const t=tipoDoBem(S.perfil.bem);const gs=S.grupos.filter(g=>num(g.cmax)>0&&num(g.ta)!=null);const f=gs.filter(g=>t.includes(g.tipo));return f.length?f:gs;}
+function candidatos(){const t=S.estr&&S.estr.tipo?[S.estr.tipo]:tipoDoBem(S.perfil.bem);const gs=S.grupos.filter(g=>num(g.cmax)>0&&num(g.ta)!=null);const f=gs.filter(g=>t.includes(g.tipo));return f.length?f:gs;}
 function grupoPara(valor,gs,prefEmb){
   // grupo cuja faixa contém o valor; senão o de faixa mais próxima. prefEmb: true prefere com embutido, false prefere sem
   let c=gs.filter(g=>valor>=num(g.cmin)-0.01&&valor<=num(g.cmax)+0.01);
@@ -404,9 +427,9 @@ function gerar(){
 function garantirCenarios(force){if(force||!S.cenarios){const c=gerar();if(c){S.cenarios=c;save();}}}
 
 /* ===================== navegação ===================== */
-function go(id){document.body.classList.toggle('print-estr',id==='estrategia');$$('.screen').forEach(s=>s.classList.toggle('on',s.id==='s-'+id));$$('[data-go]').forEach(b=>b.classList.toggle('on',b.dataset.go===id));try{localStorage.setItem(KEY+'.tab',id);}catch(e){}window.scrollTo({top:0});render();}
+function go(id){$$('.screen').forEach(s=>s.classList.toggle('on',s.id==='s-'+id));$$('[data-go]').forEach(b=>b.classList.toggle('on',b.dataset.go===id));try{localStorage.setItem(KEY+'.tab',id);}catch(e){}window.scrollTo({top:0});render();}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b){e.preventDefault();go(b.dataset.go);}});
-function present(on){document.body.classList.toggle('present',on);if(on&&!$('#s-estrategia').classList.contains('on'))go('laudo');}
+function present(on){document.body.classList.toggle('present',on);if(on)go('oferta');}
 $('#btnPresent').onclick=()=>present(true);$('#btnPresent2').onclick=()=>present(true);$('#btnExitPresent').onclick=()=>present(false);
 document.addEventListener('keydown',e=>{if(e.key==='Escape')present(false);});
 
@@ -509,7 +532,7 @@ function kvs(r){if(!r.g)return '<div class="kvs"></div>';return `<div class="kvs
 
 /* ===================== grupos ===================== */
 const GF=['cod','tipo','desc','ta','fr','cmin','cmax','pt','pr','parc','emax','lmin','lmed','lmax','assem','data','fonte'];
-const GX=['cs','cl','ct']; // contemplados na última assembleia (sorteio, lance, total) — só por colagem
+const GX=['cs','cl','ct','clf','np']; // contemplados na última assembleia (sorteio, lance, total) — só por colagem
 let editing=null;
 let gBusca='',gFiltro='';
 function renderGrupos(){const l=$('#glist');l.innerHTML='';
@@ -521,7 +544,7 @@ function renderGrupos(){const l=$('#glist');l.innerHTML='';
     d.innerHTML=`<div class="code">${esc(g.cod)} <span style="color:var(--muted);font-weight:400">· ${esc(g.tipo)}</span></div><span class="tag ${semFonte(g)?'warn':'ok'}">${semFonte(g)?'sem fonte':'fonte ok'}</span>
       <div class="meta">${esc(g.desc||'')}${g.desc?'<br>':''}Carta ${brl(num(g.cmin))}${num(g.cmax)!==num(g.cmin)?' a '+brl(num(g.cmax)):''} · TA ${pct(num(g.ta))} · FR ${pct(num(g.fr))} · embutido máx ${pct(num(g.emax))}${num(g.pr)?' · remanescente '+g.pr+'m':' · <b style="color:var(--warn)">sem prazo</b>'}${num(g.lmin)?' · menor lance últ. '+pct(num(g.lmin)):''}</div>`;
     d.onclick=()=>editGroup(g.id);l.appendChild(d);});}
-function editGroup(id){editing=id;const g=id?grupo(id):{};$('#gform-title').textContent=id?'Editar grupo '+g.cod:'Novo grupo';GF.forEach(k=>$('#g-'+k).value=g[k]??'');$('#g-paste').value='';$('#g-paste-msg').textContent='';$('#g-emax-hint').textContent='';$('#btnDelGroup').style.display=id?'':'none';if(window.innerWidth<900&&id)$('#gform-card').scrollIntoView({behavior:'smooth'});}
+function editGroup(id){editing=id;const g=id?grupo(id):{};$('#g-manual').open=!!id;$('#gform-title').textContent=id?'Editar grupo '+g.cod:'Novo grupo';GF.forEach(k=>$('#g-'+k).value=g[k]??'');$('#g-paste').value='';$('#g-paste-msg').textContent='';$('#g-emax-hint').textContent='';$('#btnDelGroup').style.display=id?'':'none';if(window.innerWidth<900&&id)$('#gform-card').scrollIntoView({behavior:'smooth'});}
 $('#btnNewGroup').onclick=()=>editGroup(null);$('#btnCancelGroup').onclick=()=>editGroup(null);
 $('#g-busca').oninput=e=>{gBusca=e.target.value;renderGrupos();};$('#g-filtro').onchange=e=>{gFiltro=e.target.value;renderGrupos();};
 $('#btnDelExemplos').onclick=()=>{const ids=S.grupos.filter(g=>g.fonte===EXEMPLO).map(g=>g.id);if((S.cenarios||[]).some(c=>ids.includes(c.gid)))S.cenarios=null;S.grupos=S.grupos.filter(g=>g.fonte!==EXEMPLO);save();empurrarGrupos();render();toast('Exemplos excluídos');};
@@ -533,16 +556,16 @@ $('#btnSaveGroup').onclick=()=>{const g={};GF.forEach(k=>g[k]=$('#g-'+k).value.t
 $('#btnDelGroup').onclick=()=>{if(!editing)return;if((S.cenarios||[]).some(c=>c.gid===editing)){toast('Grupo em uso em um caminho');return;}S.grupos=S.grupos.filter(g=>g.id!==editing);save();empurrarGrupos();editGroup(null);renderGrupos();};
 // colar linha do portal: "COD Sim|Não MIN A MAX PART PT PR D1 DNEXT DVENC ... LMED % LMIN % LMAX %"
 function parseLinha(t){const s=t.replace(/\s+/g,' ').trim();const m=s.match(/^(\d{4,8})\s+(Sim|Não|Nao)\s+([\d.,]+)\s+A\s+([\d.,]+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d{2}\/\d{2}\/\d{4})\s+(\d{2}\/\d{2}\/\d{4})\s+(\d{2}\/\d{2}\/\d{4})((?:\s+\d+){10})?/i);if(!m)return null;
-  const q=(m[11]||'').trim().split(/\s+/).map(Number);const cs=q.length===10?q[5]:'',cl=q.length===10?q[7]+q[8]:'',ct=q.length===10?q[9]:'';
+  const q=(m[11]||'').trim().split(/\s+/).map(Number);const cs=q.length===10?q[5]:'',cl=q.length===10?q[7]+q[8]:'',ct=q.length===10?q[9]:'',clf=q.length===10?q[8]:'';const np=+m[5]||'';
   const n=x=>num(x.includes(',')&&!x.includes('.')?x.replace(',','.'):x.replace(/,/g,''));const pcts=[...s.matchAll(/([\d]+,[\d]+|[\d]+\.[\d]+|\d+)\s*%/g)].map(x=>num(x[1].replace(',','.')));
   const iso=d=>{const [a,b,c]=d.split('/');return `${c}-${b}-${a}`;};
-  return {cod:m[1],emb:/^s/i.test(m[2]),cmin:n(m[3]),cmax:n(m[4]),pt:+m[6],pr:+m[7],assem:iso(m[9]),lmed:pcts[0]??'',lmin:pcts[1]??'',lmax:pcts[2]??'',cs,cl,ct};}
+  return {cod:m[1],emb:/^s/i.test(m[2]),cmin:n(m[3]),cmax:n(m[4]),pt:+m[6],pr:+m[7],assem:iso(m[9]),lmed:pcts[0]??'',lmin:pcts[1]??'',lmax:pcts[2]??'',cs,cl,ct,clf,np};}
 let batch=[];
 $('#g-paste').addEventListener('input',e=>{const lines=e.target.value.split(/\n+/).map(x=>x.trim()).filter(Boolean);const msg=$('#g-paste-msg');
   if(lines.length>1){batch=lines.map(parseLinha).filter(Boolean);$('#g-batch').style.display=batch.length?'':'none';$('#b-n').textContent=batch.length;msg.textContent=batch.length?`${batch.length} de ${lines.length} linhas reconhecidas. Informe tipo, taxa e fundo do lote e importe.`:'Não reconheci o formato das linhas.';return;}
   $('#g-batch').style.display='none';batch=[];
   const p=parseLinha(e.target.value);if(!p){msg.textContent=e.target.value.trim()?'Não reconheci o formato. Preencha manualmente.':'';return;}
-  window._pasteX={cs:p.cs,cl:p.cl,ct:p.ct};$('#g-cod').value=p.cod;$('#g-cmin').value=p.cmin;$('#g-cmax').value=p.cmax;$('#g-pt').value=p.pt;$('#g-pr').value=p.pr;$('#g-assem').value=p.assem;$('#g-lmed').value=p.lmed;$('#g-lmin').value=p.lmin;$('#g-lmax').value=p.lmax;$('#g-data').value=new Date().toISOString().slice(0,10);
+  window._pasteX={cs:p.cs,cl:p.cl,ct:p.ct,clf:p.clf,np:p.np};$('#g-cod').value=p.cod;$('#g-cmin').value=p.cmin;$('#g-cmax').value=p.cmax;$('#g-pt').value=p.pt;$('#g-pr').value=p.pr;$('#g-assem').value=p.assem;$('#g-lmed').value=p.lmed;$('#g-lmin').value=p.lmin;$('#g-lmax').value=p.lmax;$('#g-data').value=new Date().toISOString().slice(0,10);
   if(!p.emb)$('#g-emax').value=0;else{$('#g-emax').value='';}
   $('#g-emax-hint').textContent=p.emb?'Grupo COM embutido: informe o máximo conforme o regulamento (a linha não traz o %).':'Grupo sem embutido (0%).';
   msg.textContent='Preenchi código, faixa, prazos, assembleia e lances. Faltam: tipo, taxa adm, fundo de reserva'+(p.emb?', embutido máximo':'')+'.';});
@@ -550,11 +573,11 @@ $('#g-paste').addEventListener('input',e=>{const lines=e.target.value.split(/\n+
 $('#btnBatch').onclick=()=>{const tipo=$('#b-tipo').value,ta=num($('#b-ta').value),fr=num($('#b-fr').value),emax=num($('#b-emax').value),fonte=$('#b-fonte').value.trim();
   if(ta==null||fr==null){toast('Informe taxa adm e fundo de reserva do lote');return;}if(batch.some(p=>p.emb)&&emax==null){toast('Informe o embutido máximo para os grupos "Sim"');return;}
   const hoje=new Date().toISOString().slice(0,10);let novos=0,atual=0;
-  batch.forEach(p=>{const g={cod:p.cod,tipo,desc:'',ta,fr,cmin:p.cmin,cmax:p.cmax,pt:p.pt,pr:p.pr,parc:'',emax:p.emb?emax:0,lmin:p.lmin,lmed:p.lmed,lmax:p.lmax,assem:p.assem,data:hoje,fonte,cs:p.cs,cl:p.cl,ct:p.ct};
+  batch.forEach(p=>{const g={cod:p.cod,tipo,desc:'',ta,fr,cmin:p.cmin,cmax:p.cmax,pt:p.pt,pr:p.pr,parc:'',emax:p.emb?emax:0,lmin:p.lmin,lmed:p.lmed,lmax:p.lmax,assem:p.assem,data:hoje,fonte,cs:p.cs,cl:p.cl,ct:p.ct,clf:p.clf,np:p.np};
     const ex=S.grupos.find(x=>x.cod===p.cod&&x.tipo===tipo);if(ex){Object.assign(ex,g);atual++;}else{g.id='g'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);S.grupos.push(g);novos++;}});
   save();empurrarGrupos();batch=[];editGroup(null);render();toast(`${novos} grupos novos, ${atual} atualizados`);};
-function renderRank(){const t=$('#rank');const P=S.perfil,valor=num(P.valor)||0,rec=Math.max(0,num(P.recurso)||0);
-  if(!(valor>0)){t.innerHTML='<tr><td>Responda a entrevista (valor do bem) para ver o ranking.</td></tr>';return;}
+function renderRank(){const t=$('#rank');const P={valor:S.estr.valor,bem:S.estr.tipo==='Imobiliário'?'Imóvel':S.estr.tipo?'Veículo':''},valor=num(P.valor)||0;
+  if(!(valor>0)){t.innerHTML='<tr><td>Faça um pedido para ver o ranking.</td></tr>';return;}
   const gs=candidatos();if(!gs.length){t.innerHTML='<tr><td>Nenhum grupo com faixa e taxa.</td></tr>';return;}
   const rows=gs.map(g=>{const le=num(g.emax)||0;const carta=clamp(valor/(1-Math.min(le,99)/100),g);const a=num(g.lmin)>0?num(g.lmin):(num(g.lmed)>0?num(g.lmed):0);const ll=Math.min(Math.max(0,a-le),100-le);const r=calc({gid:g.id,carta,cotas:1,ll,le,n:1,prazo:''});return {g,carta,r};});
   rows.sort((a,b)=>((a.r.lanceLivre??9e99)-(b.r.lanceLivre??9e99))||((a.r.indice??99)-(b.r.indice??99)));
@@ -562,7 +585,8 @@ function renderRank(){const t=$('#rank');const P=S.perfil,valor=num(P.valor)||0,
 
 /* ===================== estratégia de compra ===================== */
 const EF=['modo','valor','tipo','max','alvo','emb','rec','p1','p2','nome'];
-S.estr=S.estr||{modo:'liquido',valor:'',tipo:'Imobiliário',max:3,alvo:'lmin',emb:'1',rec:'',p1:'',p2:'',nome:''};
+S.estr=S.estr||{modo:'liquido',valor:'',tipo:'Imobiliário',max:3,alvo:'lmin',emb:'1',rec:'',p1:'',p2:'',nome:'',lf:''};
+const EF2=['lf'];
 function cotaDe(g,carta,usaEmb,alvoK){ // números de 1 cota desse grupo com essa carta
   const le=usaEmb?(num(g.emax)||0):0;const a=num(g[alvoK])>0?num(g[alvoK]):(num(g.lmin)>0?num(g.lmin):null);
   const ll=a==null?0:Math.max(0,Math.min(a-le,100-le));
@@ -576,7 +600,7 @@ function montar(E,prior){ // prior: 'bolso' | 'parcela' | 'semlance'
   if(!gs.length)return {erro:'Nenhum grupo com faixa, taxa e prazo remanescente'+(E.tipo?' do tipo '+E.tipo:'')+'.'};
   const base=gs.map(g=>cotaDe(g,num(g.cmax),usaEmb,E.alvo)).filter(c=>c.ok);
   if(!base.length)return {erro:'Grupos sem parcela/prazo suficientes para calcular.'};
-  const metr=c=>{const liq=E.modo==='liquido'?c.credLiq:c.carta;if(prior==='semlance')return c.parcIni/liq;if(prior==='parcela')return (c.parcIni+c.parcPos)/liq;if(prior==='cotas')return -c.carta;if(prior==='prazo')return (num(c.g.pr)||999)*1e6+c.bolso/liq;return (c.bolso+0.02*c.parcPos)/liq;};
+  const metr=c=>{const liq=E.modo==='liquido'?c.credLiq:c.carta;if(prior==='semlance')return c.parcIni/liq;if(prior==='parcela')return (c.parcIni+c.parcPos)/liq;if(prior==='cotas')return -c.carta;if(prior==='mais')return c.carta;if(prior==='prazo')return (num(c.g.pr)||999)*1e6+c.bolso/liq;return (c.bolso+0.02*c.parcPos)/liq;};
   const semL=c=>{const r=calc({gid:c.g.id,carta:c.carta,cotas:1,ll:0,le:0,n:1,prazo:''});Object.assign(c,{ll:0,le:0,credLiq:r.credLiq,bolso:0,emb:0,parcIni:r.parcIni,parcPos:r.parcelaPos,sd0:r.sd0});return c;};
   if(prior==='semlance')base.forEach(semL);
   base.sort((a,b)=>metr(a)-metr(b));
@@ -596,32 +620,50 @@ function montar(E,prior){ // prior: 'bolso' | 'parcela' | 'semlance'
   if(falta>0.5)return {erro:`Com até ${max} cotas por grupo, os grupos cadastrados cobrem só ${brl(alvoNeed-falta)} de ${brl(alvoNeed)}. Aumente o máximo de cotas ou cole mais grupos.`,parcial:true,linhas};
   const tot=linhas.reduce((t,l)=>({bruto:t.bruto+l.carta*l.n,liq:t.liq+l.credLiq*l.n,bolso:t.bolso+l.bolso*l.n,emb:t.emb+l.emb*l.n,p1:t.p1+l.parcIni*l.n,p2:t.p2+l.parcPos*l.n,cotas:t.cotas+l.n,sd0:t.sd0+l.sd0*l.n}),{bruto:0,liq:0,bolso:0,emb:0,p1:0,p2:0,cotas:0,sd0:0});
   tot.prazoMax=Math.max(...linhas.map(l=>l.prazo||0));tot.prazoMin=Math.min(...linhas.map(l=>l.prazo||0));
+  // bilhetes: por assembleia, quantas contemplações históricas por cota (sorteio ÷ participantes) e quantas por lance
+  tot.sorteio=linhas.reduce((t,l)=>t+(num(l.g.np)>0&&num(l.g.cs)!=null?l.n*num(l.g.cs)/num(l.g.np):0),0);
+  tot.lanceUlt=linhas.reduce((t,l)=>t+(num(l.g.cl)||0),0);tot.temHist=linhas.some(l=>num(l.g.np)>0);
+  tot.menorCota=Math.min(...linhas.map(l=>l.credLiq));tot.maiorCota=Math.max(...linhas.map(l=>l.credLiq));
   return {linhas,tot,prior,usaEmb};
 }
-function renderEstrategia(){const E=S.estr;EF.forEach(k=>{const el=$('#e-'+k);if(!el)return;el.value=E[k]??'';el.onchange=()=>{E[k]=el.value;save();};});
-  $('#e-go').onclick=()=>{EF.forEach(k=>{const el=$('#e-'+k);if(el)E[k]=el.value;});save();E.feito=true;save();renderEstrategia();window.scrollTo({top:$('#e-out').offsetTop-80});};
-  const out=$('#e-out');if(!E.feito||!(num(E.valor)>0)){out.innerHTML='';return;}
-  const vars=[['A','Menor lance do bolso','bolso'],['B','Menor parcela','parcela'],['C','Sem lance (só sorteio)','semlance'],['D','Menos cartas','cotas'],['E','Menor prazo','prazo']].map(([k,nome,pr])=>({k,nome,r:montar(E,pr)}));
+function instrucaoBusca(r){if(!r||r.erro)return '';const porG={};r.linhas.forEach(l=>{const k=l.g.cod;porG[k]=porG[k]||{g:l.g,n:0,min:1e18,max:0};porG[k].n+=l.n;porG[k].min=Math.min(porG[k].min,l.carta);porG[k].max=Math.max(porG[k].max,l.carta);});
+  return Object.values(porG).map(x=>`${x.n} cota${x.n>1?'s':''} de ${x.min===x.max?brl(x.min):brl(x.min)+' a '+brl(x.max)} no grupo ${esc(x.g.cod)}`).join(' · ');}
+function renderEstrategia(){const E=S.estr;[...EF,...EF2].forEach(k=>{const el=$('#e-'+k);if(!el)return;el.value=E[k]??'';el.onchange=()=>{E[k]=el.value;save();};});
+  $$('#e-tipo-chips .chip').forEach(b=>{b.classList.toggle('on',(E.tipo||'')===b.dataset.v);b.onclick=()=>{E.tipo=b.dataset.v;$('#e-tipo').value=E.tipo;save();renderEstrategia();};});
+  $('#e-aviso').innerHTML=avisoPrimeiroUso();
+  $('#e-go').onclick=()=>{[...EF,...EF2].forEach(k=>{const el=$('#e-'+k);if(el)E[k]=el.value;});if(!(num(E.valor)>0)){toast('Informe o valor');return;}E.feito=true;save();go('oferta');};
+  renderOferta();renderCotas();}
+function renderOferta(){const E=S.estr;const out=$('#e-out');
+  if(!E.feito||!(num(E.valor)>0)){out.innerHTML=`<div class="card empty">Monte um pedido primeiro. <a href="#" data-go="estrategia">Ir para Pedido</a></div>`;return;}
+  const vars=[['A','Menor lance do bolso','bolso'],['F','Mais cartas (microvitórias)','mais'],['B','Menor parcela','parcela'],['C','Sem lance (só sorteio)','semlance'],['D','Menos cartas','cotas'],['E','Menor prazo','prazo']].map(([k,nome,pr])=>({k,nome,r:montar(E,pr)}));
   const rec=num(E.rec),p1=num(E.p1),p2=num(E.p2);
-  const cabe=t=>{const a=[];if(rec!=null&&E.rec!=='')a.push(t.bolso<=rec+0.5?null:`lance do bolso ${brl(t.bolso)} > ${brl(rec)} (faltam ${brl(t.bolso-rec)})`);if(p1>0)a.push(t.p1<=p1+0.5?null:`parcela até a contemplação ${brl2(t.p1)} > ${brl2(p1)}`);if(p2>0)a.push(t.p2<=p2+0.5?null:`parcela depois ${brl2(t.p2)} > ${brl2(p2)}`);return a.filter(Boolean);};
-  const informou=(rec!=null&&E.rec!=='')||p1>0||p2>0;
-  const ok=vars.map(v=>v.r&&!v.r.erro&&cabe(v.r.tot).length===0);
-  let best=-1;{const el=vars.map((v,i)=>({v,i})).filter(x=>x.v.r&&!x.v.r.erro&&(!informou||ok[x.i]));if(el.length){el.sort((a,b)=>(a.v.r.tot.bolso+0.02*a.v.r.tot.p2*12)-(b.v.r.tot.bolso+0.02*b.v.r.tot.p2*12));best=el[0].i;}}
+  const cabe=t=>{const a=[];if(rec!=null&&E.rec!=='')a.push(t.bolso<=rec+0.5?null:`lance do bolso ${brl(t.bolso)} > ${brl(rec)} (faltam ${brl(t.bolso-rec)})`);if(p1>0)a.push(t.p1<=p1+0.5?null:`parcela até contemplar ${brl2(t.p1)} > ${brl2(p1)}`);if(p2>0)a.push(t.p2<=p2+0.5?null:`parcela depois ${brl2(t.p2)} > ${brl2(p2)}`);return a.filter(Boolean);};
+  const informou=(rec!=null&&E.rec!=='')||p1>0||p2>0;const ok=vars.map(v=>v.r&&!v.r.erro&&cabe(v.r.tot).length===0);
+  let best=-1;{let el=vars.map((v,i)=>({v,i})).filter(x=>x.v.r&&!x.v.r.erro&&(!informou||ok[x.i]));const comLance=el.filter(x=>x.v.r.prior!=='semlance');if(comLance.length)el=comLance; // a oferta consultiva é com lance; "só sorteio" fica como alternativa
+    if(el.length){el.sort((a,b)=>(a.v.r.tot.bolso+0.02*a.v.r.tot.p2*12)-(b.v.r.tot.bolso+0.02*b.v.r.tot.p2*12));best=el[0].i;}}
+  S.estr.bestK=best>=0?vars[best].k:'';S.estr.busca=best>=0?instrucaoBusca(vars[best].r):'';save();
   const titulo=E.modo==='liquido'?`${brl(num(E.valor))} líquido`:`${brl(num(E.valor))} bruto`;
-  const resumo=vars.filter(v=>v.r&&!v.r.erro).map((v,i0)=>{const i=vars.indexOf(v);const t=v.r.tot;return `<tr class="${i===best?'best-row':''}"><td>${i===best?'★ ':''}${v.k} · ${esc(v.nome)}</td><td class="num">${t.cotas}</td><td class="num">${brl(t.bolso)}</td><td class="num">${brl2(t.p1)}</td><td class="num">${brl2(t.p2)}</td><td class="num">${t.prazoMax} m</td><td>${informou?(ok[i]?'<span class="tag ok">cabe</span>':'<span class="tag warn">não cabe</span>'):''}</td></tr>`;}).join('');
-  out.innerHTML=`<div class="hero"><h1>Estratégia de compra · ${titulo}</h1><p>${E.nome&&!document.body.classList.contains('present')?esc(E.nome)+' · ':''}${esc(E.tipo||'qualquer tipo')} · até ${esc(E.max)} cotas por grupo · lance alvo: ${({lmin:'menor contemplado na última assembleia',lmed:'média das 3 últimas',lmax:'maior contemplado na última'})[E.alvo]} · ${new Date().toLocaleDateString('pt-BR')}</p></div>
-  <div class="card" style="margin-bottom:14px"><h2>Resumo das variantes</h2><div class="cmp-wrap"><table class="cmp"><thead><tr><th>Variante</th><th>Cotas</th><th>Lance do bolso</th><th>Até contemplar /mês</th><th>Depois /mês ~</th><th>Prazo</th><th></th></tr></thead><tbody>${resumo||'<tr><td colspan="7">Nenhuma variante fechou. Cole mais grupos ou aumente o máximo de cotas.</td></tr>'}</tbody></table></div>${best>=0?`<div class="concl" style="margin-top:10px"><b>Recomendada: ${esc(vars[best].k+' · '+vars[best].nome)}</b>${informou?'A que cabe no bolso com menor custo.':'Menor lance do bolso e parcela depois. Informe bolso/parcela do cliente para filtrar pelo que cabe.'}</div>`:''}</div>
-  <div class="grid c3" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">${vars.map((v,i)=>{const r=v.r;if(!r||r.erro)return `<div class="card path"><h3>${v.k} · ${v.nome}</h3><div class="al" style="margin-top:8px">${esc(r?r.erro:'Informe o valor')}</div></div>`;const t=r.tot;const probs=cabe(t);
-    return `<div class="card path ${i===best?'best':''}">${i===best?'<div class="best-badge">★ recomendada</div>':''}<h3>${v.k} · ${v.nome}</h3><div class="gname">${t.cotas} cota(s) em ${r.linhas.length} grupo(s)</div>
+  const lf=num(E.lf);
+  const card=(v,i,principal)=>{const r=v.r;if(!r||r.erro)return `<div class="card path"><h3>${v.k} · ${esc(v.nome)}</h3><div class="al" style="margin-top:8px">${esc(r?r.erro:'Informe o valor')}</div></div>`;const t=r.tot;const probs=cabe(t);
+    const bilhetes=t.temHist?`<div class="dist" style="margin-top:8px"><b style="color:var(--ink)">Bilhetes por assembleia (histórico):</b> ${t.cotas} cota${t.cotas>1?'s':''} = ${t.cotas} bilhete${t.cotas>1?'s':''} no sorteio (≈ ${(t.sorteio*100).toLocaleString('pt-BR',{maximumFractionDigits:1})}% de chance de pelo menos uma contemplação por sorteio, pelo histórico de 1 sorteado por assembleia)${lf>0?` · lance fixo: cerca de ${Math.round(t.cotas*lf/100*10)/10} cota(s) participando (regra de bolso ${pct(lf)})`:''} · na última assembleia desses grupos, ${t.lanceUlt} contemplaram por lance. Cada contemplação traz entre ${brl(t.menorCota)} e ${brl(t.maiorCota)}.</div>`:'';
+    return `<div class="card path ${principal?'best':''}">${principal?'<div class="best-badge">★ oferta recomendada</div>':''}<h3>${v.k} · ${esc(v.nome)}</h3><div class="gname">${t.cotas} cota(s) em ${r.linhas.length} grupo(s) · compra ${brl(t.bruto)} · recebe ${brl(t.liq)}</div>
     <div class="bignum">${brl(t.bolso)}<small>de lance do bolso${t.emb>0?' · + '+brl(t.emb)+' embutido':''}</small></div>
-    <div class="mini" style="margin-top:10px"><div><span>Compra bruta (cartas)</span><b class="num">${brl(t.bruto)}</b></div><div><span>Crédito líquido</span><b class="num">${brl(t.liq)}</b></div><div><span>Parcela até a contemplação</span><b class="num">${brl2(t.p1)}</b></div><div><span>Parcela depois ~</span><b class="num">${brl2(t.p2)}</b></div><div><span>Prazo remanescente</span><b class="num">${t.prazoMin===t.prazoMax?t.prazoMax+' m':t.prazoMin+'–'+t.prazoMax+' m'}</b></div><div><span>Saldo devedor inicial</span><b class="num">${brl(t.sd0)}</b></div></div>
-    <details class="adv" open><summary>Grupos e cotas</summary><table class="cmp" style="margin-top:4px;font-size:12px"><thead><tr><th>Grupo</th><th>Cotas</th><th>Carta</th><th>Lance bolso</th><th>Últ. assembleia</th></tr></thead><tbody>${r.linhas.map(l=>`<tr><td>${esc(l.g.cod)}<br><span style="font-size:10px">alvo ${l.alvo!=null?pct(l.alvo):'—'} · emb ${pct(l.le)} · TA ${pct(num(l.g.ta))}</span></td><td class="num">${l.n}</td><td class="num">${brl(l.carta)}</td><td class="num">${brl(l.bolso*l.n)}</td><td class="num" style="font-size:11px">${l.g.cs!==''&&l.g.cs!=null?`${l.g.cs} sorteio · ${l.g.cl} lance`:'—'}</td></tr>`).join('')}</tbody></table></details>
-    <div class="alerts">${probs.map(a=>`<div class="al">Não cabe: ${esc(a)}</div>`).join('')}${informou&&!probs.length?'<div class="al ok">Cabe no bolso</div>':''}${r.linhas.some(l=>l.alvo==null)?'<div class="al info">Algum grupo sem histórico de lance: tratado como sem lance.</div>':''}${r.linhas.some(l=>l.sobra)?`<div class="al info">Nenhuma faixa aceita o tamanho exato: fechou com cota cheia, sobram ${brl(r.linhas.find(l=>l.sobra).sobra)} de crédito.</div>`:''}${r.linhas.some(l=>l.ajustada)?'<div class="al info">Última cota sob medida para fechar o valor.</div>':''}</div></div>`;}).join('')}</div>
-  <div class="card" style="margin-top:14px"><h2>Como apresentar</h2><div class="why" style="margin:0"><b>A conversa:</b> "Para ter ${titulo}, a estratégia ${best>=0?vars[best].k:'A'} compra ${best>=0?brl(vars[best].r.tot.bruto):'—'} em ${best>=0?vars[best].r.tot.cotas:'—'} cota(s). Você entra com ${best>=0?brl(vars[best].r.tot.bolso):'—'} de lance, paga ${best>=0?brl2(vars[best].r.tot.p1):'—'} por mês até a contemplação e cerca de ${best>=0?brl2(vars[best].r.tot.p2):'—'} depois. O lance está no nível do que contemplou na última assembleia desses grupos, que é histórico, não garantia. Se o cliente não acredita no lance, a variante C mostra o custo de esperar o sorteio."</div>
-  <div class="avisos"><b>Avisos obrigatórios</b><ul><li>A contemplação depende de sorteio ou lance. Não há garantia nem previsão de lance vencedor; o alvo usa o histórico do grupo.</li><li>O lance embutido reduz o crédito disponível.</li><li>Parcelas são estimativas lineares (saldo ÷ prazo), sem reajuste, seguro ou juros; "parcela depois" supõe contemplação de todas as cotas.</li><li>Taxas, parcelas, prazos e grupos devem ser confirmados no sistema oficial da administradora.</li><li>Esta ferramenta não substitui a simulação oficial da administradora.</li></ul></div>
-  <div class="dlg-actions no-present"><button class="btn" onclick="window.print()">PDF / Imprimir</button><button class="btn primary" id="e-present">Apresentar</button></div></div>`;
-  $('#e-present').onclick=()=>{document.body.classList.add('present');};
+    <div class="bignum" style="font-size:22px;margin-top:6px">${brl2(t.p1)}<small>por mês até contemplar · depois ~ ${brl2(t.p2)} · ${t.prazoMin===t.prazoMax?t.prazoMax:t.prazoMin+'–'+t.prazoMax} meses</small></div>
+    ${bilhetes}
+    <details class="adv" ${principal?'open':''}><summary>Grupos e cotas</summary><table class="cmp" style="margin-top:4px;font-size:12px"><thead><tr><th>Grupo</th><th>Cotas</th><th>Carta</th><th>Lance bolso</th><th>Últ. assembleia</th></tr></thead><tbody>${r.linhas.map(l=>`<tr><td>${esc(l.g.cod)}<br><span style="font-size:10px">alvo ${l.alvo!=null?pct(l.alvo):'—'} · emb ${pct(l.le)} · TA ${pct(num(l.g.ta))}</span></td><td class="num">${l.n}</td><td class="num">${brl(l.carta)}</td><td class="num">${brl(l.bolso*l.n)}</td><td class="num" style="font-size:11px">${l.g.cs!==''&&l.g.cs!=null?`${l.g.cs} sorteio · ${l.g.cl} lance`:'—'}</td></tr>`).join('')}</tbody></table></details>
+    <div class="alerts">${probs.map(a=>`<div class="al">Não cabe: ${esc(a)}</div>`).join('')}${informou&&!probs.length?'<div class="al ok">Cabe no bolso</div>':''}${r.linhas.some(l=>l.sobra)?`<div class="al info">Fechou com cota cheia; sobram ${brl(r.linhas.find(l=>l.sobra).sobra)} de crédito.</div>`:''}</div></div>`;};
+  const b=best>=0?vars[best]:null;
+  out.innerHTML=`<div class="hero"><h1>Oferta · ${titulo}</h1><p>${E.nome&&!document.body.classList.contains('present')?esc(E.nome)+' · ':''}${esc(E.tipo||'qualquer tipo')} · ${new Date().toLocaleDateString('pt-BR')} · valores estimativos, a confirmar no sistema oficial</p></div>
+  ${b?`<div class="concl" style="margin:0 0 14px;font-size:16px"><b>Para ter ${titulo}: ${b.r.tot.cotas} cota${b.r.tot.cotas>1?'s':''} (${brl(b.r.tot.bruto)} em cartas).</b>Entra com ${brl(b.r.tot.bolso)} de lance do bolso, paga ${brl2(b.r.tot.p1)} por mês até contemplar e cerca de ${brl2(b.r.tot.p2)} depois.${b.r.tot.temHist?` São ${b.r.tot.cotas} bilhetes por assembleia; cada contemplação traz ${b.r.tot.menorCota===b.r.tot.maiorCota?brl(b.r.tot.menorCota):'de '+brl(b.r.tot.menorCota)+' a '+brl(b.r.tot.maiorCota)}.`:''}<ul><li>Lance no nível do que contemplou na última assembleia desses grupos: histórico, não garantia.</li><li>Próximo passo: buscar no sistema ${esc(instrucaoBusca(b.r))}, e colar as cotas em <a href="#" data-go="cotas" style="color:inherit;font-weight:600">Cotas</a>.</li></ul></div>`:`<div class="concl none" style="margin:0 0 14px">Nenhuma variante fechou${informou?' dentro do bolso':''}. Cole mais grupos, aumente o máximo de cotas ou ajuste o bolso.</div>`}
+  <div class="grid c3" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">${b?card(b,best,true):''}</div>
+  <details class="adv no-present" style="margin-top:14px"><summary>Ver as outras ${vars.length-(b?1:0)} variantes</summary><div class="grid c3" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));margin-top:10px">${vars.map((v,i)=>i===best?'':card(v,i,false)).join('')}</div></details>
+  <p class="sub" style="margin-top:14px;font-size:11px">Avisos: contemplação depende de sorteio ou lance, sem garantia nem previsão de lance vencedor; o lance embutido reduz o crédito; parcelas são estimativas lineares sem reajuste, seguro ou juros, e "depois" supõe todas as cotas contempladas; descontos de campanha têm validade; confirme taxas, parcelas, prazos e grupos no sistema oficial da administradora. Esta ferramenta não substitui a simulação oficial.</p>
+  <div class="dlg-actions no-present"><button class="btn" id="o-share">Copiar link</button><button class="btn" onclick="window.print()">PDF / Imprimir</button><button class="btn primary" id="o-present">Apresentar</button></div>`;
+  $('#o-present').onclick=()=>{document.body.classList.add('present');};$('#o-share').onclick=shareLink;
 }
+function renderCotas(){const E=S.estr;$('#c-busca').innerHTML=E.busca?`<b>Buscar no sistema:</b> ${E.busca} (oferta ${esc(E.bestK)}).`:'Monte um pedido primeiro: a instrução de busca aparece aqui.';
+  const l=$('#c-lista');const guard=S.cotasRaw||[];l.innerHTML=guard.length?guard.map((c,i)=>`<div class="gitem" style="cursor:default"><div class="code">Colagem ${i+1} · ${new Date(c.em).toLocaleString('pt-BR')}</div><span class="tag muted">${c.txt.split('\n').length} linhas</span><div class="meta" style="white-space:pre-wrap;max-height:90px;overflow:auto">${esc(c.txt.slice(0,600))}</div></div>`).join(''):'Nada colado ainda.';
+  $('#c-save').onclick=()=>{const t=$('#c-paste').value.trim();if(!t){toast('Cole o texto primeiro');return;}S.cotasRaw=[...guard,{txt:t,em:new Date().toISOString()}].slice(-5);$('#c-paste').value='';save();renderCotas();toast('Guardado neste aparelho');};}
 
 /* ===================== grupos compartilhados (servidor) ===================== */
 let etag=null, syncTimer=null;
@@ -634,7 +676,7 @@ function empurrarGrupos(){if(!temServidor())return;clearTimeout(syncTimer);syncT
 if(window.SESSAO){const b=$('#btnSair');b.style.display='';if(window.SESSAO.admin)$('#lnkAdmin').style.display='';b.title='Sair ('+window.SESSAO.email+')';b.onclick=async()=>{try{await fetch('/api/sair',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});}catch(e){}location.href='/entrar';};}
 
 /* ===================== link ===================== */
-function shareLink(){const gids=new Set((S.cenarios||[]).map(c=>c.gid));const d={perfil:{...S.perfil,nome:''},promo:S.promo,grupos:S.grupos.filter(g=>gids.has(g.id)),cenarios:S.cenarios,step:QS.length};
+function shareLink(){const gids=new Set((S.cenarios||[]).map(c=>c.gid));const d={perfil:{...S.perfil,nome:''},promo:S.promo,grupos:S.grupos,cenarios:S.cenarios,step:QS.length,estr:{...S.estr,nome:''}};
   const url=location.origin+location.pathname+'#s='+btoa(unescape(encodeURIComponent(JSON.stringify(d))));
   (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>toast('Link copiado (sem nome do cliente)')).catch(()=>prompt('Copie o link:',url));}
 $('#btnShare').onclick=shareLink;$('#btnShare2').onclick=shareLink;
@@ -642,8 +684,8 @@ $('#btnShare').onclick=shareLink;$('#btnShare2').onclick=shareLink;
 /* ===================== render ===================== */
 function render(){renderWiz();renderGrupos();renderRank();renderLaudo();renderDetalhe();renderEstrategia();}
 editGroup(null);
-let tab='entrevista';try{tab=localStorage.getItem(KEY+'.tab')||'entrevista';}catch(e){}
-if(location.hash||(S.cenarios&&tab==='entrevista'&&S.step>=QS.length))tab=S.cenarios?'laudo':'entrevista';
+let tab='estrategia';try{tab=localStorage.getItem(KEY+'.tab')||'estrategia';}catch(e){}
+if(!['grupos','estrategia','cotas','oferta'].includes(tab))tab='estrategia';if(location.hash)tab='oferta';
 go(tab);
 puxarGrupos();
 </script>
