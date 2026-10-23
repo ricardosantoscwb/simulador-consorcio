@@ -199,8 +199,8 @@ details.adv{margin-top:6px}details.adv summary{cursor:pointer;font-size:13px;col
       <h2>Grupos <button class="btn small primary" id="btnNewGroup" style="margin-left:auto">+ Novo grupo</button></h2>
       <p class="sub">Dados digitados ou colados por você a partir do sistema oficial. Grupo sem fonte e data fica marcado.</p>
       <div class="glist" id="glist"></div>
-      <h2 style="margin-top:18px">Ranking para o cliente atual <span class="tag muted">estratégia "com lance"</span></h2>
-      <p class="sub">Para cada grupo: carta dimensionada para o crédito líquido cobrir o bem (limitada à faixa), embutido no máximo, todo o recurso do cliente como lance livre. Ordenado pela distância ao menor lance contemplado na última assembleia. Histórico, não previsão.</p>
+      <h2 style="margin-top:18px">Ranking para o cliente atual <span class="tag muted">quanto de lance resolve em cada grupo</span></h2>
+      <p class="sub">Para cada grupo: carta dimensionada para o crédito líquido cobrir o bem (limitada à faixa), embutido no máximo, e o lance do bolso necessário para igualar o menor lance contemplado na última assembleia. Ordenado pelo menor lance do bolso. Histórico, não previsão.</p>
       <div class="cmp-wrap"><table class="cmp" id="rank"></table></div>
     </div>
     <div class="card" id="gform-card">
@@ -321,14 +321,14 @@ function calc(c){
   if(r.sdPos<0||(r.sdAposParc!=null&&r.sdAposParc<0))r.alerts.push('Saldo devedor negativo — revisar lance/parcelas');
   if(!(prazo>0))r.alerts.push('Prazo remanescente não informado no grupo');
   if(r.parcCota==null)r.alerts.push('Sem parcela informada e sem prazo total para estimar');
-  if(num(P.parcela)>0&&r.parcelaPos!=null&&r.parcelaPos>num(P.parcela))r.alerts.push(`Parcela estoura o que cabe: ${brl2(r.parcelaPos)} vs ${brl2(num(P.parcela))} (+${brl2(r.parcelaPos-num(P.parcela))})`);
-  if(num(P.recurso)!=null&&P.recurso!==''&&r.lanceLivre>num(P.recurso)+0.01)r.alerts.push(`Lance livre acima do recurso do cliente (${brl2(num(P.recurso))})`);
+  if(num(P.parcela)>0&&r.parcelaPos!=null&&r.parcelaPos>num(P.parcela))r.alerts.push(`Não cabe: parcela ${brl2(r.parcelaPos)} > o que cabe no mês (${brl2(num(P.parcela))}); +${brl2(r.parcelaPos-num(P.parcela))}`);
+  if(num(P.recurso)!=null&&P.recurso!==''&&r.lanceLivre>num(P.recurso)+0.01)r.alerts.push(`Não cabe: lance do bolso ${brl(r.lanceLivre)} > o que o cliente junta (${brl(num(P.recurso))}); faltam ${brl(r.lanceLivre-num(P.recurso))}`);
   if(num(P.valor)>0&&r.credLiq<num(P.valor)-0.5)r.info.push(`Crédito líquido fica ${brl(num(P.valor)-r.credLiq)} abaixo do valor do bem`);
   if(r.dist!=null)r.info.push(r.dist<0?`Lance total ${pct(r.lancePct)}: ${pct(-r.dist)} abaixo do menor lance contemplado na última assembleia (${pct(r.lmin)}). Histórico, não previsão.`:`Lance total ${pct(r.lancePct)}: igual ou acima do menor lance contemplado na última assembleia (${pct(r.lmin)}). Histórico, não previsão.`);
   if(r.parcEst)r.info.push('Parcela estimada (saldo ÷ prazo remanescente)');
   if(r.promo){const v=S.promo.val?new Date(S.promo.val+'T23:59:59'):null;const venc=v&&v<new Date();(venc?r.alerts:r.info).push(`Taxa adm promocional ${pct(r.taEff)} (cheia ${pct(r.taCheia)})${S.promo.cod?' — código '+S.promo.cod:''}${S.promo.val?(venc?' — VALIDADE EXPIRADA ':' — válida até ')+new Date(S.promo.val+'T12:00:00').toLocaleDateString('pt-BR'):''}.`);}
   if(semFonte(g))r.info.push('Grupo sem fonte/data confirmada');
-  r.ok=r.alerts.length===0&&r.indice!=null&&r.parcelaPos!=null&&num(P.parcela)>0&&P.recurso!=='';
+  r.ok=r.alerts.length===0&&r.indice!=null&&r.parcelaPos!=null;
   return r;
 }
 function recomendar(rs){let el=rs.map((r,i)=>({i,r})).filter(x=>x.r.ok);if(!el.length)return -1;
@@ -346,21 +346,23 @@ function grupoPara(valor,gs,prefEmb){
 }
 const clamp=(v,g)=>Math.min(Math.max(v,num(g.cmin)||0),num(g.cmax)||v);
 function gerar(){
-  const P=S.perfil,valor=num(P.valor)||0,rec=Math.max(0,num(P.recurso)||0),gs=candidatos();
+  const P=S.perfil,valor=num(P.valor)||0,gs=candidatos();
   if(!gs.length||!(valor>0))return null;
-  const mk=(nome,g,carta,cotas,ll,le,como)=>({nome,gid:g.id,carta:+carta.toFixed(2),cotas,ll:+Math.max(0,Math.min(100,ll)).toFixed(1),le:+le.toFixed(1),n:1,auto:true,como});
+  const alvo=g=>num(g.lmin)>0?num(g.lmin):(num(g.lmed)>0?num(g.lmed):null); // % de lance que vem contemplando
+  const bolso=(g,le)=>{const a=alvo(g);return a==null?0:Math.max(0,a-le);};
+  const mk=(nome,g,carta,cotas,ll,le,como)=>({nome,gid:g.id,carta:+carta.toFixed(2),cotas,ll:+Math.max(0,Math.min(100,ll)).toFixed(2),le:+le.toFixed(2),n:1,auto:true,como});
   // 1 conservador: sem lance, grupo preferindo sem embutido
   const g1=grupoPara(valor,gs,false);const c1=clamp(valor,g1);
   const s1=mk('Conservador',g1,c1,1,0,0,'Sem lance: o cliente entra com a parcela cheia e disputa só por sorteio. Base de comparação.');
   // 2 com lance: grupo preferindo embutido; embutido no máximo; livre = recurso/total limitado ao que falta pra 100%
-  const g2=grupoPara(valor,gs,true);const le2=num(g2.emax)||0;const c2=clamp(valor/(1-Math.min(le2,99)/100),g2);const ll2=c2>0?Math.min(rec/c2*100,100-le2):0;
-  const s2=mk('Com lance',g2,c2,1,ll2,le2,`Embutido no máximo do grupo (${pct(le2)}) mais todo o recurso do cliente como lance livre. A carta foi ampliada para que o crédito líquido cubra o bem${c2<valor/(1-Math.min(le2,99)/100)-1?' (limitada pela faixa do grupo)':''}.`);
+  const g2=grupoPara(valor,gs,true);const le2=num(g2.emax)||0;const c2=clamp(valor/(1-Math.min(le2,99)/100),g2);const ll2=Math.min(bolso(g2,le2),100-le2);
+  const s2=mk('Com lance',g2,c2,1,ll2,le2,`Lance no nível do menor contemplado na última assembleia (${pct(alvo(g2))}): embutido no máximo (${pct(le2)}) e o resto do bolso (${pct(ll2)}).${alvo(g2)==null?' Grupo sem histórico de lance: informe no cadastro.':''} A carta foi ampliada para que o crédito líquido cubra o bem${c2<valor/(1-Math.min(le2,99)/100)-1?' (limitada pela faixa do grupo)':''}.`);
   // 3 múltiplas cotas: divide em 2 ou 3 cotas; escolhe n e grupo cuja faixa contenha valor/n
   let best=null;
   for(const n of [2,3,4]){for(const g of [...gs].sort((a,b)=>(num(b.emax)||0)-(num(a.emax)||0))){const cv=valor/n/(1-Math.min(num(g.emax)||0,99)/100);if(cv>=num(g.cmin)-0.01&&cv<=num(g.cmax)+0.01){best={n,g,cv};break;}}if(best)break;}
   if(!best){const n=2;const g=grupoPara(valor/n,gs,true);best={n,g,cv:clamp(valor/n/(1-Math.min(num(g.emax)||0,99)/100),g)};}
-  const tot3=best.cv*best.n;const le3=num(best.g.emax)||0;const ll3=tot3>0?Math.min(rec/tot3*100,100-le3):0;
-  const s3=mk('Múltiplas cotas',best.g,best.cv,best.n,ll3,le3,`${best.n} cotas de ${brl(best.cv)}: cartas menores podem ser contempladas em assembleias diferentes e o embutido vale em cada uma. Carta dimensionada para o crédito líquido somado cobrir o bem.`);
+  const tot3=best.cv*best.n;const le3=num(best.g.emax)||0;const ll3=Math.min(bolso(best.g,le3),100-le3);
+  const s3=mk('Múltiplas cotas',best.g,best.cv,best.n,ll3,le3,`${best.n} cotas de ${brl(best.cv)}: lance no nível do menor contemplado (${pct(alvo(best.g))}) em cada cota; cartas menores podem ser contempladas em assembleias diferentes. Carta dimensionada para o crédito líquido somado cobrir o bem.`);
   return [s1,s2,s3];
 }
 function garantirCenarios(force){if(force||!S.cenarios){const c=gerar();if(c){S.cenarios=c;save();}}}
@@ -376,15 +378,15 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')present(false);});
 const QS=[
   {k:'bem',q:'O que o cliente quer comprar?',why:'Define quais grupos entram na conta (imobiliário ou veículo) e o teto de lance embutido de cada um.',type:'chips',opts:['Imóvel','Veículo','Serviços','Outro']},
   {k:'valor',q:'Quanto custa, mais ou menos?',small:'Valor do bem, em reais. Pode ser aproximado.',why:'A carta precisa cobrir isso depois do lance embutido. É daqui que saem o valor da carta e a opção de dividir em várias cotas.',type:'money'},
-  {k:'recurso',q:'Quanto ele tem hoje para dar de lance?',small:'FGTS, poupança, venda de algo. Zero é uma resposta válida.',why:'É o que separa "esperar o sorteio" de "disputar por lance". Vira o lance livre dos caminhos 2 e 3.',type:'money'},
-  {k:'parcela',q:'Quanto cabe no mês dele, sem apertar?',small:'Parcela confortável, em reais por mês.',why:'Caminho que estoura isso é descartado da recomendação, mesmo que a conta feche no papel.',type:'money'},
-  {k:'prazo',q:'Em quantos meses ele precisa do bem?',small:'Opcional. Horizonte do cliente.',why:'Não muda a conta (contemplação não tem data), mas muda a conversa: prazo curto pede lance, não sorteio.',type:'int'},
+  {k:'prazo',q:'Em quantos meses ele precisa do bem?',small:'Opcional. Horizonte do cliente.',why:'Não muda a conta (contemplação não tem data), mas muda a conversa: prazo curto pede lance, não sorteio.',type:'int',opt:true},
+  {k:'recurso',q:'Se souber: quanto ele consegue juntar para o lance?',small:'Opcional. Só para o app carimbar "cabe" ou "não cabe". O lance necessário é calculado pelo grupo, não por isso.',why:'O app vai dizer quanto de lance resolve. Esse número aqui só compara com o bolso do cliente.',type:'money',opt:true},
+  {k:'parcela',q:'Se souber: quanto cabe no mês dele?',small:'Opcional. Mesma função: comparar com a parcela que o app calcular.',why:'Caminho com parcela acima disso aparece marcado, mas continua no laudo.',type:'money',opt:true},
 ];
 function renderWiz(){const w=$('#wiz');const i=Math.min(S.step,QS.length);const P=S.perfil;
   if(i>=QS.length){w.innerHTML=`<div class="steps">${QS.map(()=>'<i class="done"></i>').join('')}</div><div class="q">Pronto para o laudo.</div>
     <div class="f" style="margin-top:12px"><label>Nome do cliente (opcional, não vai no link)</label><input id="w-nome" value="${esc(P.nome)}"></div>
     <div class="f"><label>Anotações (opcional)</label><textarea id="w-obs" rows="2">${esc(P.obs)}</textarea></div>
-    <div class="live">${esc(P.bem)} de ${brl(num(P.valor))} · recurso ${brl(num(P.recurso))} · cabe ${brl2(num(P.parcela))}/mês${num(P.prazo)?' · precisa em '+P.prazo+' meses':''}</div>
+    <div class="live">${esc(P.bem)} de ${brl(num(P.valor))}${num(P.prazo)?' · precisa em '+P.prazo+' meses':''}${P.recurso!==''&&P.recurso!=null?' · consegue juntar '+brl(num(P.recurso)):''}${num(P.parcela)>0?' · cabe '+brl2(num(P.parcela))+'/mês':''}</div>
     <div class="wiz-actions"><button class="btn" id="w-back">Voltar</button><button class="btn primary" id="w-go">Gerar laudo</button></div>`;
     $('#w-nome').oninput=e=>{P.nome=e.target.value;save();};$('#w-obs').oninput=e=>{P.obs=e.target.value;save();};
     $('#w-back').onclick=()=>{S.step=QS.length-1;save();renderWiz();};
@@ -399,13 +401,13 @@ function renderWiz(){const w=$('#wiz');const i=Math.min(S.step,QS.length);const 
   $$('#wiz .chip').forEach(b=>b.onclick=()=>{P[q.k]=b.dataset.v;save();S.step=i+1;save();renderWiz();});
   const inp=$('#w-in');if(inp){inp.oninput=()=>{P[q.k]=inp.value;save();};inp.onkeydown=e=>{if(e.key==='Enter')$('#w-next').click();};setTimeout(()=>inp.focus(),50);}
   $('#w-back').onclick=()=>{S.step=Math.max(0,i-1);save();renderWiz();};
-  $('#w-next').onclick=()=>{if(q.type==='money'&&q.k!=='recurso'&&!(num(P[q.k])>0)){toast('Informe um valor');return;}if(q.k==='recurso'&&P.recurso==='')P.recurso=0;S.step=i+1;save();renderWiz();};
+  $('#w-next').onclick=()=>{if(!q.opt&&q.type==='money'&&!(num(P[q.k])>0)){toast('Informe um valor');return;}S.step=i+1;save();renderWiz();};
 }
 
 /* ===================== laudo ===================== */
 function frase(c,r){if(!r.g)return '';const parc=r.parcelaPos!=null?brl2(r.parcelaPos):'parcela a definir (prazo)';
   if(r.lanceTot<=0)return `Entra com ${c.cotas>1?c.cotas+' cotas':'1 cota'} de ${brl(num(c.carta))}, paga ${brl2(r.parcIni)} por mês e depende do sorteio. Se contemplado, recebe ${brl(r.credLiq)}.`;
-  return `Lance total de ${brl(r.lanceTot)} (${pct(r.lancePct)}): ${brl(r.lanceLivre)} do bolso + ${brl(r.lanceEmb)} embutido. Se contemplado, recebe ${brl(r.credLiq)} e paga ${parc} por ${r.prazo>0?r.prazo+' meses':'prazo a confirmar'}.`;}
+  return `Com <b>${brl(r.lanceLivre)} de lance do bolso</b> (mais ${brl(r.lanceEmb)} embutido, total ${pct(r.lancePct)}) e <b>${parc} por mês</b> por ${r.prazo>0?r.prazo+' meses':'prazo a confirmar'}, o cliente disputa no nível que vem contemplando e, se contemplado, recebe ${brl(r.credLiq)}.`;}
 function distBar(r){if(r.dist==null)return '';const p=Math.min(100,r.lancePct),m=Math.min(100,r.lmin);
   return `<div class="dist">Lance ${pct(r.lancePct)} vs. menor contemplado na última assembleia ${pct(r.lmin)}<div class="track"><div class="fill" style="width:${p}%"></div><div class="mark" style="left:${m}%"></div></div>${r.dist<0?`Faltam ${pct(-r.dist)} (${brl(r.total*(-r.dist)/100)}) para igualar. Histórico, não previsão.`:'No nível do que vem contemplando. Histórico, não previsão.'}</div>`;}
 function renderLaudo(){garantirCenarios(false);const P=S.perfil;
@@ -416,17 +418,18 @@ function renderLaudo(){garantirCenarios(false);const P=S.perfil;
   const rs=S.cenarios.map(calc);const best=recomendar(rs);
   S.cenarios.forEach((c,i)=>{const r=rs[i];const d=document.createElement('div');d.className='card path'+(i===best?' best':'');
     d.innerHTML=`${i===best?'<div class="best-badge">★ caminho recomendado</div>':''}<h3>${esc(c.nome)} ${c.auto?'':'<span class="tag muted">ajustado</span>'}</h3><div class="gname">${r.g?esc(r.g.cod+' · '+r.g.tipo):'—'}</div>
-      <div class="bignum">${brl(r.credLiq)}<small>crédito líquido para o bem</small></div>
+      <div class="bignum">${r.lanceTot>0?brl(r.lanceLivre):'R$ 0'}<small>${r.lanceTot>0?'de lance do bolso':'sem lance (só sorteio)'}</small></div>
+      <div class="bignum" style="font-size:22px;margin-top:6px">${r.parcelaPos!=null?brl2(r.parcelaPos):'—'}<small>por mês após a contemplação ~ · crédito ${brl(r.credLiq)}</small></div>
       <div class="sent">${frase(c,r)}</div>
       <div class="mini"><div><span>Do bolso (lance + parcelas antes)</span><b class="num">${brl(r.recursoProprio)}</b></div><div><span>Parcela estimada ~</span><b class="num">${r.parcelaPos!=null?brl2(r.parcelaPos):'—'}</b></div><div><span>Parcela inicial</span><b class="num">${brl2(r.parcIni)}</b></div><div><span>Índice (menor = melhor)</span><b class="num">${r.indice!=null?r.indice.toLocaleString('pt-BR',{maximumFractionDigits:2}):'—'}</b></div></div>
       ${distBar(r)}
-      <div class="verdict"><div class="alerts">${r.alerts.map(a=>`<div class="al">${esc(a)}</div>`).join('')}${r.info.filter(a=>!a.startsWith('Lance total')).slice(0,2).map(a=>`<div class="al info">${esc(a)}</div>`).join('')}${r.ok?'<div class="al ok">Cabe no perfil</div>':''}</div>
+      <div class="verdict"><div class="alerts">${r.alerts.map(a=>`<div class="al">${esc(a)}</div>`).join('')}${r.info.filter(a=>!a.startsWith('Lance total')).slice(0,2).map(a=>`<div class="al info">${esc(a)}</div>`).join('')}${r.ok?((num(S.perfil.parcela)>0||(S.perfil.recurso!==''&&S.perfil.recurso!=null))?'<div class="al ok">Cabe no bolso do cliente</div>':'<div class="al ok">Oferta montada (informe bolso/parcela do cliente para checar se cabe)</div>'):''}</div>
       <div class="why" style="margin:10px 0 0"><b>Como foi montado:</b> ${esc(c.como||'ajustado manualmente no Detalhe')}</div></div>`;
     grid.appendChild(d);});
   const cc=$('#l-concl');
   if(best<0){const motivos=[...new Set(rs.flatMap(r=>r.alerts))].slice(0,4);cc.innerHTML=`<div class="concl none"><b>Nenhum caminho cabe no perfil ainda.</b>O que trava: <ul>${motivos.map(m=>`<li>${esc(m)}</li>`).join('')||'<li>perfil incompleto</li>'}</ul>Dica: ajuste no Detalhe (cotas, lance) ou revise o grupo (prazo remanescente, faixa).</div>`;}
   else{const r=rs[best],c=S.cenarios[best];const outros=rs.map((x,i)=>i!==best&&x.ok?`${S.cenarios[i].nome}: índice ${x.indice.toFixed(2)}`:null).filter(Boolean);
-    cc.innerHTML=`<div class="concl"><b>Para este cliente, o caminho é ${esc(c.nome)}.</b>Recebe ${brl(r.credLiq)} com ${brl(r.recursoProprio)} do bolso e parcela estimada de ${brl2(r.parcelaPos)}. ${num(P.prazo)>0&&r.dist!=null&&r.dist>=0?'Cliente tem prazo: priorizado quem está no nível do lance que vem contemplando. ':''}Menor custo por real de dinheiro novo entre os que cabem (índice ${r.indice.toFixed(2)}${outros.length?'; '+outros.join(', '):''}).<ul>${r.dist!=null?`<li>${r.dist<0?`Lance ${pct(-r.dist)} abaixo do menor contemplado na última assembleia — conversar sobre reforçar o lance ou aceitar depender mais do sorteio.`:'Lance no nível do que vem contemplando na última assembleia.'}</li>`:''}${num(P.prazo)>0&&r.lanceTot<=0?`<li>Cliente precisa em ${P.prazo} meses e este caminho depende só de sorteio: alinhar expectativa.</li>`:''}<li>Recomendação matemática; não garante contemplação.</li></ul></div>`;}
+    cc.innerHTML=`<div class="concl"><b>Para este cliente, o caminho é ${esc(c.nome)}.</b>Oferta: ${brl(r.lanceLivre)} de lance do bolso${r.lanceEmb>0?' (+ '+brl(r.lanceEmb)+' embutido)':''} e ${brl2(r.parcelaPos)} por mês; recebe ${brl(r.credLiq)}. ${num(P.prazo)>0&&r.dist!=null&&r.dist>=0?'Cliente tem prazo: priorizado quem está no nível do lance que vem contemplando. ':''}Menor custo por real de dinheiro novo entre os que cabem (índice ${r.indice.toFixed(2)}${outros.length?'; '+outros.join(', '):''}).<ul>${r.dist!=null?`<li>${r.dist<0?`Lance ${pct(-r.dist)} abaixo do menor contemplado na última assembleia — conversar sobre reforçar o lance ou aceitar depender mais do sorteio.`:'Lance no nível do que vem contemplando na última assembleia.'}</li>`:''}${num(P.prazo)>0&&r.lanceTot<=0?`<li>Cliente precisa em ${P.prazo} meses e este caminho depende só de sorteio: alinhar expectativa.</li>`:''}<li>Recomendação matemática; não garante contemplação.</li></ul></div>`;}
 }
 $('#btnRegen').onclick=()=>{garantirCenarios(true);render();toast('Caminhos regerados');};
 
@@ -444,7 +447,7 @@ function renderDetalhe(){garantirCenarios(false);const grid=$('#cgrid');grid.inn
     <div class="f"><label>Lance embutido (% da carta) — máx. ${g?pct(num(g.emax)):'—'}</label><div class="pct"><input data-k="le" type="range" min="0" max="${g&&num(g.emax)!=null?num(g.emax):100}" step="0.5" value="${esc(c.le)}"><input data-k="le" type="number" min="0" max="100" step="0.5" inputmode="decimal" value="${esc(c.le)}"></div></div>
     <div class="two"><div class="f"><label>Prazo remanescente (meses)</label><input data-k="prazo" type="number" min="1" inputmode="numeric" value="${esc(c.prazo??'')}" placeholder="${g&&num(g.pr)?'grupo: '+g.pr:'informar'}"></div><div class="f"><label>Parcelas pagas antes da contemplação</label><input data-k="n" type="number" min="0" step="1" inputmode="numeric" value="${esc(c.n)}"></div></div>
     ${g?`<div class="off"><div class="kv"><span class="lab">Taxa adm${r.promo?' (promo)':''}</span><b class="num">${pct(r.taEff)}${r.promo?` <s style="color:var(--muted);font-weight:400">${pct(r.taCheia)}</s>`:''}</b></div><div class="kv"><span class="lab">Fundo de reserva</span><b class="num">${pct(num(g.fr))}</b></div><div class="kv"><span class="lab">Parcela por cota ${r.parcEst?'(estimada)':'(informada)'}</span><b class="num">${brl2(r.parcCota)}</b></div>${num(g.lmin)?`<div class="kv"><span class="lab">Menor lance contemplado (últ.)</span><b class="num">${pct(num(g.lmin))}</b></div>`:''}</div>`:''}
-    ${kvs(r)}<div class="alerts">${r.alerts.map(a=>`<div class="al">${esc(a)}</div>`).join('')}${r.info.map(a=>`<div class="al info">${esc(a)}</div>`).join('')}${r.ok?'<div class="al ok">Cabe no perfil</div>':''}</div>`;
+    ${kvs(r)}<div class="alerts">${r.alerts.map(a=>`<div class="al">${esc(a)}</div>`).join('')}${r.info.map(a=>`<div class="al info">${esc(a)}</div>`).join('')}${r.ok?((num(S.perfil.parcela)>0||(S.perfil.recurso!==''&&S.perfil.recurso!=null))?'<div class="al ok">Cabe no bolso do cliente</div>':'<div class="al ok">Oferta montada (informe bolso/parcela do cliente para checar se cabe)</div>'):''}</div>`;
     card.querySelectorAll('[data-k]').forEach(el=>{el.addEventListener(el.type==='range'?'input':'change',()=>{const k=el.dataset.k;c[k]=(el.type==='number'||el.type==='range')?(el.value===''?'':num(el.value)):el.value;c.auto=false;c.como='';
       if(k==='gid'){const ng=grupo(c.gid);if(ng){c.carta=clamp(num(c.carta)||0,ng);c.prazo='';if(num(ng.emax)!=null&&num(c.le)>num(ng.emax))c.le=num(ng.emax);}}
       if(el.type==='range'){card.querySelectorAll(`[data-k="${k}"]`).forEach(o=>o.value=el.value);save();const r2=calc(c);card.querySelector('.kvs').outerHTML=kvs(r2);card.querySelector('.alerts').innerHTML=r2.alerts.map(a=>`<div class="al">${esc(a)}</div>`).join('')+r2.info.map(a=>`<div class="al info">${esc(a)}</div>`).join('')+(r2.ok?'<div class="al ok">Cabe no perfil</div>':'');return;}
@@ -506,9 +509,9 @@ $('#btnBatch').onclick=()=>{const tipo=$('#b-tipo').value,ta=num($('#b-ta').valu
 function renderRank(){const t=$('#rank');const P=S.perfil,valor=num(P.valor)||0,rec=Math.max(0,num(P.recurso)||0);
   if(!(valor>0)){t.innerHTML='<tr><td>Responda a entrevista (valor do bem) para ver o ranking.</td></tr>';return;}
   const gs=candidatos();if(!gs.length){t.innerHTML='<tr><td>Nenhum grupo com faixa e taxa.</td></tr>';return;}
-  const rows=gs.map(g=>{const le=num(g.emax)||0;const carta=clamp(valor/(1-Math.min(le,99)/100),g);const ll=carta>0?Math.min(rec/carta*100,100-le):0;const r=calc({gid:g.id,carta,cotas:1,ll,le,n:1,prazo:''});return {g,carta,r};});
-  rows.sort((a,b)=>((b.r.dist??-999)-(a.r.dist??-999))||((a.r.indice??99)-(b.r.indice??99)));
-  t.innerHTML=`<thead><tr><th>Grupo</th><th>Carta</th><th>Lance que alcança</th><th>Menor contemplado</th><th>Distância</th><th>Crédito líquido</th><th>Parcela ~</th><th>Cabe?</th></tr></thead><tbody>${rows.map(({g,carta,r})=>`<tr><td>${esc(g.cod)}<br><span style="font-size:11px">${esc(g.tipo)}${semFonte(g)?' · <span style="color:var(--warn)">sem fonte</span>':''}</span></td><td class="num">${brl(carta)}</td><td class="num">${pct(r.lancePct)}<br><span style="font-size:11px">${pct(num(g.emax)||0)} emb. + ${pct(r.lancePct-(num(g.emax)||0))} livre</span></td><td class="num">${r.lmin!=null?pct(r.lmin):'—'}</td><td class="num" style="color:${r.dist==null?'inherit':r.dist>=0?'var(--ok)':'var(--warn)'}">${r.dist==null?'—':(r.dist>=0?'+':'')+pct(r.dist)}</td><td class="num">${brl(r.credLiq)}</td><td class="num">${r.parcelaPos!=null?brl2(r.parcelaPos):'—'}</td><td>${r.ok?'<span class="tag ok">sim</span>':`<span class="tag warn" title="${esc(r.alerts[0]||'')}">${esc((r.alerts[0]||'pendente').split(':')[0].slice(0,28))}</span>`}</td></tr>`).join('')}</tbody>`;}
+  const rows=gs.map(g=>{const le=num(g.emax)||0;const carta=clamp(valor/(1-Math.min(le,99)/100),g);const a=num(g.lmin)>0?num(g.lmin):(num(g.lmed)>0?num(g.lmed):0);const ll=Math.min(Math.max(0,a-le),100-le);const r=calc({gid:g.id,carta,cotas:1,ll,le,n:1,prazo:''});return {g,carta,r};});
+  rows.sort((a,b)=>((a.r.lanceLivre??9e99)-(b.r.lanceLivre??9e99))||((a.r.indice??99)-(b.r.indice??99)));
+  t.innerHTML=`<thead><tr><th>Grupo</th><th>Carta</th><th>Lance do bolso</th><th>Lance total</th><th>Menor contemplado</th><th>Crédito líquido</th><th>Parcela ~</th><th>Cabe?</th></tr></thead><tbody>${rows.map(({g,carta,r})=>`<tr><td>${esc(g.cod)}<br><span style="font-size:11px">${esc(g.tipo)}${semFonte(g)?' · <span style="color:var(--warn)">sem fonte</span>':''}</span></td><td class="num">${brl(carta)}</td><td class="num"><b>${brl(r.lanceLivre)}</b><br><span style="font-size:11px">${pct(r.lancePct-(num(g.emax)||0))} da carta</span></td><td class="num">${pct(r.lancePct)}<br><span style="font-size:11px">${pct(num(g.emax)||0)} embutido</span></td><td class="num">${r.lmin!=null?pct(r.lmin):'—'}</td><td class="num">${brl(r.credLiq)}</td><td class="num">${r.parcelaPos!=null?brl2(r.parcelaPos):'—'}</td><td>${r.ok?'<span class="tag ok">sim</span>':`<span class="tag warn" title="${esc(r.alerts[0]||'')}">${esc((r.alerts[0]||'pendente').split(':')[0].slice(0,28))}</span>`}</td></tr>`).join('')}</tbody>`;}
 
 /* ===================== grupos compartilhados (servidor) ===================== */
 let etag=null, syncTimer=null;
