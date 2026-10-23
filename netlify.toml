@@ -1,0 +1,17 @@
+# Simulador de Consórcio · Netlify
+# publico/  → só o robots. A página do simulador sai pela função app, depois de conferir a sessão.
+# funcoes/  → entrar, código, sair, app, dados.
+# nucleo/   → sessão, e-mail, páginas e o HTML do app (gerado por build.mjs). Nunca é publicado.
+[build]
+  command = "node build.mjs"
+  publish = "publico"
+  functions = "funcoes"
+[functions]
+  node_bundler = "esbuild"
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+    X-Frame-Options = "DENY"

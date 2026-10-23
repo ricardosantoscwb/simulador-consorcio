@@ -6,6 +6,7 @@
 <title>Simulador de Consórcio</title>
 <meta name="description" content="Entrevista rápida, laudo com três caminhos e detalhe dos cenários de consórcio.">
 <meta name="robots" content="noindex">
+<!--SESSAO-->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
@@ -134,6 +135,7 @@ details.adv{margin-top:6px}details.adv summary{cursor:pointer;font-size:13px;col
   <div class="brand"><div class="dot">∑</div><div>Simulador de Consórcio<small>entrevista · laudo · detalhe</small></div></div>
   <nav class="tabs"><button data-go="entrevista">Entrevista</button><button data-go="laudo">Laudo</button><button data-go="detalhe">Detalhe</button><button data-go="grupos">Grupos</button></nav>
   <button class="btn primary" id="btnPresent">Apresentar</button>
+  <button class="btn ghost small" id="btnSair" title="Sair" style="display:none">Sair</button>
 </div></header>
 <div class="present-bar"><button class="btn small" onclick="window.print()">PDF</button><button class="btn small" id="btnShare2">Link</button><button class="btn small primary" id="btnExitPresent">Sair</button></div>
 
@@ -477,8 +479,8 @@ $('#btnNewGroup').onclick=()=>editGroup(null);$('#btnCancelGroup').onclick=()=>e
 $('#btnSaveGroup').onclick=()=>{const g={};GF.forEach(k=>g[k]=$('#g-'+k).value.trim());if(!g.cod){toast('Informe o código');return;}
   ['ta','fr','cmin','cmax','pt','pr','parc','emax','lmin','lmed','lmax'].forEach(k=>g[k]=g[k]===''?'':num(g[k]));if(g.cmax===''&&g.cmin!=='')g.cmax=g.cmin;
   if(editing)Object.assign(grupo(editing),g);else{g.id='g'+Date.now().toString(36);S.grupos.push(g);}
-  save();editGroup(null);renderGrupos();toast('Grupo salvo');};
-$('#btnDelGroup').onclick=()=>{if(!editing)return;if((S.cenarios||[]).some(c=>c.gid===editing)){toast('Grupo em uso em um caminho');return;}S.grupos=S.grupos.filter(g=>g.id!==editing);save();editGroup(null);renderGrupos();};
+  save();empurrarGrupos();editGroup(null);renderGrupos();toast('Grupo salvo');};
+$('#btnDelGroup').onclick=()=>{if(!editing)return;if((S.cenarios||[]).some(c=>c.gid===editing)){toast('Grupo em uso em um caminho');return;}S.grupos=S.grupos.filter(g=>g.id!==editing);save();empurrarGrupos();editGroup(null);renderGrupos();};
 // colar linha do portal: "COD Sim|Não MIN A MAX PART PT PR D1 DNEXT DVENC ... LMED % LMIN % LMAX %"
 function parseLinha(t){const s=t.replace(/\s+/g,' ').trim();const m=s.match(/^(\d{4,8})\s+(Sim|Não|Nao)\s+([\d.,]+)\s+A\s+([\d.,]+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d{2}\/\d{2}\/\d{4})\s+(\d{2}\/\d{2}\/\d{4})\s+(\d{2}\/\d{2}\/\d{4})/i);if(!m)return null;
   const n=x=>num(x.includes(',')&&!x.includes('.')?x.replace(',','.'):x.replace(/,/g,''));const pcts=[...s.matchAll(/([\d]+,[\d]+|[\d]+\.[\d]+|\d+)\s*%/g)].map(x=>num(x[1].replace(',','.')));
@@ -499,13 +501,23 @@ $('#btnBatch').onclick=()=>{const tipo=$('#b-tipo').value,ta=num($('#b-ta').valu
   const hoje=new Date().toISOString().slice(0,10);let novos=0,atual=0;
   batch.forEach(p=>{const g={cod:p.cod,tipo,desc:'',ta,fr,cmin:p.cmin,cmax:p.cmax,pt:p.pt,pr:p.pr,parc:'',emax:p.emb?emax:0,lmin:p.lmin,lmed:p.lmed,lmax:p.lmax,assem:p.assem,data:hoje,fonte};
     const ex=S.grupos.find(x=>x.cod===p.cod&&x.tipo===tipo);if(ex){Object.assign(ex,g);atual++;}else{g.id='g'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);S.grupos.push(g);novos++;}});
-  save();batch=[];editGroup(null);render();toast(`${novos} grupos novos, ${atual} atualizados`);};
+  save();empurrarGrupos();batch=[];editGroup(null);render();toast(`${novos} grupos novos, ${atual} atualizados`);};
 function renderRank(){const t=$('#rank');const P=S.perfil,valor=num(P.valor)||0,rec=Math.max(0,num(P.recurso)||0);
   if(!(valor>0)){t.innerHTML='<tr><td>Responda a entrevista (valor do bem) para ver o ranking.</td></tr>';return;}
   const gs=candidatos();if(!gs.length){t.innerHTML='<tr><td>Nenhum grupo com faixa e taxa.</td></tr>';return;}
   const rows=gs.map(g=>{const le=num(g.emax)||0;const carta=clamp(valor/(1-Math.min(le,99)/100),g);const ll=carta>0?Math.min(rec/carta*100,100-le):0;const r=calc({gid:g.id,carta,cotas:1,ll,le,n:1,prazo:''});return {g,carta,r};});
   rows.sort((a,b)=>((b.r.dist??-999)-(a.r.dist??-999))||((a.r.indice??99)-(b.r.indice??99)));
   t.innerHTML=`<thead><tr><th>Grupo</th><th>Carta</th><th>Lance que alcança</th><th>Menor contemplado</th><th>Distância</th><th>Crédito líquido</th><th>Parcela ~</th><th>Cabe?</th></tr></thead><tbody>${rows.map(({g,carta,r})=>`<tr><td>${esc(g.cod)}<br><span style="font-size:11px">${esc(g.tipo)}${semFonte(g)?' · <span style="color:var(--warn)">sem fonte</span>':''}</span></td><td class="num">${brl(carta)}</td><td class="num">${pct(r.lancePct)}<br><span style="font-size:11px">${pct(num(g.emax)||0)} emb. + ${pct(r.lancePct-(num(g.emax)||0))} livre</span></td><td class="num">${r.lmin!=null?pct(r.lmin):'—'}</td><td class="num" style="color:${r.dist==null?'inherit':r.dist>=0?'var(--ok)':'var(--warn)'}">${r.dist==null?'—':(r.dist>=0?'+':'')+pct(r.dist)}</td><td class="num">${brl(r.credLiq)}</td><td class="num">${r.parcelaPos!=null?brl2(r.parcelaPos):'—'}</td><td>${r.ok?'<span class="tag ok">sim</span>':`<span class="tag warn" title="${esc(r.alerts[0]||'')}">${esc((r.alerts[0]||'pendente').split(':')[0].slice(0,28))}</span>`}</td></tr>`).join('')}</tbody>`;}
+
+/* ===================== grupos compartilhados (servidor) ===================== */
+let etag=null, syncTimer=null;
+const temServidor=()=>location.protocol.startsWith('http')&&!!window.SESSAO;
+async function puxarGrupos(){if(!temServidor())return;try{const r=await fetch('/api/dados',{cache:'no-store'});if(r.status===401){location.href='/entrar';return;}const j=await r.json();if(!j.ok)return;etag=j.etag;
+  if(j.grupos.length){S.grupos=j.grupos;save();render();}else if(S.grupos.length){empurrarGrupos();}}catch(e){}}
+function empurrarGrupos(){if(!temServidor())return;clearTimeout(syncTimer);syncTimer=setTimeout(async()=>{try{const r=await fetch('/api/dados',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({grupos:S.grupos,etag})});const j=await r.json();
+  if(r.status===409&&j.grupos){S.grupos=j.grupos;etag=j.etag;save();render();toast('Grupos atualizados por outra pessoa; recarreguei.');return;}
+  if(r.status===401){location.href='/entrar';return;}if(j.ok)etag=j.etag;}catch(e){toast('Sem conexão: grupos salvos só neste aparelho');}},400);}
+if(window.SESSAO){const b=$('#btnSair');b.style.display='';b.title='Sair ('+window.SESSAO.email+')';b.onclick=async()=>{try{await fetch('/api/sair',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});}catch(e){}location.href='/entrar';};}
 
 /* ===================== link ===================== */
 function shareLink(){const gids=new Set((S.cenarios||[]).map(c=>c.gid));const d={perfil:{...S.perfil,nome:''},promo:S.promo,grupos:S.grupos.filter(g=>gids.has(g.id)),cenarios:S.cenarios,step:QS.length};
@@ -519,6 +531,7 @@ editGroup(null);
 let tab='entrevista';try{tab=localStorage.getItem(KEY+'.tab')||'entrevista';}catch(e){}
 if(location.hash||(S.cenarios&&tab==='entrevista'&&S.step>=QS.length))tab=S.cenarios?'laudo':'entrevista';
 go(tab);
+puxarGrupos();
 </script>
 </body>
 </html>
