@@ -47,6 +47,20 @@ export async function ativar(email, ativo, por) {
   });
 }
 
+export async function alterar(email, novoEmail, nome, por) {
+  const e = normEmail(email), n = normEmail(novoEmail || email);
+  if (!emailValido(n)) return { ok: false, erro: "E-mail inválido." };
+  if (fixos().has(n)) return { ok: false, erro: "Esse e-mail já entra pela configuração da Netlify." };
+  return atualizar(K, (d) => {
+    const l = (d && d.lista) || [];
+    const u = l.find((x) => x.email === e);
+    if (!u) return { resultado: { ok: false, erro: "Não encontrado." } };
+    if (n !== e && l.some((x) => x.email === n)) return { resultado: { ok: false, erro: "Já existe usuário com esse e-mail." } };
+    u.email = n; u.nome = String(nome ?? u.nome ?? "").slice(0, 80); u.mudou = hoje().toISOString(); u.por = por;
+    return { novo: { lista: l }, resultado: { ok: true, trocouEmail: n !== e } };
+  });
+}
+
 export async function excluir(email) {
   const e = normEmail(email);
   return atualizar(K, (d) => {

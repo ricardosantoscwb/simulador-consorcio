@@ -65,7 +65,7 @@ export function paginaAdmin(quem) {
 <form id="f" class="row"><div><label for="email">E-mail</label><input id="email" type="email" inputmode="email" required></div><div><label for="nome">Nome (opcional)</label><input id="nome" maxlength="80"></div><button class="btn primary" type="submit" style="margin:0">Incluir</button></form>
 <p class="msg" id="msg" role="status" aria-live="polite"></p>
 <table><thead><tr><th>E-mail</th><th>Nome</th><th>Situação</th><th></th></tr></thead><tbody id="lista"><tr><td colspan="4">Carregando…</td></tr></tbody></table>
-<div class="why">Os e-mails marcados como <b>fixo</b> vêm da configuração da Netlify (ADMIN_EMAILS e USUARIOS) e não se pausam por aqui. Excluir apaga o cadastro; pausar mantém o histórico e dá pra reativar.</div>
+<div class="why">Os e-mails marcados como <b>fixo</b> vêm da configuração da Netlify (ADMIN_EMAILS e USUARIOS) e não se pausam por aqui. Excluir apaga o cadastro; pausar mantém o histórico e dá pra reativar; alterar troca e-mail ou nome (trocar o e-mail encerra a sessão atual da pessoa).</div>
 </div>
 <script>
 (function(){
@@ -74,14 +74,15 @@ export function paginaAdmin(quem) {
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
   function post(d){return fetch('/api/usuarios',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)}).then(function(r){return r.json()})}
   function mostra(us){lista.innerHTML=us.map(function(u){var sit=u.fixo?'<span class="tag muted">fixo'+(u.admin?' · admin':'')+'</span>':(u.ativo?'<span class="tag">ativo</span>':'<span class="tag warn">pausado</span>');
-    var ac=u.fixo?'':'<span class="acoes">'+(u.ativo?'<button class="btn" data-a="pausar" data-e="'+esc(u.email)+'">Pausar</button>':'<button class="btn" data-a="reativar" data-e="'+esc(u.email)+'">Reativar</button>')+'<button class="btn" data-a="excluir" data-e="'+esc(u.email)+'">Excluir</button></span>';
+    var ac=u.fixo?'':'<span class="acoes">'+(u.ativo?'<button class="btn" data-a="pausar" data-e="'+esc(u.email)+'">Pausar</button>':'<button class="btn" data-a="reativar" data-e="'+esc(u.email)+'">Reativar</button>')+'<button class="btn" data-a="alterar" data-e="'+esc(u.email)+'" data-n="'+esc(u.nome||'')+'">Alterar</button><button class="btn" data-a="excluir" data-e="'+esc(u.email)+'">Excluir</button></span>';
     return '<tr><td>'+esc(u.email)+'</td><td>'+esc(u.nome||'')+'</td><td>'+sit+'</td><td>'+ac+'</td></tr>'}).join('')||'<tr><td colspan="4">Ninguém ainda.</td></tr>'}
   function carrega(){post({acao:'listar'}).then(function(j){if(j.usuarios)mostra(j.usuarios)}).catch(function(){diz('Sem conexão.','erro')})}
   document.getElementById('f').addEventListener('submit',function(e){e.preventDefault();diz('Incluindo…');
     post({acao:'incluir',email:document.getElementById('email').value.trim(),nome:document.getElementById('nome').value.trim()}).then(function(j){if(j.usuarios)mostra(j.usuarios);if(j.ok){diz('Incluído. A pessoa já pode pedir o código em /entrar.','ok');document.getElementById('f').reset()}else diz(j.erro||'Não deu.','erro')}).catch(function(){diz('Sem conexão.','erro')})});
   lista.addEventListener('click',function(e){var b=e.target.closest('button[data-a]');if(!b)return;var a=b.dataset.a,em=b.dataset.e;
     if(a==='excluir'&&!window.confirm('Excluir '+em+'? A pessoa perde o acesso na hora.'))return;
-    diz('Salvando…');post({acao:a,email:em}).then(function(j){if(j.usuarios)mostra(j.usuarios);diz(j.ok?'Feito.':(j.erro||'Não deu.'),j.ok?'ok':'erro')}).catch(function(){diz('Sem conexão.','erro')})});
+    var extra={};if(a==='alterar'){var ne=window.prompt('Novo e-mail (deixe igual para manter):',em);if(ne===null)return;var nn=window.prompt('Nome:',b.dataset.n||'');if(nn===null)return;extra={novoEmail:ne.trim(),nome:nn.trim()};}
+    diz('Salvando…');post(Object.assign({acao:a,email:em},extra)).then(function(j){if(j.usuarios)mostra(j.usuarios);diz(j.ok?'Feito.':(j.erro||'Não deu.'),j.ok?'ok':'erro')}).catch(function(){diz('Sem conexão.','erro')})});
   carrega();
 })();
 </script></main></body></html>`;

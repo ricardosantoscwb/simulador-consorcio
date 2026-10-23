@@ -113,3 +113,9 @@ r = await admin(post("/api/usuarios", { acao: "excluir", email: "maria@exemplo.c
 for (const k in cookies) delete cookies[k];
 r = await admin(post("/api/usuarios", { acao: "incluir", email: "x@exemplo.com" })); assert.equal(r.status, 303);
 console.log("ok · painel de usuários");
+// alterar
+for (const k in cookies) delete cookies[k]; Object.assign(cookies, cookiesAdmin);
+r = await admin(post("/api/usuarios", { acao: "incluir", email: "ana@exemplo.com", nome: "Ana" })); assert.ok((await r.json()).ok);
+r = await admin(post("/api/usuarios", { acao: "alterar", email: "ana@exemplo.com", novoEmail: "Ana2@Exemplo.com", nome: "Ana Dois" })); j = await r.json(); assert.ok(j.ok && j.usuarios.some((u) => u.email === "ana2@exemplo.com" && u.nome === "Ana Dois") && !j.usuarios.some((u) => u.email === "ana@exemplo.com"));
+r = await admin(post("/api/usuarios", { acao: "alterar", email: "ana2@exemplo.com", novoEmail: "ricardo@exemplo.com" })); assert.equal(r.status, 400);
+console.log("ok · alterar usuário");
