@@ -2,7 +2,7 @@
 import { json, corpoJson, lerComEtag, gravarSe, hoje } from "../nucleo/base.mjs";
 import { sessaoDe } from "../nucleo/auth.mjs";
 const K = "dados/grupos";
-const CAMPOS = new Set(["id","cod","tipo","desc","ta","fr","cmin","cmax","pt","pr","parc","emax","lmin","lmed","lmax","assem","data","fonte"]);
+const CAMPOS = new Set(["id","cod","tipo","desc","ta","fr","cmin","cmax","pt","pr","parc","emax","lmin","lmed","lmax","assem","data","fonte","cs","cl","ct"]);
 export default async (req) => {
   const s = await sessaoDe(req);
   if (!s) return json({ ok: false }, 401);
