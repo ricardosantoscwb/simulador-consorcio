@@ -135,6 +135,7 @@ details.adv{margin-top:6px}details.adv summary{cursor:pointer;font-size:13px;col
   <div class="brand"><div class="dot">∑</div><div>Simulador de Consórcio<small>entrevista · laudo · detalhe</small></div></div>
   <nav class="tabs"><button data-go="entrevista">Entrevista</button><button data-go="laudo">Laudo</button><button data-go="detalhe">Detalhe</button><button data-go="grupos">Grupos</button></nav>
   <button class="btn primary" id="btnPresent">Apresentar</button>
+  <a class="btn ghost small" id="lnkAdmin" href="/admin" style="display:none">Usuários</a>
   <button class="btn ghost small" id="btnSair" title="Sair" style="display:none">Sair</button>
 </div></header>
 <div class="present-bar"><button class="btn small" onclick="window.print()">PDF</button><button class="btn small" id="btnShare2">Link</button><button class="btn small primary" id="btnExitPresent">Sair</button></div>
@@ -517,7 +518,7 @@ async function puxarGrupos(){if(!temServidor())return;try{const r=await fetch('/
 function empurrarGrupos(){if(!temServidor())return;clearTimeout(syncTimer);syncTimer=setTimeout(async()=>{try{const r=await fetch('/api/dados',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({grupos:S.grupos,etag})});const j=await r.json();
   if(r.status===409&&j.grupos){S.grupos=j.grupos;etag=j.etag;save();render();toast('Grupos atualizados por outra pessoa; recarreguei.');return;}
   if(r.status===401){location.href='/entrar';return;}if(j.ok)etag=j.etag;}catch(e){toast('Sem conexão: grupos salvos só neste aparelho');}},400);}
-if(window.SESSAO){const b=$('#btnSair');b.style.display='';b.title='Sair ('+window.SESSAO.email+')';b.onclick=async()=>{try{await fetch('/api/sair',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});}catch(e){}location.href='/entrar';};}
+if(window.SESSAO){const b=$('#btnSair');b.style.display='';if(window.SESSAO.admin)$('#lnkAdmin').style.display='';b.title='Sair ('+window.SESSAO.email+')';b.onclick=async()=>{try{await fetch('/api/sair',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});}catch(e){}location.href='/entrar';};}
 
 /* ===================== link ===================== */
 function shareLink(){const gids=new Set((S.cenarios||[]).map(c=>c.gid));const d={perfil:{...S.perfil,nome:''},promo:S.promo,grupos:S.grupos.filter(g=>gids.has(g.id)),cenarios:S.cenarios,step:QS.length};

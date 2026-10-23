@@ -2,7 +2,8 @@
 // Portado da área do Estaleiro, enxuto: um tipo só de usuário (a lista USUARIOS).
 // O código fica preso ao navegador que pediu (cookie de pedido): ninguém chuta
 // nem queima o código de outra pessoa. Cada aparelho novo pede código.
-import { ler, gravar, apagar, atualizar, listar, sha, token, codigoN, iguais, normEmail, emailValido, usuarios, admins, hoje, mandarEmail, lerCookie } from "./base.mjs";
+import { ler, gravar, apagar, atualizar, listar, sha, token, codigoN, iguais, normEmail, emailValido, hoje, mandarEmail, lerCookie } from "./base.mjs";
+import { quemE as quemEUsuario } from "./usuarios.mjs";
 
 export const CODIGO_MIN = 10;
 export const CODIGO_TENTATIVAS = 3;
@@ -17,11 +18,11 @@ export const DIGITOS = 8;
 const kCodigo = (e, n) => `codigo/${sha(e)}/${sha(n)}`;
 const kSessao = (t) => `sessao/${sha(t)}`;
 
-/** Quem é esse e-mail: { email, admin } | null */
-export function quemE(email) {
-  const e = normEmail(email);
-  if (!usuarios().has(e)) return null;
-  return { email: e, admin: admins().has(e) };
+/** Quem é esse e-mail e pode entrar agora: { email, admin } | null (pausado = null) */
+export async function quemE(email) {
+  const u = await quemEUsuario(email);
+  if (!u || !u.ativo) return null;
+  return { email: u.email, admin: u.admin };
 }
 
 /** Conta um evento numa janela. Devolve false se passou do limite. Atômico. */
@@ -42,7 +43,7 @@ export async function pedirCodigo(email, origem = "") {
   const nonce = token(24);
   const nada = { ok: true, nonce, tarefa: null };
   if (!(await conta(`limite/ip/${sha(origem)}`, PEDIDOS_IP_HORA, 60 * 60e3))) return nada;
-  const quem = quemE(e);
+  const quem = await quemE(e);
   if (!quem) return nada;
   if (!(await conta(`limite/email15/${sha(e)}/${sha(origem)}`, PEDIDOS_EMAIL_IP_15MIN, 15 * 60e3))) return nada;
   if (!(await conta(`limite/emaildia/${sha(e)}/${sha(origem)}`, PEDIDOS_EMAIL_IP_DIA, 24 * 60 * 60e3))) return nada;
@@ -77,7 +78,7 @@ export async function conferirCodigo(email, cod, nonce, origem = "", lugar = "")
   } catch { r = "nao"; }
   if (r !== "ok") return { ok: false };
   await apagar(chave);
-  const quem = quemE(e);
+  const quem = await quemE(e);
   if (!quem) return { ok: false };
   const tk = token(32);
   await gravar(kSessao(tk), { email: e, admin: quem.admin, criada: hoje().toISOString(), expira: hoje().getTime() + SESSAO_DIAS * 864e5, lugar });
@@ -89,8 +90,9 @@ export async function sessaoDe(req) {
   if (!t || t.length < 20 || t.length > 100) return null;
   const s = await ler(kSessao(t));
   if (!s || hoje().getTime() > s.expira) return null;
-  if (!usuarios().has(s.email)) return null; // saiu da lista: a sessão morre
-  return { ...s, admin: admins().has(s.email), token: t };
+  const u = await quemE(s.email); // saiu da lista ou foi pausado: a sessão morre
+  if (!u) return null;
+  return { ...s, admin: u.admin, token: t };
 }
 
 export async function sair(req) {

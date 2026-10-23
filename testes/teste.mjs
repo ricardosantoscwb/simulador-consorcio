@@ -80,3 +80,36 @@ process.env.USUARIOS = "ricardo@exemplo.com";
 assert.equal((await app(get("/"))).status, 303);
 
 console.log("ok · 10 blocos, e-mails capturados:", caixa.length);
+
+// ── painel de usuários ────────────────────────────────────────────────────────
+const admin = (await import("../funcoes/admin.mjs")).default;
+process.env.USUARIOS = "ricardo@exemplo.com";
+// janaina (não fixa) não entra antes de ser incluída
+assert.equal((await app(get("/"))).status, 303);
+r = await codigo(post("/api/codigo", { email: "maria@exemplo.com" }), ctx); guarda(r); assert.equal(caixa.length, 3, "não cadastrada: sem e-mail");
+// admin entra
+r = await codigo(post("/api/codigo", { email: "ricardo@exemplo.com" }), ctx); guarda(r); const c4 = caixa.at(-1).assunto.match(/(\d{8})/)[1];
+r = await entrar(post("/api/entrar", { email: "ricardo@exemplo.com", codigo: c4 }), ctx); guarda(r); assert.equal(r.status, 200);
+r = await admin(get("/admin")); assert.equal(r.status, 200); assert.ok((await r.text()).includes("Usuários"));
+r = await admin(post("/api/usuarios", { acao: "incluir", email: "Maria@Exemplo.com", nome: "Maria" })); j = await r.json(); assert.ok(j.ok); assert.ok(j.usuarios.some((u) => u.email === "maria@exemplo.com" && u.ativo && !u.fixo));
+r = await admin(post("/api/usuarios", { acao: "incluir", email: "ricardo@exemplo.com" })); assert.equal(r.status, 400);
+// maria entra
+const cookiesAdmin = { ...cookies }; for (const k in cookies) delete cookies[k];
+r = await codigo(post("/api/codigo", { email: "maria@exemplo.com" }), ctx); guarda(r); const c5 = caixa.at(-1).assunto.match(/(\d{8})/)[1]; assert.equal(caixa.at(-1).para, "maria@exemplo.com");
+r = await entrar(post("/api/entrar", { email: "maria@exemplo.com", codigo: c5 }), ctx); guarda(r); assert.equal(r.status, 200);
+assert.equal((await app(get("/"))).status, 200);
+assert.equal((await admin(get("/admin"))).status, 303, "maria não é admin");
+const cookiesMaria = { ...cookies };
+// admin pausa: maria perde a sessão; reativa: precisa de código novo; exclui
+Object.assign(cookies, cookiesAdmin);
+r = await admin(post("/api/usuarios", { acao: "pausar", email: "maria@exemplo.com" })); j = await r.json(); assert.ok(j.ok && j.usuarios.find((u) => u.email === "maria@exemplo.com").ativo === false);
+for (const k in cookies) delete cookies[k]; Object.assign(cookies, cookiesMaria);
+assert.equal((await app(get("/"))).status, 303, "pausada não entra");
+const antes = caixa.length; r = await codigo(post("/api/codigo", { email: "maria@exemplo.com" }), ctx); assert.equal(caixa.length, antes, "pausada não recebe código");
+for (const k in cookies) delete cookies[k]; Object.assign(cookies, cookiesAdmin);
+r = await admin(post("/api/usuarios", { acao: "reativar", email: "maria@exemplo.com" })); j = await r.json(); assert.ok(j.ok);
+r = await admin(post("/api/usuarios", { acao: "excluir", email: "maria@exemplo.com" })); j = await r.json(); assert.ok(j.ok && !j.usuarios.some((u) => u.email === "maria@exemplo.com"));
+// não-admin não mexe na lista
+for (const k in cookies) delete cookies[k];
+r = await admin(post("/api/usuarios", { acao: "incluir", email: "x@exemplo.com" })); assert.equal(r.status, 303);
+console.log("ok · painel de usuários");
