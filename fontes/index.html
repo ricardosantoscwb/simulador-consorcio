@@ -127,6 +127,11 @@ body.present .present-bar{display:flex;gap:6px}
 @media print{.top,.bnav,.no-present,.present-bar{display:none!important}body{background:#fff}main{padding:0;max-width:none}.card{box-shadow:none;break-inside:avoid}.screen{display:none}.screen#s-oferta{display:block}.grid.c3{grid-template-columns:repeat(3,1fr)}}
 .toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 14px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:40}
 .toast.on{opacity:1}
+.seg{margin-top:14px;border:1px solid var(--line);border-radius:14px;background:var(--card);padding:14px}
+.seg h3{margin:0 0 10px;font-size:15px}.seg .tri{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.seg .it{display:flex;gap:10px;align-items:flex-start}.seg .ic{flex:none;width:32px;height:32px;border-radius:50%;background:var(--accent-soft);display:grid;place-items:center}.seg .ic svg{width:17px;height:17px;stroke:var(--accent);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.seg .it b{display:block;font-size:14px}.seg .it span{font-size:13px;color:var(--muted)}
+.seg .nota{margin-top:10px;padding-top:8px;border-top:1px solid var(--line);font-size:11px;color:var(--muted)}
 .dlg-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
 details.adv{margin-top:6px}details.adv summary{cursor:pointer;font-size:13px;color:var(--muted);margin-bottom:8px}
 </style>
@@ -212,6 +217,10 @@ details.adv{margin-top:6px}details.adv summary{cursor:pointer;font-size:13px;col
       <div class="two">
         <div class="f"><label>Cabe por mês depois (R$)</label><input id="e-p2" type="number" min="0" step="100" inputmode="decimal"></div>
         <div class="f"><label>Nome do cliente (não vai no link)</label><input id="e-nome"></div>
+      </div>
+      <div class="two">
+        <div class="f"><label>Seguro prestamista na oferta</label><select id="e-sg"><option value="">Não incluir</option><option value="1">Incluir</option></select></div>
+        <div class="f"><label>Seguro: % ao mês sobre a parcela <span class="hint">sem fonte confirmada: use o do sistema</span></label><input id="e-sgp" type="number" min="0" max="20" step="0.01" inputmode="decimal" placeholder="ex.: 0,05"></div>
       </div>
     </details>
     <div class="wiz-actions"><span></span><button class="btn primary" id="e-go">Montar oferta</button></div>
@@ -346,6 +355,7 @@ const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const num=v=>{const n=parseFloat(v);return isFinite(n)?n:null;};
 const brl=v=>v==null||!isFinite(v)?'—':v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
 const brl2=v=>v==null||!isFinite(v)?'—':v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const pct2=v=>v==null||!isFinite(v)?'—':v.toLocaleString('pt-BR',{maximumFractionDigits:3})+'%';
 const pct=v=>v==null||!isFinite(v)?'—':v.toLocaleString('pt-BR',{maximumFractionDigits:1})+'%';
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2200);}
@@ -584,7 +594,7 @@ function renderRank(){const t=$('#rank');const P={valor:S.estr.valor,bem:S.estr.
   t.innerHTML=`<thead><tr><th>Grupo</th><th>Carta</th><th>Lance do bolso</th><th>Lance total</th><th>Menor contemplado</th><th>Crédito líquido</th><th>Parcela ~</th><th>Cabe?</th></tr></thead><tbody>${rows.map(({g,carta,r})=>`<tr><td>${esc(g.cod)}<br><span style="font-size:11px">${esc(g.tipo)}${semFonte(g)?' · <span style="color:var(--warn)">sem fonte</span>':''}</span></td><td class="num">${brl(carta)}</td><td class="num"><b>${brl(r.lanceLivre)}</b><br><span style="font-size:11px">${pct(r.lancePct-(num(g.emax)||0))} da carta</span></td><td class="num">${pct(r.lancePct)}<br><span style="font-size:11px">${pct(num(g.emax)||0)} embutido</span></td><td class="num">${r.lmin!=null?pct(r.lmin):'—'}</td><td class="num">${brl(r.credLiq)}</td><td class="num">${r.parcelaPos!=null?brl2(r.parcelaPos):'—'}</td><td>${r.ok?'<span class="tag ok">sim</span>':`<span class="tag warn" title="${esc(r.alerts[0]||'')}">${esc((r.alerts[0]||'pendente').split(':')[0].slice(0,28))}</span>`}</td></tr>`).join('')}</tbody>`;}
 
 /* ===================== estratégia de compra ===================== */
-const EF=['modo','valor','tipo','max','alvo','emb','rec','p1','p2','nome'];
+const EF=['modo','valor','tipo','max','alvo','emb','rec','p1','p2','nome','sg','sgp'];
 S.estr=S.estr||{modo:'liquido',valor:'',tipo:'Imobiliário',max:3,alvo:'lmin',emb:'1',rec:'',p1:'',p2:'',nome:'',lf:''};
 const EF2=['lf'];
 function cotaDe(g,carta,usaEmb,alvoK){ // números de 1 cota desse grupo com essa carta
@@ -633,11 +643,20 @@ function renderEstrategia(){const E=S.estr;[...EF,...EF2].forEach(k=>{const el=$
   $('#e-aviso').innerHTML=avisoPrimeiroUso();
   $('#e-go').onclick=()=>{[...EF,...EF2].forEach(k=>{const el=$('#e-'+k);if(el)E[k]=el.value;});if(!(num(E.valor)>0)){toast('Informe o valor');return;}E.feito=true;save();go('oferta');};
   renderOferta();renderCotas();}
+function blocoSeguro(b,K){const t=b&&b.r&&!b.r.erro?b.r.tot:null;
+  const custo=K>0&&t?`Cerca de ${brl2(t.p1*K)} por mês (${pct2(K*100)} da parcela), já somado na parcela mostrada`:'Valor a confirmar no sistema; ainda não entra na parcela mostrada';
+  const ic=d=>`<span class="ic"><svg viewBox="0 0 24 24">${d}</svg></span>`;
+  return `<div class="seg"><h3>Seguro prestamista: proteção do seu plano</h3><div class="tri">
+    <div class="it">${ic('<path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/>')}<div><b>Protege o plano</b><span>Se algo grave acontecer com o titular, o saldo é tratado pelo seguro, conforme as coberturas da apólice.</span></div></div>
+    <div class="it">${ic('<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6M15 14.2c3 0 6 1.6 6 5.8"/>')}<div><b>Protege quem fica</b><span>A família não herda a parcela de um bem que ainda estava sendo pago.</span></div></div>
+    <div class="it">${ic('<circle cx="12" cy="12" r="8"/><path d="M12 8v8M9.5 10.2c.4-1 1.4-1.4 2.5-1.4s2.3.5 2.3 1.6c0 2.2-4.8 1-4.8 3.2 0 1 1.1 1.7 2.5 1.7s2.1-.5 2.5-1.4"/>')}<div><b>Quanto custa</b><span>${custo}.</span></div></div>
+  </div><div class="nota">Produto acessório, sem fonte confirmada neste app: coberturas, carência, exclusões e se a adesão é opcional valem conforme a apólice e o contrato. A contratação do consórcio não deve ser condicionada ao seguro. Confirme tudo no sistema oficial.</div></div>`;}
 function renderOferta(){const E=S.estr;const out=$('#e-out');
   if(!E.feito||!(num(E.valor)>0)){out.innerHTML=`<div class="card empty">Monte um pedido primeiro. <a href="#" data-go="estrategia">Ir para Pedido</a></div>`;return;}
   const vars=[['A','Menor lance do bolso','bolso'],['F','Mais cartas (microvitórias)','mais'],['B','Menor parcela','parcela'],['C','Sem lance (só sorteio)','semlance'],['D','Menos cartas','cotas'],['E','Menor prazo','prazo']].map(([k,nome,pr])=>({k,nome,r:montar(E,pr)}));
+  const K=E.sg==='1'?(num(E.sgp)||0)/100:0;const P1=t=>t.p1*(1+K),P2=t=>t.p2*(1+K);
   const rec=num(E.rec),p1=num(E.p1),p2=num(E.p2);
-  const cabe=t=>{const a=[];if(rec!=null&&E.rec!=='')a.push(t.bolso<=rec+0.5?null:`lance do bolso ${brl(t.bolso)} > ${brl(rec)} (faltam ${brl(t.bolso-rec)})`);if(p1>0)a.push(t.p1<=p1+0.5?null:`parcela até contemplar ${brl2(t.p1)} > ${brl2(p1)}`);if(p2>0)a.push(t.p2<=p2+0.5?null:`parcela depois ${brl2(t.p2)} > ${brl2(p2)}`);return a.filter(Boolean);};
+  const cabe=t=>{const a=[];if(rec!=null&&E.rec!=='')a.push(t.bolso<=rec+0.5?null:`lance do bolso ${brl(t.bolso)} > ${brl(rec)} (faltam ${brl(t.bolso-rec)})`);if(p1>0)a.push(P1(t)<=p1+0.5?null:`parcela até contemplar ${brl2(P1(t))} > ${brl2(p1)}`);if(p2>0)a.push(P2(t)<=p2+0.5?null:`parcela depois ${brl2(P2(t))} > ${brl2(p2)}`);return a.filter(Boolean);};
   const informou=(rec!=null&&E.rec!=='')||p1>0||p2>0;const ok=vars.map(v=>v.r&&!v.r.erro&&cabe(v.r.tot).length===0);
   let best=-1;{let el=vars.map((v,i)=>({v,i})).filter(x=>x.v.r&&!x.v.r.erro&&(!informou||ok[x.i]));const comLance=el.filter(x=>x.v.r.prior!=='semlance');if(comLance.length)el=comLance; // a oferta consultiva é com lance; "só sorteio" fica como alternativa
     if(el.length){el.sort((a,b)=>(a.v.r.tot.bolso+0.02*a.v.r.tot.p2*12)-(b.v.r.tot.bolso+0.02*b.v.r.tot.p2*12));best=el[0].i;}}
@@ -648,16 +667,17 @@ function renderOferta(){const E=S.estr;const out=$('#e-out');
     const bilhetes=t.temHist?`<div class="dist" style="margin-top:8px"><b style="color:var(--ink)">Bilhetes por assembleia (histórico):</b> ${t.cotas} cota${t.cotas>1?'s':''} = ${t.cotas} bilhete${t.cotas>1?'s':''} no sorteio (≈ ${(t.sorteio*100).toLocaleString('pt-BR',{maximumFractionDigits:1})}% de chance de pelo menos uma contemplação por sorteio, pelo histórico de 1 sorteado por assembleia)${lf>0?` · lance fixo: cerca de ${Math.round(t.cotas*lf/100*10)/10} cota(s) participando (regra de bolso ${pct(lf)})`:''} · na última assembleia desses grupos, ${t.lanceUlt} contemplaram por lance. Cada contemplação traz entre ${brl(t.menorCota)} e ${brl(t.maiorCota)}.</div>`:'';
     return `<div class="card path ${principal?'best':''}">${principal?'<div class="best-badge">★ oferta recomendada</div>':''}<h3>${v.k} · ${esc(v.nome)}</h3><div class="gname">${t.cotas} cota(s) em ${r.linhas.length} grupo(s) · compra ${brl(t.bruto)} · recebe ${brl(t.liq)}</div>
     <div class="bignum">${brl(t.bolso)}<small>de lance do bolso${t.emb>0?' · + '+brl(t.emb)+' embutido':''}</small></div>
-    <div class="bignum" style="font-size:22px;margin-top:6px">${brl2(t.p1)}<small>por mês até contemplar · depois ~ ${brl2(t.p2)} · ${t.prazoMin===t.prazoMax?t.prazoMax:t.prazoMin+'–'+t.prazoMax} meses</small></div>
+    <div class="bignum" style="font-size:22px;margin-top:6px">${brl2(P1(t))}<small>por mês até contemplar${K>0?' (com seguro)':''} · depois ~ ${brl2(P2(t))} · ${t.prazoMin===t.prazoMax?t.prazoMax:t.prazoMin+'–'+t.prazoMax} meses</small></div>
     ${bilhetes}
     <details class="adv" ${principal?'open':''}><summary>Grupos e cotas</summary><table class="cmp" style="margin-top:4px;font-size:12px"><thead><tr><th>Grupo</th><th>Cotas</th><th>Carta</th><th>Lance bolso</th><th>Últ. assembleia</th></tr></thead><tbody>${r.linhas.map(l=>`<tr><td>${esc(l.g.cod)}<br><span style="font-size:10px">alvo ${l.alvo!=null?pct(l.alvo):'—'} · emb ${pct(l.le)} · TA ${pct(num(l.g.ta))}</span></td><td class="num">${l.n}</td><td class="num">${brl(l.carta)}</td><td class="num">${brl(l.bolso*l.n)}</td><td class="num" style="font-size:11px">${l.g.cs!==''&&l.g.cs!=null?`${l.g.cs} sorteio · ${l.g.cl} lance`:'—'}</td></tr>`).join('')}</tbody></table></details>
     <div class="alerts">${probs.map(a=>`<div class="al">Não cabe: ${esc(a)}</div>`).join('')}${informou&&!probs.length?'<div class="al ok">Cabe no bolso</div>':''}${r.linhas.some(l=>l.sobra)?`<div class="al info">Fechou com cota cheia; sobram ${brl(r.linhas.find(l=>l.sobra).sobra)} de crédito.</div>`:''}</div></div>`;};
   const b=best>=0?vars[best]:null;
   out.innerHTML=`<div class="hero"><h1>Oferta · ${titulo}</h1><p>${E.nome&&!document.body.classList.contains('present')?esc(E.nome)+' · ':''}${esc(E.tipo||'qualquer tipo')} · ${new Date().toLocaleDateString('pt-BR')} · valores estimativos, a confirmar no sistema oficial</p></div>
-  ${b?`<div class="concl" style="margin:0 0 14px;font-size:16px"><b>Para ter ${titulo}: ${b.r.tot.cotas} cota${b.r.tot.cotas>1?'s':''} (${brl(b.r.tot.bruto)} em cartas).</b>Entra com ${brl(b.r.tot.bolso)} de lance do bolso, paga ${brl2(b.r.tot.p1)} por mês até contemplar e cerca de ${brl2(b.r.tot.p2)} depois.${b.r.tot.temHist?` São ${b.r.tot.cotas} bilhetes por assembleia; cada contemplação traz ${b.r.tot.menorCota===b.r.tot.maiorCota?brl(b.r.tot.menorCota):'de '+brl(b.r.tot.menorCota)+' a '+brl(b.r.tot.maiorCota)}.`:''}<ul><li>Lance no nível do que contemplou na última assembleia desses grupos: histórico, não garantia.</li><li>Próximo passo: buscar no sistema ${esc(instrucaoBusca(b.r))}, e colar as cotas em <a href="#" data-go="cotas" style="color:inherit;font-weight:600">Cotas</a>.</li></ul></div>`:`<div class="concl none" style="margin:0 0 14px">Nenhuma variante fechou${informou?' dentro do bolso':''}. Cole mais grupos, aumente o máximo de cotas ou ajuste o bolso.</div>`}
+  ${b?`<div class="concl" style="margin:0 0 14px;font-size:16px"><b>Para ter ${titulo}: ${b.r.tot.cotas} cota${b.r.tot.cotas>1?'s':''} (${brl(b.r.tot.bruto)} em cartas).</b>Entra com ${brl(b.r.tot.bolso)} de lance do bolso, paga ${brl2(P1(b.r.tot))} por mês até contemplar${K>0?' (já com o seguro prestamista)':''} e cerca de ${brl2(P2(b.r.tot))} depois.${b.r.tot.temHist?` São ${b.r.tot.cotas} bilhetes por assembleia; cada contemplação traz ${b.r.tot.menorCota===b.r.tot.maiorCota?brl(b.r.tot.menorCota):'de '+brl(b.r.tot.menorCota)+' a '+brl(b.r.tot.maiorCota)}.`:''}<ul><li>Lance no nível do que contemplou na última assembleia desses grupos: histórico, não garantia.</li><li>Próximo passo: buscar no sistema ${esc(instrucaoBusca(b.r))}, e colar as cotas em <a href="#" data-go="cotas" style="color:inherit;font-weight:600">Cotas</a>.</li></ul></div>`:`<div class="concl none" style="margin:0 0 14px">Nenhuma variante fechou${informou?' dentro do bolso':''}. Cole mais grupos, aumente o máximo de cotas ou ajuste o bolso.</div>`}
   <div class="grid c3" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">${b?card(b,best,true):''}</div>
   <details class="adv no-present" style="margin-top:14px"><summary>Ver as outras ${vars.length-(b?1:0)} variantes</summary><div class="grid c3" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));margin-top:10px">${vars.map((v,i)=>i===best?'':card(v,i,false)).join('')}</div></details>
-  <p class="sub" style="margin-top:14px;font-size:11px">Avisos: contemplação depende de sorteio ou lance, sem garantia nem previsão de lance vencedor; o lance embutido reduz o crédito; parcelas são estimativas lineares sem reajuste, seguro ou juros, e "depois" supõe todas as cotas contempladas; descontos de campanha têm validade; confirme taxas, parcelas, prazos e grupos no sistema oficial da administradora. Esta ferramenta não substitui a simulação oficial.</p>
+  ${E.sg==='1'?blocoSeguro(b,K):''}
+  <p class="sub" style="margin-top:14px;font-size:11px">Avisos: contemplação depende de sorteio ou lance, sem garantia nem previsão de lance vencedor; o lance embutido reduz o crédito; parcelas são estimativas lineares sem reajuste ou juros${K>0?`; o seguro prestamista entra pelo percentual informado (${pct2(K*100)} ao mês sobre a parcela), sem fonte confirmada`:' e sem seguro'}, e "depois" supõe todas as cotas contempladas; descontos de campanha têm validade; confirme taxas, parcelas, prazos e grupos no sistema oficial da administradora. Esta ferramenta não substitui a simulação oficial.</p>
   <div class="dlg-actions no-present"><button class="btn" id="o-share">Copiar link</button><button class="btn" onclick="window.print()">PDF / Imprimir</button><button class="btn primary" id="o-present">Apresentar</button></div>`;
   $('#o-present').onclick=()=>{document.body.classList.add('present');};$('#o-share').onclick=shareLink;
 }
