@@ -58,7 +58,7 @@ export function paginaEntrar() {
 </script></main></body></html>`;
 }
 
-export function paginaAdmin(quem) {
+export function paginaAdmin(quem, extra = "") { // extra: bloco do app (o módulo de usuários segue portável)
   return `${topo("Usuários · Simulador de Consórcio").replace("<main>", '<main class="wide">')}
 <div class="card">
 <h1>Usuários</h1><p class="sub">Quem pode entrar no simulador. Pausado não entra e perde a sessão na hora. Você está como ${esc(quem)}. <a href="/">Voltar ao simulador</a></p>
@@ -67,6 +67,7 @@ export function paginaAdmin(quem) {
 <table><thead><tr><th>E-mail</th><th>Nome</th><th>Situação</th><th></th></tr></thead><tbody id="lista"><tr><td colspan="4">Carregando…</td></tr></tbody></table>
 <div class="why">Os e-mails marcados como <b>fixo</b> vêm da configuração da Netlify (ADMIN_EMAILS e USUARIOS) e não se pausam por aqui. Excluir apaga o cadastro; pausar mantém o histórico e dá pra reativar; alterar troca e-mail ou nome (trocar o e-mail encerra a sessão atual da pessoa).</div>
 </div>
+${extra}
 <script>
 (function(){
   var msg=document.getElementById('msg'),lista=document.getElementById('lista');

@@ -141,7 +141,7 @@ details.adv{margin-top:6px}details.adv summary{cursor:pointer;font-size:13px;col
   <div class="brand"><div class="dot">∑</div><div>Simulador de Consórcio<small>grupos · pedido · cotas · oferta</small></div></div>
   <nav class="tabs"><button data-go="grupos">1 Grupos</button><button data-go="estrategia">2 Pedido</button><button data-go="cotas">3 Cotas</button><button data-go="oferta">4 Oferta</button></nav>
   <button class="btn primary" id="btnPresent">Apresentar</button>
-  <a class="btn ghost small" id="lnkAdmin" href="/admin" style="display:none">Usuários</a>
+  <a class="btn ghost small" id="lnkAdmin" href="/admin" style="display:none">Admin</a>
   <button class="btn ghost small" id="btnSair" title="Sair" style="display:none">Sair</button>
 </div></header>
 <div class="present-bar"><button class="btn small" onclick="window.print()">PDF</button><button class="btn small" id="btnShare2">Link</button><button class="btn small primary" id="btnExitPresent">Sair</button></div>
@@ -212,6 +212,7 @@ details.adv{margin-top:6px}details.adv summary{cursor:pointer;font-size:13px;col
 
 <!-- ================= GRUPOS ================= -->
 <section class="screen" id="s-grupos">
+  <div id="imp-card"></div>
   <div class="grid c2">
     <div class="card">
       <h2>Grupos guardados <button class="btn small" id="btnNewGroup" style="margin-left:auto">+ Manual</button></h2>
@@ -225,7 +226,9 @@ details.adv{margin-top:6px}details.adv summary{cursor:pointer;font-size:13px;col
       <div class="wiz-actions"><span></span><button class="btn primary" data-go="estrategia">Próximo: Pedido →</button></div>
     </div>
     <div class="card" id="gform-card" style="order:-1">
-      <h2 id="gform-title">Colar grupos do portal</h2>
+      <h2 id="gform-title">Atualizar grupos</h2>
+      <p class="sub">Pelo botão <b>Atualizar Simulador</b> no portal (instalação em <a href="/admin">Admin</a>). Colar à mão só se o botão falhar.</p>
+      <details class="adv" id="g-colar"><summary>Colar à mão</summary>
       <div class="f"><label>Cole as linhas da tabela "Informações dos Grupos" <span class="hint">uma ou várias; preenche código, faixa, prazos, assembleia e lances</span></label><textarea id="g-paste" rows="5" placeholder="Uma ou várias linhas, uma por grupo. ex.: 010016 Não 58948.56 A 106107.42 1000 200 150 28/09/2022 17/11/2026 ..."></textarea><div class="hint" id="g-paste-msg"></div></div>
       <div id="g-batch" style="display:none" class="off">
         <b>Importar lote</b>. Em "Automático", o tipo sai do código do grupo (01 imóvel, 03 leves, 04 pesados) e taxa, fundo e embutido usam o padrão do banner (a partir de). Pode colar imóvel, leves e pesados juntos.
@@ -234,6 +237,7 @@ details.adv{margin-top:6px}details.adv summary{cursor:pointer;font-size:13px;col
         <div class="f"><label>Fonte</label><input id="b-fonte" placeholder="ex.: sistema oficial"></div>
         <button class="btn primary small" id="btnBatch">Importar <span id="b-n">0</span> grupos</button>
       </div>
+      </details>
       <details class="adv" id="g-manual"><summary>Campos do grupo (edição manual)</summary>
       <div class="two">
         <div class="f"><label>Código</label><input id="g-cod"></div>
@@ -298,12 +302,14 @@ const defaultState=()=>({
     {id:'G2',cod:'G2',tipo:'Imobiliário',desc:'Imóvel com lance (exemplo)',ta:14.75,fr:3,cmin:450000,cmax:450000,pt:'',pr:'',parc:2684,emax:50,lmin:'',lmed:'',lmax:'',assem:'',data:'',fonte:EXEMPLO},
     {id:'G3',cod:'G3',tipo:'Veículos Leves',desc:'Veículo com lance (exemplo)',ta:14.4,fr:3,cmin:124448.07,cmax:124448.07,pt:'',pr:'',parc:2435.08,emax:30,lmin:'',lmed:'',lmax:'',assem:'',data:'',fonte:EXEMPLO},
   ],
-    cotasL:[], comp:{},
+    cotasL:[], comp:{}, convenios:[],
   segTaxa:0.0433, segInfo:'1 amostra da tela de composição (27/10/2026): grupo 10012, carta R$ 305.576, seguro R$ 163,41 por mês sobre saldo de R$ 377.388 sem seguro',
 });
 let S=load();
+var IMPORT_PEND; // (sem "=null": load() roda antes desta linha) pacote do botão "Atualizar Simulador" (chega no fragmento da URL, nunca vai ao servidor como link)
 function load(){
   const base=defaultState();
+  try{const h=location.hash.slice(1);if(h.startsWith('importar=')){IMPORT_PEND=JSON.parse(decodeURIComponent(h.slice(9)));history.replaceState(null,'',location.pathname);}}catch(e){toast('Pacote do portal ilegível: clique de novo no botão');}
   try{const h=location.hash.slice(1);if(h.startsWith('s=')){const d=JSON.parse(decodeURIComponent(escape(atob(h.slice(2)))));history.replaceState(null,'',location.pathname);toast('Caminhos carregados do link');return {...base,...d,perfil:{...base.perfil,...(d.perfil||{})},promo:{...base.promo,...(d.promo||{})}};}}catch(e){}
   try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);return {...base,...d,perfil:{...base.perfil,...(d.perfil||{})},promo:{...base.promo,...(d.promo||{})}};}}catch(e){}
   return base;
@@ -388,7 +394,17 @@ function statusPortal(){const gs=S.grupos.filter(g=>g.fonte!==EXEMPLO&&g.data);i
 function avisoPortal(){const st=statusPortal();if(!st)return '';
   return st.velho?`<div class="al" style="margin-bottom:10px">Teve assembleia em ${fmtD(st.assemPassada)}, depois da sua colagem de ${fmtD(st.ult)}: cole a tabela do portal de novo (lance e contemplados podem ter mudado).</div>`
     :`<div class="al info" style="margin-bottom:10px">Tabela do portal colada em ${fmtD(st.ult)}.${st.prox?` Próxima assembleia: ${fmtD(st.prox)}; depois dela, cole de novo.`:''}</div>`;}
-function renderGrupos(){const l=$('#glist');l.innerHTML=avisoPortal();
+function pacoteLinhas(P){return Object.values(P&&P.grupos||{}).flat().map(parseLinha).filter(Boolean);}
+function renderImport(){const el=$('#imp-card');if(!el)return;if(!IMPORT_PEND){el.innerHTML='';return;}
+  const ls=pacoteLinhas(IMPORT_PEND),por={};ls.forEach(p=>{const t=tipoDoCod(p.cod)||'?';por[t]=(por[t]||0)+1;});const conv=(IMPORT_PEND.convenios||[]).length;
+  el.innerHTML=`<div class="card" style="margin-bottom:14px;border-color:var(--accent)"><h2>Chegou do portal <span class="tag">${esc(new Date(IMPORT_PEND.em).toLocaleString('pt-BR'))}</span></h2>
+    <p class="sub">${Object.entries(por).map(([t,n])=>esc(t)+': '+n).join(' · ')||'nenhum grupo reconhecido'}${conv?' · '+conv+' códigos de convênio':''}. Confirme pra gravar no simulador (vale pra todos os gerentes) e registrar o histórico de lances.</p>
+    <div class="dlg-actions" style="justify-content:flex-start"><button class="btn primary" id="imp-ok" ${ls.length?'':'disabled'}>Gravar no simulador</button><button class="btn" id="imp-no">Descartar</button></div></div>`;
+  $('#imp-no').onclick=()=>{IMPORT_PEND=null;renderImport();};
+  $('#imp-ok').onclick=()=>{const P=IMPORT_PEND;IMPORT_PEND=null;if(Array.isArray(P.convenios)&&((window.SESSAO&&window.SESSAO.admin)||!temServidor()))S.convenios=P.convenios.map(c=>({cod:String(c.cod||'').replace(/\D/g,''),nome:String(c.nome||'')}));
+    if(ls.some(p=>!tipoDoCod(p.cod))){toast('Há grupos de tipo desconhecido: ficaram de fora');}
+    const r=importarLote(ls.filter(p=>tipoDoCod(p.cod)),p=>{const t=tipoDoCod(p.cod);return {tipo:t,...PADRAO_LOTE[t]};},'portal da Caixa Consórcio (botão Atualizar Simulador)');render();toast(resumoImport(r));};}
+function renderGrupos(){renderImport();const l=$('#glist');l.innerHTML=avisoPortal();
   $('#g-exemplos').style.display=S.grupos.some(g=>g.fonte===EXEMPLO)?'':'none';
   const q=gBusca.toLowerCase();const lista=S.grupos.filter(g=>(!gFiltro||g.tipo===gFiltro)&&(!q||String(g.cod).toLowerCase().includes(q)||String(g.desc||'').toLowerCase().includes(q)));
   if(!S.grupos.length)l.innerHTML='<div class="empty">Nenhum grupo. Cole a tabela ao lado.</div>';else if(!lista.length)l.innerHTML='<div class="empty">Nada com esse filtro.</div>';
@@ -397,7 +413,7 @@ function renderGrupos(){const l=$('#glist');l.innerHTML=avisoPortal();
     d.innerHTML=`<div class="code">${esc(g.cod)} <span style="color:var(--muted);font-weight:400">· ${esc(g.tipo)}</span></div><span class="tag ${semFonte(g)?'warn':'ok'}">${semFonte(g)?'sem fonte':'fonte ok'}</span>
       <div class="meta">${esc(g.desc||'')}${g.desc?'<br>':''}Carta ${brl(num(g.cmin))}${num(g.cmax)!==num(g.cmin)?' a '+brl(num(g.cmax)):''} · TA ${pct(num(g.ta))} · FR ${pct(num(g.fr))} · embutido máx ${pct(num(g.emax))}${num(g.pr)?' · remanescente '+g.pr+'m':' · <b style="color:var(--warn)">sem prazo</b>'}${num(g.lmin)?' · menor lance últ. '+pct(num(g.lmin)):''}${(()=>{const t=tendencia(g);return t?` · <b style="color:${t.sobe?'var(--warn)':'var(--ok)'}">${esc(t.txt)}</b>`:'';})()}</div>`;
     d.onclick=()=>editGroup(g.id);l.appendChild(d);});}
-function editGroup(id){editing=id;const g=id?grupo(id):{};$('#g-manual').open=!!id;$('#gform-title').textContent=id?'Editar grupo '+g.cod:'Colar grupos do portal';GF.forEach(k=>$('#g-'+k).value=g[k]??'');$('#g-paste').value='';$('#g-paste-msg').textContent='';$('#g-emax-hint').textContent='';$('#btnDelGroup').style.display=id?'':'none';if(window.innerWidth<900&&id)$('#gform-card').scrollIntoView({behavior:'smooth'});}
+function editGroup(id){editing=id;const g=id?grupo(id):{};$('#g-manual').open=!!id;$('#gform-title').textContent=id?'Editar grupo '+g.cod:'Atualizar grupos';GF.forEach(k=>$('#g-'+k).value=g[k]??'');$('#g-paste').value='';$('#g-paste-msg').textContent='';$('#g-emax-hint').textContent='';$('#btnDelGroup').style.display=id?'':'none';if(window.innerWidth<900&&id)$('#gform-card').scrollIntoView({behavior:'smooth'});}
 $('#btnNewGroup').onclick=()=>{editGroup(null);$('#g-manual').open=true;$('#gform-title').textContent='Novo grupo (manual)';$('#gform-card').scrollIntoView({behavior:'smooth'});};$('#btnCancelGroup').onclick=()=>editGroup(null);
 $('#g-busca').oninput=e=>{gBusca=e.target.value;renderGrupos();};$('#g-filtro').onchange=e=>{gFiltro=e.target.value;renderGrupos();};
 $('#btnDelExemplos').onclick=()=>{const ids=S.grupos.filter(g=>g.fonte===EXEMPLO).map(g=>g.id);S.grupos=S.grupos.filter(g=>g.fonte!==EXEMPLO);save();empurrarGrupos();render();toast('Exemplos excluídos');};
@@ -432,12 +448,14 @@ $('#btnBatch').onclick=()=>{const auto=$('#b-tipo').value==='auto',fonte=$('#b-f
   const cfg=p=>{if(auto){const t=tipoDoCod(p.cod);return t?{tipo:t,...PADRAO_LOTE[t]}:null;}return {tipo:$('#b-tipo').value,ta:num($('#b-ta').value),fr:num($('#b-fr').value),emax:num($('#b-emax').value)};};
   if(auto&&batch.some(p=>!tipoDoCod(p.cod))){toast('Há códigos que não reconheço o tipo: escolha o tipo do lote');return;}
   if(!auto){const c=cfg(batch[0]);if(c.ta==null||c.fr==null){toast('Informe taxa adm e fundo de reserva do lote');return;}if(batch.some(p=>p.emb)&&c.emax==null){toast('Informe o embutido máximo para os grupos "Sim"');return;}}
-  const porTipo={};
+  const r=importarLote(batch,cfg,fonte);batch=[];editGroup(null);render();toast(resumoImport(r));};
+function resumoImport(r){return Object.entries(r.porTipo).map(([t,n])=>t+': '+n).join(' · ')+' — '+(r.novos||r.mudou?`${r.novos} novos, ${r.mudou} com lance ou assembleia nova`:'nada mudou desde a última atualização');}
+function importarLote(batch,cfg,fonte){const porTipo={};
   const hoje=new Date().toISOString().slice(0,10);let novos=0,atual=0,mudou=0;
   batch.forEach(p=>{const {tipo,ta,fr,emax}=cfg(p);porTipo[tipo]=(porTipo[tipo]||0)+1;const g={cod:p.cod,tipo,desc:'',ta,fr,cmin:p.cmin,cmax:p.cmax,pt:p.pt,pr:p.pr,parc:'',emax:p.emb?emax:0,lmin:p.lmin,lmed:p.lmed,lmax:p.lmax,assem:p.assem,data:hoje,fonte,cs:p.cs,cl:p.cl,ct:p.ct,clf:p.clf,np:p.np};
     const ex=S.grupos.find(x=>x.cod===p.cod&&x.tipo===tipo);if(ex){const ant=JSON.stringify([ex.lmin,ex.lmed,ex.lmax,ex.cs,ex.cl,ex.assem]);Object.assign(ex,g);if(JSON.stringify([ex.lmin,ex.lmed,ex.lmax,ex.cs,ex.cl,ex.assem])!==ant)mudou++;regHist(ex);atual++;}else{g.id='g'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);regHist(g);S.grupos.push(g);novos++;}});
   S.grupos=S.grupos.filter(g=>g.fonte!==EXEMPLO); // chegaram grupos reais: os de exemplo saem sozinhos
-  save();empurrarGrupos();batch=[];editGroup(null);render();toast((Object.entries(porTipo).map(([t,n])=>t+': '+n).join(' · '))+' — '+(novos||mudou?`${novos} novos, ${mudou} com lance ou assembleia nova`:'nada mudou desde a última colagem'));};
+  save();empurrarGrupos();return {porTipo,novos,mudou,atual};}
 function renderRank(){const t=$('#rank');const P={valor:S.estr.valor,bem:S.estr.tipo==='Imobiliário'?'Imóvel':S.estr.tipo?'Veículo':''},valor=num(P.valor)||0;
   if(!(valor>0)){t.innerHTML='<tr><td>Faça um pedido para ver o ranking.</td></tr>';return;}
   const gs=candidatos();if(!gs.length){t.innerHTML='<tr><td>Nenhum grupo com faixa e taxa.</td></tr>';return;}
@@ -677,10 +695,11 @@ function campOferta(vars){const ls=vars.flatMap(v=>v.r&&!v.r.erro?v.r.linhas:[])
 const CAMP_BANNER=[ // banner Super Sexta Antecipada (portal da administradora, 29/10/2026)
   {cod:'20262026000030',nome:'Super Sexta · imóvel e leves',tipos:['Imobiliário','Veículos Leves'],cmin:null,cmax:null,emb:'ambos',desc:30,ta:null,ini:'2026-10-29',fim:'2026-10-30'},
   {cod:'61092031101550',nome:'Super Sexta · pesados',tipos:['Veículos Pesados'],cmin:200000,cmax:1000000,emb:'com',desc:null,ta:13,ini:'2026-10-29',fim:'2026-10-30'},
-  {cod:'61092031101500',nome:'Super Sexta · pesados',tipos:['Veículos Pesados'],cmin:200000,cmax:1000000,emb:'ambos',desc:null,ta:13,ini:'2026-10-29',fim:'2026-10-30'},
+  {cod:'61092031101500',nome:'Super Sexta · pesados',tipos:['Veículos Pesados'],cmin:200000,cmax:1000000,emb:'com',desc:null,ta:13,ini:'2026-10-29',fim:'2026-10-30'},
   {cod:'61092031101450',nome:'Super Sexta · pesados',tipos:['Veículos Pesados'],cmin:200000,cmax:400000,emb:'sem',desc:null,ta:13,ini:'2026-10-29',fim:'2026-10-30'}];
 function renderCampanhas(){const el=$('#camp-card');if(!el)return;const adm=!temServidor()||!!(window.SESSAO&&window.SESSAO.admin),cs=S.campanhas||[],h=hojeL();
   el.innerHTML=`<h2>Campanhas <span class="tag muted">códigos de convênio</span></h2><p class="sub">${adm?'Você cadastra; vale para todos os gerentes.':'Cadastradas pelo admin.'} A Oferta mostra o código em cada cota onde ele vale e já aplica o desconto.</p>
+  ${(S.convenios||[]).length?`<details class="adv" open><summary>Códigos de convênio do portal (${S.convenios.length}) · percentual e regras no arquivo "Baixar" de cada um no portal</summary><table class="cmp" style="font-size:12px"><tbody>${S.convenios.map(c=>`<tr><td class="num">${esc(c.cod||'—')}</td><td style="text-align:left">${esc(c.nome)}</td></tr>`).join('')}</tbody></table></details>`:''}
   ${cs.length?`<div class="cmp-wrap"><table class="cmp" style="font-size:12px"><thead><tr><th>Código</th><th>Vale para</th><th>Carta</th><th>Embutido</th><th>Benefício</th><th>Validade</th>${adm?'<th></th>':''}</tr></thead><tbody>${cs.map((c,i)=>`<tr><td>${esc(c.cod)}${c.nome?'<br><span style="font-size:10px">'+esc(c.nome)+'</span>':''}</td><td>${esc(c.tipos.join(', ')||'todos')}</td><td class="num">${c.cmin!=null||c.cmax!=null?brl(c.cmin)+' a '+brl(c.cmax):'todas'}</td><td>${({com:'com',sem:'sem',ambos:'com ou sem'})[c.emb]||'—'}</td><td>${c.ta!=null?'taxa '+pct(c.ta):'−'+pct(c.desc)+' na taxa'}</td><td>${fmtD(c.ini)} a ${fmtD(c.fim)}${c.fim&&c.fim<h?' <span class="tag warn">vencida</span>':''}</td>${adm?`<td><button class="btn small danger" data-cdel="${i}">Excluir</button></td>`:''}</tr>`).join('')}</tbody></table></div>`:'<div class="empty">Nenhuma campanha cadastrada.</div>'}
   ${adm?`${cs.length?'':'<button class="btn small" id="cp-seed" style="margin-top:8px">Carregar a Super Sexta do banner (29 e 30/10)</button>'}
   <details class="adv" style="margin-top:10px"><summary>Adicionar campanha</summary>
@@ -740,10 +759,10 @@ function renderCotas(){const E=S.estr;
 let etag=null, syncTimer=null;
 const temServidor=()=>location.protocol.startsWith('http')&&!!window.SESSAO;
 async function puxarGrupos(){if(!temServidor())return;try{const r=await fetch('/api/dados',{cache:'no-store'});if(r.status===401){location.href='/entrar';return;}const j=await r.json();if(!j.ok)return;etag=j.etag;
-  S.campanhas=j.campanhas||[];if(j.grupos.length){S.grupos=j.grupos;save();render();}else{save();render();if(S.grupos.length)empurrarGrupos();}
+  S.campanhas=j.campanhas||[];S.convenios=j.convenios||[];if(j.grupos.length){S.grupos=j.grupos;save();render();}else{save();render();if(S.grupos.length)empurrarGrupos();}
   if(window.SESSAO&&window.SESSAO.admin&&!S.campanhas.length&&hojeL()<=CAMP_BANNER[0].fim){S.campanhas=CAMP_BANNER.map(c=>({...c}));save();render();empurrarGrupos();toast('Campanha Super Sexta carregada');}}catch(e){}}
-function empurrarGrupos(){if(!temServidor())return;clearTimeout(syncTimer);syncTimer=setTimeout(async()=>{try{const r=await fetch('/api/dados',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({grupos:S.grupos,etag,...(window.SESSAO&&window.SESSAO.admin?{campanhas:S.campanhas||[]}:{})})});const j=await r.json();
-  if(r.status===409&&j.grupos){S.grupos=j.grupos;S.campanhas=j.campanhas||[];etag=j.etag;save();render();toast('Grupos atualizados por outra pessoa; recarreguei.');return;}
+function empurrarGrupos(){if(!temServidor())return;clearTimeout(syncTimer);syncTimer=setTimeout(async()=>{try{const r=await fetch('/api/dados',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({grupos:S.grupos,etag,...(window.SESSAO&&window.SESSAO.admin?{campanhas:S.campanhas||[],convenios:S.convenios||[]}:{})})});const j=await r.json();
+  if(r.status===409&&j.grupos){S.grupos=j.grupos;S.campanhas=j.campanhas||[];S.convenios=j.convenios||[];etag=j.etag;save();render();toast('Grupos atualizados por outra pessoa; recarreguei.');return;}
   if(r.status===401){location.href='/entrar';return;}if(j.ok)etag=j.etag;}catch(e){toast('Sem conexão: grupos salvos só neste aparelho');}},400);}
 if(window.SESSAO){const b=$('#btnSair');b.style.display='';if(window.SESSAO.admin)$('#lnkAdmin').style.display='';b.title='Sair ('+window.SESSAO.email+')';b.onclick=async()=>{try{await fetch('/api/sair',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});}catch(e){}location.href='/entrar';};}
 
@@ -758,6 +777,7 @@ function render(){renderGrupos();renderRank();renderCampanhas();renderEstrategia
 editGroup(null);
 let tab='estrategia';try{tab=localStorage.getItem(KEY+'.tab')||'estrategia';}catch(e){}
 if(!['grupos','estrategia','cotas','oferta'].includes(tab))tab='estrategia';if(location.hash)tab='oferta';
+if(IMPORT_PEND)tab='grupos';
 go(tab);
 puxarGrupos();
 </script>

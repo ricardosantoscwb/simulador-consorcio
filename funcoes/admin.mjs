@@ -3,13 +3,14 @@ import { html, json, redirect, pedidoValido, corpoJson, jsonParaScript } from ".
 import { sessaoDe, anularAcessoDoEmail } from "../nucleo/auth.mjs";
 import { painel, incluir, ativar, excluir, alterar } from "../nucleo/usuarios.mjs";
 import { paginaAdmin } from "../nucleo/paginas.mjs";
+import { cardAtualizar } from "../nucleo/botao-portal.mjs";
 
 export default async (req) => {
   const s = await sessaoDe(req);
   if (!s) return redirect("/entrar");
   if (!s.admin) return redirect("/");
   const url = new URL(req.url);
-  if (url.pathname === "/admin") return html(paginaAdmin(s.email));
+  if (url.pathname === "/admin") return html(paginaAdmin(s.email, cardAtualizar()));
   if (!pedidoValido(req)) return json({ ok: false }, 403);
   let d; try { d = await corpoJson(req, 4_000); } catch { return json({ ok: false }, 400); }
   let r = { ok: false, erro: "Ação desconhecida." };

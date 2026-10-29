@@ -15,11 +15,12 @@ const limpaC = (v) => (Array.isArray(v) ? v.slice(0, 30).filter((c) => c && type
   cmin: nOuNull(c.cmin), cmax: nOuNull(c.cmax), emb: ["com", "sem", "ambos"].includes(c.emb) ? c.emb : "ambos",
   desc: nOuNull(c.desc), ta: nOuNull(c.ta), ini: data(c.ini), fim: data(c.fim),
 })) : []);
+const limpaConv = (v) => (Array.isArray(v) ? v.slice(0, 40).map((c) => ({ cod: txt(c && c.cod, 30).replace(/\D/g, ""), nome: txt(c && c.nome, 160) })).filter((c) => c.cod || c.nome) : []);
 const lista = (dado, k) => (dado && Array.isArray(dado[k]) ? dado[k] : []);
 export default async (req) => {
   const s = await sessaoDe(req);
   if (!s) return json({ ok: false }, 401);
-  if (req.method === "GET") { const { dado, etag } = await lerComEtag(K); return json({ ok: true, grupos: lista(dado, "grupos"), campanhas: lista(dado, "campanhas"), etag, quem: s.email }); }
+  if (req.method === "GET") { const { dado, etag } = await lerComEtag(K); return json({ ok: true, grupos: lista(dado, "grupos"), campanhas: lista(dado, "campanhas"), convenios: lista(dado, "convenios"), etag, quem: s.email }); }
   if (req.method !== "PUT" || !(req.headers.get("content-type") || "").includes("application/json") || req.headers.get("origin") !== new URL(req.url).origin) return json({ ok: false }, 403);
   let d; try { d = await corpoJson(req, 400_000); } catch { return json({ ok: false }, 400); }
   if (!Array.isArray(d.grupos) || d.grupos.length > 500) return json({ ok: false }, 400);
@@ -30,8 +31,9 @@ export default async (req) => {
   });
   const atual = await lerComEtag(K);
   const campanhas = s.admin && Array.isArray(d.campanhas) ? limpaC(d.campanhas) : lista(atual.dado, "campanhas"); // quem não é admin não mexe nas campanhas
-  const ok = await gravarSe(K, { grupos, campanhas, por: s.email, em: hoje().toISOString() }, d.etag || null);
-  if (!ok) { const { dado, etag } = await lerComEtag(K); return json({ ok: false, conflito: true, grupos: lista(dado, "grupos"), campanhas: lista(dado, "campanhas"), etag }, 409); }
+  const convenios = s.admin && Array.isArray(d.convenios) ? limpaConv(d.convenios) : lista(atual.dado, "convenios");
+  const ok = await gravarSe(K, { grupos, campanhas, convenios, por: s.email, em: hoje().toISOString() }, d.etag || null);
+  if (!ok) { const { dado, etag } = await lerComEtag(K); return json({ ok: false, conflito: true, grupos: lista(dado, "grupos"), campanhas: lista(dado, "campanhas"), convenios: lista(dado, "convenios"), etag }, 409); }
   const { etag } = await lerComEtag(K);
   return json({ ok: true, etag });
 };

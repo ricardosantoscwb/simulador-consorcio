@@ -128,6 +128,11 @@ r = await dados(new Request(O + "/api/dados", { method: "PUT", headers: { "Conte
 j = await etagDados(); assert.deepEqual(j.campanhas, [{ cod: "20262026000030", nome: "", tipos: ["Imobiliário"], cmin: null, cmax: null, emb: "ambos", desc: 30, ta: null, ini: "2026-10-29", fim: "2026-10-30" }]);
 r = await dados(new Request(O + "/api/dados", { method: "PUT", headers: { "Content-Type": "application/json", Origin: O, Cookie: jar() }, body: JSON.stringify({ grupos: [], etag: j.etag }) })); assert.ok((await r.json()).ok);
 j = await etagDados(); assert.equal(j.campanhas.length, 1, "grupos sem campanhas no corpo preservam as campanhas");
+// convênios do portal: admin grava (só dígitos no código), grupos depois preservam
+r = await dados(new Request(O + "/api/dados", { method: "PUT", headers: { "Content-Type": "application/json", Origin: O, Cookie: jar() }, body: JSON.stringify({ grupos: [], campanhas: j.campanhas, convenios: [{ cod: "0066 2999-000199", nome: "Sócio PJ" }, { cod: "", nome: "IBC" }, { lixo: 1 }], etag: j.etag }) })); assert.ok((await r.json()).ok);
+j = await etagDados(); assert.deepEqual(j.convenios, [{ cod: "00662999000199", nome: "Sócio PJ" }, { cod: "", nome: "IBC" }]);
+r = await dados(new Request(O + "/api/dados", { method: "PUT", headers: { "Content-Type": "application/json", Origin: O, Cookie: jar() }, body: JSON.stringify({ grupos: [], etag: j.etag }) })); assert.ok((await r.json()).ok);
+j = await etagDados(); assert.equal(j.convenios.length, 2, "grupos sem convênios no corpo preservam os convênios");
 console.log("ok · painel de usuários");
 // alterar
 for (const k in cookies) delete cookies[k]; Object.assign(cookies, cookiesAdmin);
