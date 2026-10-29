@@ -61,6 +61,10 @@ r = await dados(new Request(O + "/api/dados", { method: "PUT", headers: { "Conte
 const e1 = j.etag;
 r = await dados(get("/api/dados")); j = await r.json(); assert.deepEqual(j.grupos, [{ id: "g1", cod: "010016", ta: 14.75, fr: 3 }]);
 r = await dados(new Request(O + "/api/dados", { method: "PUT", headers: { "Content-Type": "application/json", Origin: O, Cookie: jar() }, body: JSON.stringify({ grupos: [], etag: "velha" }) })); assert.equal(r.status, 409); j = await r.json(); assert.ok(j.conflito && j.etag === e1);
+// participantes e histórico de lance passam; lixo no histórico é limpo
+r = await dados(get("/api/dados")); j = await r.json();
+r = await dados(new Request(O + "/api/dados", { method: "PUT", headers: { "Content-Type": "application/json", Origin: O, Cookie: jar() }, body: JSON.stringify({ grupos: [{ id: "g1", cod: "010016", np: 1000, clf: 2, h: [{ m: "2026-09", n: 61.1, d: 65, x: 1 }, { m: "ruim", n: 1 }, { m: "2026-10", n: "63", d: 66.2 }, "lixo"] }], etag: j.etag }) })); assert.ok((await r.json()).ok);
+r = await dados(get("/api/dados")); j = await r.json(); assert.deepEqual(j.grupos, [{ id: "g1", cod: "010016", np: 1000, clf: 2, h: [{ m: "2026-09", n: 61.1, d: 65 }, { m: "2026-10", n: null, d: 66.2 }] }]);
 // sem sessão: 401
 r = await dados(new Request(O + "/api/dados")); assert.equal(r.status, 401);
 

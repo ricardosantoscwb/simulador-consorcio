@@ -222,6 +222,10 @@ details.adv{margin-top:6px}details.adv summary{cursor:pointer;font-size:13px;col
         <div class="f"><label>Seguro prestamista na oferta</label><select id="e-sg"><option value="">Incluir (como no sistema)</option><option value="0">Não incluir</option></select></div>
         <div class="f"><label>Seguro: % ao mês sobre o saldo devedor <span class="hint">vazio = usa a amostra do sistema</span></label><input id="e-sgp" type="number" min="0" max="5" step="0.001" inputmode="decimal" placeholder="amostra: 0,0433"></div>
       </div>
+      <div class="two">
+        <div class="f"><label>FGTS para o lance (R$) <span class="hint">só imóvel; regras do FGTS a confirmar</span></label><input id="e-fgts" type="number" min="0" step="1000" inputmode="decimal"></div>
+        <div class="f"><label>Plano reduzido (parcela menor até contemplar)</label><select id="e-red"><option value="">Não usar</option><option value="1">Usar, se a composição da cota foi colada</option></select></div>
+      </div>
     </details>
     <div class="wiz-actions"><span></span><button class="btn primary" id="e-go">Montar oferta</button></div>
   </div></div>
@@ -365,6 +369,12 @@ const grupo=id=>S.grupos.find(g=>g.id===id);
 const semFonte=g=>!g.fonte||g.fonte===EXEMPLO||!g.data;
 const soExemplo=()=>S.grupos.every(g=>g.fonte===EXEMPLO);
 const tipoDoBem=b=>({'Imóvel':['Imobiliário'],'Veículo':['Veículos Leves','Veículos Pesados'],'Serviços':['Serviços']})[b]||[];
+// histórico do lance: 1 ponto por mês de colagem (só o que o gerente colou; nada automático)
+function regHist(g){const n=num(g.lmin),d=num(g.lmed);if(n==null&&d==null)return;const m=new Date().toISOString().slice(0,7);
+  g.h=[...(g.h||[]).filter(x=>x.m!==m),{m,n,d}].sort((a,b)=>a.m.localeCompare(b.m)).slice(-24);}
+function tendencia(g){const h=(g&&g.h||[]).filter(x=>x.n!=null||x.d!=null);if(h.length<2)return null;const a=h[h.length-2],b=h[h.length-1];
+  const k=a.n!=null&&b.n!=null?'n':'d';if(a[k]==null||b[k]==null)return null;const dv=b[k]-a[k];const mm=x=>x.m.slice(5)+'/'+x.m.slice(0,4);
+  return {dv,sobe:dv>=0.5,txt:Math.abs(dv)<0.5?`lance estável desde ${mm(a)}`:`lance ${dv>0?'subindo':'caindo'} ${dv>0?'+':'−'}${Math.abs(dv).toLocaleString('pt-BR',{maximumFractionDigits:1})} p.p. desde ${mm(a)}`};}
 
 /* ===================== cálculo (mesma lógica da planilha) ===================== */
 function calc(c){
@@ -554,7 +564,7 @@ function renderGrupos(){const l=$('#glist');l.innerHTML='';
   l.insertAdjacentHTML('beforebegin','');const cab=document.createElement('div');cab.className='sub';cab.textContent=`${lista.length} de ${S.grupos.length} grupos`;l.appendChild(cab);
   lista.forEach(g=>{const d=document.createElement('div');d.className='gitem';
     d.innerHTML=`<div class="code">${esc(g.cod)} <span style="color:var(--muted);font-weight:400">· ${esc(g.tipo)}</span></div><span class="tag ${semFonte(g)?'warn':'ok'}">${semFonte(g)?'sem fonte':'fonte ok'}</span>
-      <div class="meta">${esc(g.desc||'')}${g.desc?'<br>':''}Carta ${brl(num(g.cmin))}${num(g.cmax)!==num(g.cmin)?' a '+brl(num(g.cmax)):''} · TA ${pct(num(g.ta))} · FR ${pct(num(g.fr))} · embutido máx ${pct(num(g.emax))}${num(g.pr)?' · remanescente '+g.pr+'m':' · <b style="color:var(--warn)">sem prazo</b>'}${num(g.lmin)?' · menor lance últ. '+pct(num(g.lmin)):''}</div>`;
+      <div class="meta">${esc(g.desc||'')}${g.desc?'<br>':''}Carta ${brl(num(g.cmin))}${num(g.cmax)!==num(g.cmin)?' a '+brl(num(g.cmax)):''} · TA ${pct(num(g.ta))} · FR ${pct(num(g.fr))} · embutido máx ${pct(num(g.emax))}${num(g.pr)?' · remanescente '+g.pr+'m':' · <b style="color:var(--warn)">sem prazo</b>'}${num(g.lmin)?' · menor lance últ. '+pct(num(g.lmin)):''}${(()=>{const t=tendencia(g);return t?` · <b style="color:${t.sobe?'var(--warn)':'var(--ok)'}">${esc(t.txt)}</b>`:'';})()}</div>`;
     d.onclick=()=>editGroup(g.id);l.appendChild(d);});}
 function editGroup(id){editing=id;const g=id?grupo(id):{};$('#g-manual').open=!!id;$('#gform-title').textContent=id?'Editar grupo '+g.cod:'Novo grupo';GF.forEach(k=>$('#g-'+k).value=g[k]??'');$('#g-paste').value='';$('#g-paste-msg').textContent='';$('#g-emax-hint').textContent='';$('#btnDelGroup').style.display=id?'':'none';if(window.innerWidth<900&&id)$('#gform-card').scrollIntoView({behavior:'smooth'});}
 $('#btnNewGroup').onclick=()=>editGroup(null);$('#btnCancelGroup').onclick=()=>editGroup(null);
@@ -563,7 +573,7 @@ $('#btnDelExemplos').onclick=()=>{const ids=S.grupos.filter(g=>g.fonte===EXEMPLO
 $('#btnSaveGroup').onclick=()=>{const g={};GF.forEach(k=>g[k]=$('#g-'+k).value.trim());if(editing){const old=grupo(editing);GX.forEach(k=>{if(old[k]!=null)g[k]=old[k];});}
   if(window._pasteX){Object.assign(g,window._pasteX);window._pasteX=null;}if(!g.cod){toast('Informe o código');return;}
   ['ta','fr','cmin','cmax','pt','pr','parc','emax','lmin','lmed','lmax'].forEach(k=>g[k]=g[k]===''?'':num(g[k]));if(g.cmax===''&&g.cmin!=='')g.cmax=g.cmin;
-  if(editing)Object.assign(grupo(editing),g);else{g.id='g'+Date.now().toString(36);S.grupos.push(g);}
+  if(editing){Object.assign(grupo(editing),g);regHist(grupo(editing));}else{g.id='g'+Date.now().toString(36);regHist(g);S.grupos.push(g);}
   save();empurrarGrupos();editGroup(null);renderGrupos();toast('Grupo salvo');};
 $('#btnDelGroup').onclick=()=>{if(!editing)return;if((S.cenarios||[]).some(c=>c.gid===editing)){toast('Grupo em uso em um caminho');return;}S.grupos=S.grupos.filter(g=>g.id!==editing);save();empurrarGrupos();editGroup(null);renderGrupos();};
 // colar linha do portal: "COD Sim|Não MIN A MAX PART PT PR D1 DNEXT DVENC ... LMED % LMIN % LMAX %"
@@ -586,7 +596,7 @@ $('#btnBatch').onclick=()=>{const tipo=$('#b-tipo').value,ta=num($('#b-ta').valu
   if(ta==null||fr==null){toast('Informe taxa adm e fundo de reserva do lote');return;}if(batch.some(p=>p.emb)&&emax==null){toast('Informe o embutido máximo para os grupos "Sim"');return;}
   const hoje=new Date().toISOString().slice(0,10);let novos=0,atual=0;
   batch.forEach(p=>{const g={cod:p.cod,tipo,desc:'',ta,fr,cmin:p.cmin,cmax:p.cmax,pt:p.pt,pr:p.pr,parc:'',emax:p.emb?emax:0,lmin:p.lmin,lmed:p.lmed,lmax:p.lmax,assem:p.assem,data:hoje,fonte,cs:p.cs,cl:p.cl,ct:p.ct,clf:p.clf,np:p.np};
-    const ex=S.grupos.find(x=>x.cod===p.cod&&x.tipo===tipo);if(ex){Object.assign(ex,g);atual++;}else{g.id='g'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);S.grupos.push(g);novos++;}});
+    const ex=S.grupos.find(x=>x.cod===p.cod&&x.tipo===tipo);if(ex){Object.assign(ex,g);regHist(ex);atual++;}else{g.id='g'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);regHist(g);S.grupos.push(g);novos++;}});
   save();empurrarGrupos();batch=[];editGroup(null);render();toast(`${novos} grupos novos, ${atual} atualizados`);};
 function renderRank(){const t=$('#rank');const P={valor:S.estr.valor,bem:S.estr.tipo==='Imobiliário'?'Imóvel':S.estr.tipo?'Veículo':''},valor=num(P.valor)||0;
   if(!(valor>0)){t.innerHTML='<tr><td>Faça um pedido para ver o ranking.</td></tr>';return;}
@@ -596,7 +606,7 @@ function renderRank(){const t=$('#rank');const P={valor:S.estr.valor,bem:S.estr.
   t.innerHTML=`<thead><tr><th>Grupo</th><th>Carta</th><th>Lance do bolso</th><th>Lance total</th><th>Menor contemplado</th><th>Crédito líquido</th><th>Parcela ~</th><th>Cabe?</th></tr></thead><tbody>${rows.map(({g,carta,r})=>`<tr><td>${esc(g.cod)}<br><span style="font-size:11px">${esc(g.tipo)}${semFonte(g)?' · <span style="color:var(--warn)">sem fonte</span>':''}</span></td><td class="num">${brl(carta)}</td><td class="num"><b>${brl(r.lanceLivre)}</b><br><span style="font-size:11px">${pct(r.lancePct-(num(g.emax)||0))} da carta</span></td><td class="num">${pct(r.lancePct)}<br><span style="font-size:11px">${pct(num(g.emax)||0)} embutido</span></td><td class="num">${r.lmin!=null?pct(r.lmin):'—'}</td><td class="num">${brl(r.credLiq)}</td><td class="num">${r.parcelaPos!=null?brl2(r.parcelaPos):'—'}</td><td>${r.ok?'<span class="tag ok">sim</span>':`<span class="tag warn" title="${esc(r.alerts[0]||'')}">${esc((r.alerts[0]||'pendente').split(':')[0].slice(0,28))}</span>`}</td></tr>`).join('')}</tbody>`;}
 
 /* ===================== estratégia de compra ===================== */
-const EF=['modo','valor','tipo','max','alvo','emb','rec','p1','p2','nome','sg','sgp'];
+const EF=['modo','valor','tipo','max','alvo','emb','rec','p1','p2','nome','sg','sgp','fgts','red'];
 S.estr=S.estr||{modo:'liquido',valor:'',tipo:'Imobiliário',max:3,alvo:'lmin',emb:'1',rec:'',p1:'',p2:'',nome:'',lf:''};
 const EF2=['lf'];
 function cotaDe(g,carta,usaEmb,alvoK){ // números de 1 cota desse grupo com essa carta
@@ -640,7 +650,7 @@ function montar(E,prior){ // prior: 'bolso' | 'parcela' | 'semlance'
 }
 function montarReal(E,prior){ // cotas reais coladas do sistema de vendas; null = não há cotas do tipo (cai no motor dos grupos)
   const need=num(E.valor)||0;if(!(need>0))return null;
-  const cs=S.cotasL.filter(x=>x.plano==='Normal'&&x.carta>0&&x.parc>0&&x.prazo>0&&(x.vagas==null||x.vagas>0)&&(!E.tipo||(E.tipo==='Imobiliário'?x.tipo==='Imobiliário':x.tipo==='Veículos')));
+  const cs=S.cotasL.filter(x=>(x.plano==='Normal'||(E.red==='1'&&x.plano==='Reduzida'&&S.comp[x.gid+'|Reduzida']))&&x.carta>0&&x.parc>0&&x.prazo>0&&(x.vagas==null||x.vagas>0)&&(!E.tipo||(E.tipo==='Imobiliário'?x.tipo==='Imobiliário':x.tipo==='Veículos')));
   if(!cs.length)return null;
   const incSeg=E.sg!=='0',usaEmb=prior!=='semlance'&&E.emb==='1';
   const items=cs.map(x=>{
@@ -706,31 +716,41 @@ function renderOferta(){const E=S.estr;const out=$('#e-out');
   const vars=[['A','Menor lance do bolso','bolso'],['F','Mais cartas (microvitórias)','mais'],['B','Menor parcela','parcela'],['C','Sem lance (só sorteio)','semlance'],['D','Menos cartas','cotas'],['E','Menor prazo','prazo']].map(([k,nome,pr])=>({k,nome,r:montarAuto(E,pr)}));
   const R=E.sg!=='0'?((num(E.sgp)>0?num(E.sgp):(S.segTaxa||0))/100):0;const K=R;const segE=t=>R*(t.sdEst||0),segI=t=>segE(t)+(t.segReal||0);const P1=t=>t.p1+segE(t),P2=t=>t.p2+(t.p1>0?segE(t)*t.p2/t.p1:0);
   const rec=num(E.rec),p1=num(E.p1),p2=num(E.p2);
-  const cabe=t=>{const a=[];if(rec!=null&&E.rec!=='')a.push(t.bolso<=rec+0.5?null:`lance do bolso ${brl(t.bolso)} > ${brl(rec)} (faltam ${brl(t.bolso-rec)})`);if(p1>0)a.push(P1(t)<=p1+0.5?null:`parcela até contemplar ${brl2(P1(t))} > ${brl2(p1)}`);if(p2>0)a.push(P2(t)<=p2+0.5?null:`parcela depois ${brl2(P2(t))} > ${brl2(p2)}`);return a.filter(Boolean);};
+  const fg=E.tipo==='Imobiliário'?Math.max(0,num(E.fgts)||0):0;const fgU=t=>Math.min(fg,t.bolso),cli=t=>t.bolso-fgU(t); // FGTS cobre parte do lance livre
+  const cabe=t=>{const a=[];if(rec!=null&&E.rec!=='')a.push(cli(t)<=rec+0.5?null:`lance do bolso ${brl(cli(t))} > ${brl(rec)} (faltam ${brl(cli(t)-rec)})`);if(p1>0)a.push(P1(t)<=p1+0.5?null:`parcela até contemplar ${brl2(P1(t))} > ${brl2(p1)}`);if(p2>0)a.push(P2(t)<=p2+0.5?null:`parcela depois ${brl2(P2(t))} > ${brl2(p2)}`);return a.filter(Boolean);};
   const informou=(rec!=null&&E.rec!=='')||p1>0||p2>0;const ok=vars.map(v=>v.r&&!v.r.erro&&cabe(v.r.tot).length===0);
   let best=-1;{let el=vars.map((v,i)=>({v,i})).filter(x=>x.v.r&&!x.v.r.erro&&(!informou||ok[x.i]));const comLance=el.filter(x=>x.v.r.prior!=='semlance');if(comLance.length)el=comLance; // a oferta consultiva é com lance; "só sorteio" fica como alternativa
-    if(el.length){el.sort((a,b)=>(a.v.r.tot.bolso+0.02*a.v.r.tot.p2*12)-(b.v.r.tot.bolso+0.02*b.v.r.tot.p2*12));best=el[0].i;}}
+    if(el.length){el.sort((a,b)=>(cli(a.v.r.tot)+0.02*a.v.r.tot.p2*12)-(cli(b.v.r.tot)+0.02*b.v.r.tot.p2*12));best=el[0].i;}}
   S.estr.bestK=best>=0?vars[best].k:'';S.estr.busca=best>=0?instrucaoBusca(vars[best].r):'';S.estr.buscaL=best>=0?vars[best].r.linhas.map(l=>({cod:l.g.cod,carta:l.carta,n:l.n})):[];save();
   const titulo=E.modo==='liquido'?`${brl(num(E.valor))} líquido`:`${brl(num(E.valor))} bruto`;
   const lf=num(E.lf);
   const card=(v,i,principal)=>{const r=v.r;if(!r||r.erro)return `<div class="card path"><h3>${v.k} · ${esc(v.nome)}</h3><div class="al" style="margin-top:8px">${esc(r?r.erro:'Informe o valor')}</div></div>`;const t=r.tot;const probs=cabe(t);
     const bilhetes=t.temHist?`<div class="dist" style="margin-top:8px"><b style="color:var(--ink)">Bilhetes por assembleia (histórico):</b> ${t.cotas} cota${t.cotas>1?'s':''} = ${t.cotas} bilhete${t.cotas>1?'s':''} no sorteio (≈ ${(t.sorteio*100).toLocaleString('pt-BR',{maximumFractionDigits:1})}% de chance de pelo menos uma contemplação por sorteio, pelo histórico de 1 sorteado por assembleia)${lf>0?` · lance fixo: cerca de ${Math.round(t.cotas*lf/100*10)/10} cota(s) participando (regra de bolso ${pct(lf)})`:''} · na última assembleia desses grupos, ${t.lanceUlt} contemplaram por lance. Cada contemplação traz entre ${brl(t.menorCota)} e ${brl(t.maiorCota)}.</div>`:'';
     return `<div class="card path ${principal?'best':''}">${principal?'<div class="best-badge">★ oferta recomendada</div>':''}<h3>${v.k} · ${esc(v.nome)}</h3><div class="gname">${t.cotas} cota(s) em ${r.linhas.length} grupo(s) · compra ${brl(t.bruto)} · recebe ${brl(t.liq)}</div>
-    <div class="bignum">${brl(t.bolso)}<small>de lance do bolso${t.emb>0?' · + '+brl(t.emb)+' embutido':''}</small></div>
+    <div class="bignum">${brl(cli(t))}<small>de lance do bolso${fgU(t)>0?' · + '+brl(fgU(t))+' do FGTS':''}${t.emb>0?' · + '+brl(t.emb)+' embutido':''}</small></div>
     <div class="bignum" style="font-size:22px;margin-top:6px">${brl2(P1(t))}<small>por mês até contemplar${E.sg!=='0'&&K>0?' (com seguro)':''} · depois ~ ${brl2(P2(t))} · ${t.prazoMin===t.prazoMax?t.prazoMax:t.prazoMin+'–'+t.prazoMax} meses</small></div>
     ${bilhetes}
-    <details class="adv" ${principal?'open':''}><summary>Grupos e cotas</summary><table class="cmp" style="margin-top:4px;font-size:12px"><thead><tr><th>Grupo</th><th>Cotas</th><th>Carta</th><th>Lance bolso</th><th>Últ. assembleia</th></tr></thead><tbody>${r.linhas.map(l=>`<tr><td>${esc(l.g.cod)}<br><span style="font-size:10px">alvo ${l.alvo!=null?pct(l.alvo):'—'} · emb ${pct(l.le)} · TA ${pct(num(l.g.ta))}${l.real?' · vagas '+(l.ultimas?'últimas':l.vagas):''}</span></td><td class="num">${l.n}</td><td class="num">${brl(l.carta)}</td><td class="num">${brl(l.bolso*l.n)}</td><td class="num" style="font-size:11px">${l.g.cs!==''&&l.g.cs!=null?`${l.g.cs} sorteio · ${l.g.cl} lance`:'—'}</td></tr>`).join('')}</tbody></table></details>
-    <div class="alerts">${probs.map(a=>`<div class="al">Não cabe: ${esc(a)}</div>`).join('')}${informou&&!probs.length?'<div class="al ok">Cabe no bolso</div>':''}${r.linhas.some(l=>l.sobra)?`<div class="al info">Fechou com cota cheia; sobram ${brl(r.linhas.find(l=>l.sobra).sobra)} de crédito.</div>`:''}</div></div>`;};
+    <details class="adv" ${principal?'open':''}><summary>Grupos e cotas</summary><table class="cmp" style="margin-top:4px;font-size:12px"><thead><tr><th>Grupo</th><th>Cotas</th><th>Carta</th><th>Lance bolso</th><th>Últ. assembleia</th></tr></thead><tbody>${r.linhas.map(l=>`<tr><td>${esc(l.g.cod)}<br><span style="font-size:10px">alvo ${l.alvo!=null?pct(l.alvo):'—'} · emb ${pct(l.le)} · TA ${pct(num(l.g.ta))}${l.real?' · vagas '+(l.ultimas?'últimas':l.vagas):''}${l.x&&l.x.plano==='Reduzida'?' · plano reduzido':''}</span></td><td class="num">${l.n}</td><td class="num">${brl(l.carta)}</td><td class="num">${brl(l.bolso*l.n)}</td><td class="num" style="font-size:11px">${l.g.cs!==''&&l.g.cs!=null?`${l.g.cs} sorteio · ${l.g.cl} lance`:'—'}${(t=>t?`<br><span style="color:${t.sobe?'var(--warn)':'var(--muted)'}">${esc(t.txt)}</span>`:'')(tendencia(l.g))}</td></tr>`).join('')}</tbody></table></details>
+    <div class="alerts">${probs.map(a=>`<div class="al">Não cabe: ${esc(a)}</div>`).join('')}${(()=>{const s=[...new Set(r.linhas.filter(l=>(tendencia(l.g)||{}).sobe).map(l=>l.g.cod))];return s.length?`<div class="al">Lance subindo no grupo ${esc(s.join(', '))}: o alvo do mês passado pode ficar curto. Histórico, não previsão.</div>`:'';})()}${r.linhas.some(l=>l.x&&l.x.plano==='Reduzida')?'<div class="al info">Inclui plano reduzido: parcela até contemplar é a do sistema; a de depois é estimativa linear sobre o saldo da composição (regra da administradora sem fonte confirmada).</div>':''}${informou&&!probs.length?'<div class="al ok">Cabe no bolso</div>':''}${r.linhas.some(l=>l.sobra)?`<div class="al info">Fechou com cota cheia; sobram ${brl(r.linhas.find(l=>l.sobra).sobra)} de crédito.</div>`:''}</div></div>`;};
   const b=best>=0?vars[best]:null;
   out.innerHTML=`<div class="hero"><h1>Oferta · ${titulo}</h1><p>${E.nome&&!document.body.classList.contains('present')?esc(E.nome)+' · ':''}${esc(E.tipo||'qualquer tipo')} · ${new Date().toLocaleDateString('pt-BR')} · valores estimativos, a confirmar no sistema oficial</p></div>
   ${fonteOferta(vars)}
-  ${b?`<div class="concl" style="margin:0 0 14px;font-size:16px"><b>Para ter ${titulo}: ${b.r.tot.cotas} cota${b.r.tot.cotas>1?'s':''} (${brl(b.r.tot.bruto)} em cartas).</b>Entra com ${brl(b.r.tot.bolso)} de lance do bolso, paga ${brl2(P1(b.r.tot))} por mês até contemplar${E.sg!=='0'&&K>0?' (já com o seguro prestamista)':''} e cerca de ${brl2(P2(b.r.tot))} depois.${b.r.tot.temHist?` São ${b.r.tot.cotas} bilhetes por assembleia; cada contemplação traz ${b.r.tot.menorCota===b.r.tot.maiorCota?brl(b.r.tot.menorCota):'de '+brl(b.r.tot.menorCota)+' a '+brl(b.r.tot.maiorCota)}.`:''}<ul><li>Lance no nível do que contemplou na última assembleia desses grupos: histórico, não garantia.</li><li>${b.r.real?`Próximo passo: confirmar no sistema vagas e parcela de ${esc(instrucaoBusca(b.r))}.`:`Próximo passo: buscar no sistema ${esc(instrucaoBusca(b.r))}, e colar as cotas em <a href="#" data-go="cotas" style="color:inherit;font-weight:600">Cotas</a>.`}</li></ul></div>`:`<div class="concl none" style="margin:0 0 14px">Nenhuma variante fechou${informou?' dentro do bolso':''}. Cole mais grupos, aumente o máximo de cotas ou ajuste o bolso.</div>`}
+  ${b?`<div class="concl" style="margin:0 0 14px;font-size:16px"><b>Para ter ${titulo}: ${b.r.tot.cotas} cota${b.r.tot.cotas>1?'s':''} (${brl(b.r.tot.bruto)} em cartas).</b>Entra com ${brl(cli(b.r.tot))} de lance do bolso${fgU(b.r.tot)>0?' (+ '+brl(fgU(b.r.tot))+' do FGTS)':''}, paga ${brl2(P1(b.r.tot))} por mês até contemplar${E.sg!=='0'&&K>0?' (já com o seguro prestamista)':''} e cerca de ${brl2(P2(b.r.tot))} depois.${b.r.tot.temHist?` São ${b.r.tot.cotas} bilhetes por assembleia; cada contemplação traz ${b.r.tot.menorCota===b.r.tot.maiorCota?brl(b.r.tot.menorCota):'de '+brl(b.r.tot.menorCota)+' a '+brl(b.r.tot.maiorCota)}.`:''}<ul><li>Lance no nível do que contemplou na última assembleia desses grupos: histórico, não garantia.</li><li>${b.r.real?`Próximo passo: confirmar no sistema vagas e parcela de ${esc(instrucaoBusca(b.r))}.`:`Próximo passo: buscar no sistema ${esc(instrucaoBusca(b.r))}, e colar as cotas em <a href="#" data-go="cotas" style="color:inherit;font-weight:600">Cotas</a>.`}</li></ul></div>`:`<div class="concl none" style="margin:0 0 14px">Nenhuma variante fechou${informou?' dentro do bolso':''}. Cole mais grupos, aumente o máximo de cotas ou ajuste o bolso.</div>`}
   <div class="grid c3" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">${b?card(b,best,true):''}</div>
   <details class="adv no-present" style="margin-top:14px"><summary>Ver as outras ${vars.length-(b?1:0)} variantes</summary><div class="grid c3" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));margin-top:10px">${vars.map((v,i)=>i===best?'':card(v,i,false)).join('')}</div></details>
   ${E.sg!=='0'?blocoSeguro(b,segI):''}
-  <p class="sub" style="margin-top:14px;font-size:11px">Avisos: contemplação depende de sorteio ou lance, sem garantia nem previsão de lance vencedor; o lance embutido reduz o crédito; parcelas são estimativas lineares sem reajuste ou juros${K>0?`; o seguro prestamista já vem na parcela do sistema ou entra pela amostra de ${pct2(K*100)} ao mês sobre o saldo devedor (1 grupo; cai conforme o saldo)`:' e sem seguro'}, e "depois" supõe todas as cotas contempladas; descontos de campanha têm validade; confirme taxas, parcelas, prazos e grupos no sistema oficial da administradora. Esta ferramenta não substitui a simulação oficial.</p>
-  <div class="dlg-actions no-present"><button class="btn" id="o-share">Copiar link</button><button class="btn" onclick="window.print()">PDF / Imprimir</button><button class="btn primary" id="o-present">Apresentar</button></div>`;
+  <p class="sub" style="margin-top:14px;font-size:11px">Avisos: contemplação depende de sorteio ou lance, sem garantia nem previsão de lance vencedor; o lance embutido reduz o crédito; parcelas são estimativas lineares sem reajuste ou juros${K>0?`; o seguro prestamista já vem na parcela do sistema ou entra pela amostra de ${pct2(K*100)} ao mês sobre o saldo devedor (1 grupo; cai conforme o saldo)`:' e sem seguro'}, e "depois" supõe todas as cotas contempladas;${fg>0?' o uso do FGTS no lance depende das regras do FGTS e da administradora (confirmar elegibilidade antes de oferecer);':''}${E.red==='1'?' plano reduzido: regra pós-contemplação sem fonte confirmada;':''} tendência de lance é comparação entre colagens, não previsão; descontos de campanha têm validade; confirme taxas, parcelas, prazos e grupos no sistema oficial da administradora. Esta ferramenta não substitui a simulação oficial.</p>
+  <div class="dlg-actions no-present">${b?'<button class="btn" id="o-msg">Copiar mensagem</button>':''}<button class="btn" id="o-share">Copiar link</button><button class="btn" onclick="window.print()">PDF / Imprimir</button><button class="btn primary" id="o-present">Apresentar</button></div>`;
   $('#o-present').onclick=()=>{document.body.classList.add('present');};$('#o-share').onclick=shareLink;
+  if(b){$('#o-msg').onclick=()=>{const t=b.r.tot,nG=new Set(b.r.linhas.map(l=>l.g.cod)).size,sg=E.sg!=='0'&&K>0;
+    const txt=[`*Proposta de consórcio · ${titulo}*${E.tipo?' ('+E.tipo+')':''}`,
+      `• ${t.cotas} cota${t.cotas>1?'s':''} (${brl(t.bruto)} em cartas) em ${nG} grupo${nG>1?'s':''}`,
+      `• Lance do bolso: ${brl(cli(t))}${fgU(t)>0?' + '+brl(fgU(t))+' do FGTS':''}${t.emb>0?' + '+brl(t.emb)+' embutido (sai do próprio crédito)':''}`,
+      `• Parcela até contemplar: ${brl2(P1(t))}${sg?' (com seguro prestamista)':''}`,
+      `• Depois de contemplar: cerca de ${brl2(P2(t))}, por até ${t.prazoMax} meses`,
+      `• Cada contemplação libera ${t.menorCota===t.maiorCota?brl(t.menorCota):'de '+brl(t.menorCota)+' a '+brl(t.maiorCota)}`,
+      '',`Valores estimados em ${new Date().toLocaleDateString('pt-BR')}, a confirmar na simulação oficial da administradora. Contemplação por sorteio ou lance, sem garantia de prazo; o lance usado é o histórico do grupo, não previsão.`].join('\n');
+    (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>toast('Mensagem copiada (sem nome do cliente)')).catch(()=>prompt('Copie a mensagem:',txt));};}
 }
 const numBR=x=>{const n=parseFloat(String(x).replace(/\./g,'').replace(',','.').replace('%',''));return isFinite(n)?n:null;};
 const reMoney=/^\d{1,3}(\.\d{3})*,\d{2}$/,rePct=/^\d+(,\d+)?%$/,reDate=/^\d{2}\/\d{2}\/\d{4}$/,reNumBR=/^\d{1,3}(\.\d{3})*,\d+$/;
@@ -796,7 +816,7 @@ function empurrarGrupos(){if(!temServidor())return;clearTimeout(syncTimer);syncT
 if(window.SESSAO){const b=$('#btnSair');b.style.display='';if(window.SESSAO.admin)$('#lnkAdmin').style.display='';b.title='Sair ('+window.SESSAO.email+')';b.onclick=async()=>{try{await fetch('/api/sair',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});}catch(e){}location.href='/entrar';};}
 
 /* ===================== link ===================== */
-function shareLink(){const gids=new Set((S.cenarios||[]).map(c=>c.gid));const d={perfil:{...S.perfil,nome:''},promo:S.promo,grupos:S.grupos,cenarios:S.cenarios,step:QS.length,estr:{...S.estr,nome:''}};
+function shareLink(){const gids=new Set((S.cenarios||[]).map(c=>c.gid));const d={perfil:{...S.perfil,nome:''},promo:S.promo,grupos:S.grupos.map(({h,...g})=>g),cenarios:S.cenarios,step:QS.length,estr:{...S.estr,nome:''}};
   const url=location.origin+location.pathname+'#s='+btoa(unescape(encodeURIComponent(JSON.stringify(d))));
   (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>toast('Link copiado (sem nome do cliente)')).catch(()=>prompt('Copie o link:',url));}
 $('#btnShare').onclick=shareLink;$('#btnShare2').onclick=shareLink;
