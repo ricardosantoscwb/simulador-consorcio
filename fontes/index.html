@@ -382,7 +382,13 @@ const GF=['cod','tipo','desc','ta','fr','cmin','cmax','pt','pr','parc','emax','l
 const GX=['cs','cl','ct','clf','np']; // contemplados na última assembleia (sorteio, lance, total) — só por colagem
 let editing=null;
 let gBusca='',gFiltro='';
-function renderGrupos(){const l=$('#glist');l.innerHTML='';
+function statusPortal(){const gs=S.grupos.filter(g=>g.fonte!==EXEMPLO&&g.data);if(!gs.length)return null;const h=hojeL(),ult=gs.map(g=>g.data).sort().pop();
+  const as=gs.map(g=>g.assem).filter(Boolean).sort(),passou=as.filter(a=>a<h&&a>=ult),prox=as.find(a=>a>=h);
+  return {ult,prox,velho:passou.length>0,assemPassada:passou[0]||null};}
+function avisoPortal(){const st=statusPortal();if(!st)return '';
+  return st.velho?`<div class="al" style="margin-bottom:10px">Teve assembleia em ${fmtD(st.assemPassada)}, depois da sua colagem de ${fmtD(st.ult)}: cole a tabela do portal de novo (lance e contemplados podem ter mudado).</div>`
+    :`<div class="al info" style="margin-bottom:10px">Tabela do portal colada em ${fmtD(st.ult)}.${st.prox?` Próxima assembleia: ${fmtD(st.prox)}; depois dela, cole de novo.`:''}</div>`;}
+function renderGrupos(){const l=$('#glist');l.innerHTML=avisoPortal();
   $('#g-exemplos').style.display=S.grupos.some(g=>g.fonte===EXEMPLO)?'':'none';
   const q=gBusca.toLowerCase();const lista=S.grupos.filter(g=>(!gFiltro||g.tipo===gFiltro)&&(!q||String(g.cod).toLowerCase().includes(q)||String(g.desc||'').toLowerCase().includes(q)));
   if(!S.grupos.length)l.innerHTML='<div class="empty">Nenhum grupo. Cole a tabela ao lado.</div>';else if(!lista.length)l.innerHTML='<div class="empty">Nada com esse filtro.</div>';
@@ -419,10 +425,10 @@ $('#g-paste').addEventListener('input',e=>{const lines=e.target.value.split(/\n+
 
 $('#btnBatch').onclick=()=>{const tipo=$('#b-tipo').value,ta=num($('#b-ta').value),fr=num($('#b-fr').value),emax=num($('#b-emax').value),fonte=$('#b-fonte').value.trim();
   if(ta==null||fr==null){toast('Informe taxa adm e fundo de reserva do lote');return;}if(batch.some(p=>p.emb)&&emax==null){toast('Informe o embutido máximo para os grupos "Sim"');return;}
-  const hoje=new Date().toISOString().slice(0,10);let novos=0,atual=0;
+  const hoje=new Date().toISOString().slice(0,10);let novos=0,atual=0,mudou=0;
   batch.forEach(p=>{const g={cod:p.cod,tipo,desc:'',ta,fr,cmin:p.cmin,cmax:p.cmax,pt:p.pt,pr:p.pr,parc:'',emax:p.emb?emax:0,lmin:p.lmin,lmed:p.lmed,lmax:p.lmax,assem:p.assem,data:hoje,fonte,cs:p.cs,cl:p.cl,ct:p.ct,clf:p.clf,np:p.np};
-    const ex=S.grupos.find(x=>x.cod===p.cod&&x.tipo===tipo);if(ex){Object.assign(ex,g);regHist(ex);atual++;}else{g.id='g'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);regHist(g);S.grupos.push(g);novos++;}});
-  save();empurrarGrupos();batch=[];editGroup(null);render();toast(`${novos} grupos novos, ${atual} atualizados`);};
+    const ex=S.grupos.find(x=>x.cod===p.cod&&x.tipo===tipo);if(ex){const ant=JSON.stringify([ex.lmin,ex.lmed,ex.lmax,ex.cs,ex.cl,ex.assem]);Object.assign(ex,g);if(JSON.stringify([ex.lmin,ex.lmed,ex.lmax,ex.cs,ex.cl,ex.assem])!==ant)mudou++;regHist(ex);atual++;}else{g.id='g'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);regHist(g);S.grupos.push(g);novos++;}});
+  save();empurrarGrupos();batch=[];editGroup(null);render();toast(novos||mudou?`${novos} grupos novos · ${mudou} com lance ou assembleia nova · ${atual-mudou} sem mudança`:'Nada mudou desde a última colagem');};
 function renderRank(){const t=$('#rank');const P={valor:S.estr.valor,bem:S.estr.tipo==='Imobiliário'?'Imóvel':S.estr.tipo?'Veículo':''},valor=num(P.valor)||0;
   if(!(valor>0)){t.innerHTML='<tr><td>Faça um pedido para ver o ranking.</td></tr>';return;}
   const gs=candidatos();if(!gs.length){t.innerHTML='<tr><td>Nenhum grupo com faixa e taxa.</td></tr>';return;}
@@ -700,7 +706,8 @@ function roteiro(E){const need=num(E.valor)||0;if(!(need>0))return null;const tO
 function renderCotas(){const E=S.estr;
   const R=E.feito?roteiro(E):null,tipoT=E.tipo==='Imobiliário'?'imóvel':(E.tipo||'').toLowerCase()||'o tipo do bem';
   const pronto=E.bestReal&&E.busca;
-  let busca=R?`${pronto?`<div style="font-size:15px;color:var(--ink)"><b>Pronto:</b> a oferta já fecha com o que você colou. <b>Confirme no sistema:</b> ${E.busca}. <a href="#" data-go="oferta" style="color:inherit;font-weight:600">Ver a oferta →</a></div><div class="hint">Se alguma não tiver vaga, siga o ranking abaixo ou pesquise ${brl(R.rec.lo)} a ${brl(R.rec.hi)}.</div>`:`<div style="font-size:15px;color:var(--ink)"><b>Pesquise no sistema:</b> ${esc(tipoT)} de <b>${brl(R.rec.lo)} a ${brl(R.rec.hi)}</b> e cole a 1ª página abaixo.</div>`}
+  const velho=(statusPortal()||{}).velho;
+  let busca=R?`${velho?avisoPortal():''}${pronto?`<div style="font-size:15px;color:var(--ink)"><b>Pronto:</b> a oferta já fecha com o que você colou. <b>Confirme no sistema:</b> ${E.busca}. <a href="#" data-go="oferta" style="color:inherit;font-weight:600">Ver a oferta →</a></div><div class="hint">Se alguma não tiver vaga, siga o ranking abaixo ou pesquise ${brl(R.rec.lo)} a ${brl(R.rec.hi)}.</div>`:`<div style="font-size:15px;color:var(--ink)"><b>Pesquise no sistema:</b> ${esc(tipoT)} de <b>${brl(R.rec.lo)} a ${brl(R.rec.hi)}</b> e cole a 1ª página abaixo.</div>`}
     Para ${brl(R.need)} ${E.modo==='liquido'?'líquido':''}${R.embP>0?` com embutido de ${pct(R.embP)}`:''}: ${brl(R.total)} em cartas, em <b>${R.rec.n} cota${R.rec.n>1?'s':''} de ~${brl(R.rec.t)}</b>.${R.melhores&&R.melhores.length>1?`<div style="margin-top:6px"><b>Melhores faixas:</b> ${R.melhores.map(o=>`${o.n} carta${o.n>1?'s':''} de ~${brl(o.t)} (${o.uso.map(u=>u.k+'× '+esc(u.cod)+' '+pct(u.a)).join(' + ')}; bolso ~${brl(o.bolso)})`).join(' · ')}.${R.um&&R.um!==R.rec&&R.um.bolso>R.rec.bolso+500?` Não compensa 1 carta de ${brl(R.um.t)}: lance ${pct(R.um.a)}, bolso ~${brl(R.um.bolso)}.`:''}</div>`:''}
     ${R.rec.gs.length?`<div style="margin-top:6px"><b>Olhe nesta ordem (menor lance primeiro):</b><ol style="margin:4px 0 0;padding-left:20px">${R.rec.gs.map(g=>`<li>Grupo <b>${esc(g.cod)}</b>: lance ${pct(g.a)}${g.vagas!=null?' · '+g.vagas+' vaga'+(g.vagas>1?'s':''):(g.vagasTxt?' · '+esc(g.vagasTxt):'')}${g.part?' · '+g.part+' participantes':''}</li>`).join('')}</ol><div class="hint">Se o 1º não tiver cota nessa faixa, passe pro próximo. Nenhum grupo conhecido? Cole a página que o app aprende.</div></div>`:'<div class="hint">Ainda não há grupos colados desse tipo: cole a página da busca e o app monta o ranking.</div>'}
     <details class="adv" style="margin-top:6px"><summary>Comparar todas as divisões (1 a 8 cartas)</summary><table class="cmp" style="font-size:12px"><thead><tr><th>Cartas</th><th>Cada uma</th><th>Pesquise</th><th>Grupo de menor lance</th><th>Lance do bolso ~</th></tr></thead><tbody>${R.ops.map(o=>`<tr class="${o===R.rec?'best-row':''}"><td>${o.n}</td><td class="num">${brl(o.t)}</td><td class="num">${brl(o.lo)} a ${brl(o.hi)}</td><td>${o.uso?o.uso.map(u=>u.k+'× '+esc(u.cod)+' ('+pct(u.a)+')').join(' + '):'—'}</td><td class="num">${o.bolso!=null?brl(o.bolso):'—'}</td></tr>`).join('')}</tbody></table><div class="hint">Só aparecem tamanhos em que há grupo conhecido (tabela do portal em Grupos ou páginas coladas aqui). Lance pelo histórico do grupo, não é garantia. Empate no bolso: mais cartas = mais bilhetes por assembleia.</div></details>
