@@ -65,6 +65,11 @@ r = await dados(new Request(O + "/api/dados", { method: "PUT", headers: { "Conte
 r = await dados(get("/api/dados")); j = await r.json();
 r = await dados(new Request(O + "/api/dados", { method: "PUT", headers: { "Content-Type": "application/json", Origin: O, Cookie: jar() }, body: JSON.stringify({ grupos: [{ id: "g1", cod: "010016", np: 1000, clf: 2, h: [{ m: "2026-09", n: 61.1, d: 65, x: 1 }, { m: "ruim", n: 1 }, { m: "2026-10", n: "63", d: 66.2 }, "lixo"] }], etag: j.etag }) })); assert.ok((await r.json()).ok);
 r = await dados(get("/api/dados")); j = await r.json(); assert.deepEqual(j.grupos, [{ id: "g1", cod: "010016", np: 1000, clf: 2, h: [{ m: "2026-09", n: 61.1, d: 65 }, { m: "2026-10", n: null, d: 66.2 }] }]);
+// campanhas: quem não é admin não grava; grupos não apagam campanhas
+r = await dados(get("/api/dados")); j = await r.json(); assert.deepEqual(j.campanhas, []);
+r = await dados(new Request(O + "/api/dados", { method: "PUT", headers: { "Content-Type": "application/json", Origin: O, Cookie: jar() }, body: JSON.stringify({ grupos: j.grupos, campanhas: [{ cod: "123" }], etag: j.etag }) })); assert.ok((await r.json()).ok);
+r = await dados(get("/api/dados")); j = await r.json(); assert.deepEqual(j.campanhas, [], "não-admin não grava campanha");
+const etagDados = () => dados(get("/api/dados")).then((x) => x.json());
 // sem sessão: 401
 r = await dados(new Request(O + "/api/dados")); assert.equal(r.status, 401);
 
@@ -116,6 +121,13 @@ r = await admin(post("/api/usuarios", { acao: "excluir", email: "maria@exemplo.c
 // não-admin não mexe na lista
 for (const k in cookies) delete cookies[k];
 r = await admin(post("/api/usuarios", { acao: "incluir", email: "x@exemplo.com" })); assert.equal(r.status, 303);
+// admin grava campanha (limpa campos estranhos); grupos gravados depois preservam a campanha
+for (const k in cookies) delete cookies[k]; Object.assign(cookies, cookiesAdmin);
+j = await etagDados();
+r = await dados(new Request(O + "/api/dados", { method: "PUT", headers: { "Content-Type": "application/json", Origin: O, Cookie: jar() }, body: JSON.stringify({ grupos: j.grupos, campanhas: [{ cod: "20262026000030", tipos: ["Imobiliário", "Lixo"], desc: 30, emb: "x", ini: "2026-10-29", fim: "2026-10-30", mal: 1 }], etag: j.etag }) })); assert.ok((await r.json()).ok);
+j = await etagDados(); assert.deepEqual(j.campanhas, [{ cod: "20262026000030", nome: "", tipos: ["Imobiliário"], cmin: null, cmax: null, emb: "ambos", desc: 30, ta: null, ini: "2026-10-29", fim: "2026-10-30" }]);
+r = await dados(new Request(O + "/api/dados", { method: "PUT", headers: { "Content-Type": "application/json", Origin: O, Cookie: jar() }, body: JSON.stringify({ grupos: [], etag: j.etag }) })); assert.ok((await r.json()).ok);
+j = await etagDados(); assert.equal(j.campanhas.length, 1, "grupos sem campanhas no corpo preservam as campanhas");
 console.log("ok · painel de usuários");
 // alterar
 for (const k in cookies) delete cookies[k]; Object.assign(cookies, cookiesAdmin);

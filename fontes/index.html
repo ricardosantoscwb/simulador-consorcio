@@ -168,10 +168,6 @@ details.adv{margin-top:6px}details.adv summary{cursor:pointer;font-size:13px;col
     </div>
     <details class="adv"><summary>Avançado</summary>
       <div class="two">
-        <div class="f"><label>Campanha: desconto na taxa adm (%)</label><input id="pr-desc" type="number" min="0" max="100" step="0.5" inputmode="decimal"></div>
-        <div class="f"><label>Campanha válida até</label><input id="pr-val" type="date"></div>
-      </div>
-      <div class="two">
         <div class="f"><label>Máximo de cotas por grupo</label><input id="e-max" type="number" min="1" max="20" step="1" inputmode="numeric" value="3"></div>
         <div class="f"><label>Lance alvo (histórico do grupo)</label><select id="e-alvo"><option value="lmin">Menor contemplado na última</option><option value="lmed">Média das 3 últimas</option><option value="lmax">Maior contemplado na última</option></select></div>
       </div>
@@ -283,6 +279,7 @@ details.adv{margin-top:6px}details.adv summary{cursor:pointer;font-size:13px;col
       </div>
     </div>
   </div>
+  <div class="card" style="margin-top:14px" id="camp-card"></div>
 </section>
 </main>
 
@@ -295,7 +292,7 @@ const KEY='simcons.v2';
 const EXEMPLO='Exemplo da planilha original — sem fonte confirmada';
 const defaultState=()=>({
   perfil:{nome:'',bem:'Imóvel',valor:'',recurso:'',parcela:'',prazo:'',obs:''},
-  promo:{cod:'',desc:'',val:''},
+  promo:{cod:'',desc:'',val:''}, campanhas:[],
   grupos:[
     {id:'G1',cod:'G1',tipo:'Outro',desc:'Grupo sem lance (exemplo)',ta:14.87486,fr:3,cmin:102345.94,cmax:102345.94,pt:'',pr:'',parc:2234.09,emax:0,lmin:'',lmed:'',lmax:'',assem:'',data:'',fonte:EXEMPLO},
     {id:'G2',cod:'G2',tipo:'Imobiliário',desc:'Imóvel com lance (exemplo)',ta:14.75,fr:3,cmin:450000,cmax:450000,pt:'',pr:'',parc:2684,emax:50,lmin:'',lmed:'',lmax:'',assem:'',data:'',fonte:EXEMPLO},
@@ -339,7 +336,7 @@ function calc(c){
   const ll=(num(c.ll)||0)/100,le=(num(c.le)||0)/100,n=Math.max(0,num(c.n)??1);
   const prazo=num(c.prazo)??num(g.pr);
   r.total=carta*cotas;
-  r.taCheia=num(g.ta)||0;const desc=num(S.promo.desc)||0;r.taEff=r.taCheia*(1-Math.min(100,Math.max(0,desc))/100);r.promo=desc>0;
+  r.taCheia=num(g.ta)||0;r.camp=campDe({tipo:g.tipo,carta,plano:'Normal',emax:num(g.emax)});r.taEff=r.camp?taCamp(r.camp,r.taCheia):r.taCheia;r.promo=!!r.camp;
   r.taR=r.total*r.taEff/100;r.frR=r.total*(num(g.fr)||0)/100;r.sd0=r.total+r.taR+r.frR;
   if(num(g.parc)!=null){r.parcCota=num(g.parc);r.parcEst=false;}else if((num(g.pr)>0||num(g.pt)>0)&&cotas>0){r.parcCota=(r.sd0/cotas)/(num(g.pr)>0?num(g.pr):num(g.pt));r.parcEst=true;}else r.parcCota=null;
   r.parcIni=r.parcCota!=null?r.parcCota*cotas:null;
@@ -362,7 +359,7 @@ function calc(c){
   if(num(P.valor)>0&&r.credLiq<num(P.valor)-0.5)r.info.push(`Crédito líquido fica ${brl(num(P.valor)-r.credLiq)} abaixo do valor do bem`);
   if(r.dist!=null)r.info.push(r.dist<0?`Lance total ${pct(r.lancePct)}: ${pct(-r.dist)} abaixo do menor lance contemplado na última assembleia (${pct(r.lmin)}). Histórico, não previsão.`:`Lance total ${pct(r.lancePct)}: igual ou acima do menor lance contemplado na última assembleia (${pct(r.lmin)}). Histórico, não previsão.`);
   if(r.parcEst)r.info.push('Parcela estimada (saldo ÷ prazo remanescente)');
-  if(r.promo){const v=S.promo.val?new Date(S.promo.val+'T23:59:59'):null;const venc=v&&v<new Date();(venc?r.alerts:r.info).push(`Taxa adm promocional ${pct(r.taEff)} (cheia ${pct(r.taCheia)})${S.promo.cod?' — código '+S.promo.cod:''}${S.promo.val?(venc?' — VALIDADE EXPIRADA ':' — válida até ')+new Date(S.promo.val+'T12:00:00').toLocaleDateString('pt-BR'):''}.`);}
+  if(r.promo)r.info.push(`Campanha ${r.camp.cod}: taxa adm ${pct(r.taEff)} (cheia ${pct(r.taCheia)}).`);
   if(semFonte(g))r.info.push('Grupo sem fonte/data confirmada');
   r.ok=r.alerts.length===0&&r.indice!=null&&r.parcelaPos!=null;
   return r;
@@ -478,37 +475,41 @@ function montar(E,prior){ // prior: 'bolso' | 'parcela' | 'semlance'
 }
 function montarReal(E,prior){ // cotas reais coladas do sistema de vendas; null = não há cotas do tipo (cai no motor dos grupos)
   const need=num(E.valor)||0;if(!(need>0))return null;
-  const cs=S.cotasL.filter(x=>(x.plano==='Normal'||(E.red==='1'&&x.plano==='Reduzida'&&S.comp[x.gid+'|Reduzida']))&&x.carta>0&&x.parc>0&&x.prazo>0&&(x.vagas==null||x.vagas>0)&&(!E.tipo||(E.tipo==='Imobiliário'?x.tipo==='Imobiliário':x.tipo==='Veículos')));
+  const cs=cotasComModelo().filter(x=>(x.plano==='Normal'||(E.red==='1'&&x.plano==='Reduzida'&&(S.comp[compK(x)]||compDoGrupo(x.gid,'Reduzida'))))&&x.carta>0&&x.parc>0&&x.prazo>0&&(x.vagas==null||x.vagas>0)&&(!E.tipo||(E.tipo==='Imobiliário'?x.tipo==='Imobiliário':x.tipo==='Veículos')));
   if(!cs.length)return null;
   const incSeg=E.sg!=='0',usaEmb=prior!=='semlance'&&E.emb==='1';
   const items=cs.map(x=>{
-    const gp=S.grupos.find(g=>codN(g.cod)===x.gid),sd=segDe(x),seg=sd.seg||0,ss=sd.ss,comp=S.comp[x.gid+'|'+x.plano];
+    const gp=S.grupos.find(g=>codN(g.cod)===x.gid),sd=segDe(x),seg=sd.seg||0,ss=sd.ss,comp=S.comp[compK(x)]||compDoGrupo(x.gid,x.plano);
     const le=usaEmb?(gp&&num(gp.emax)!=null?num(gp.emax):(x.tipo==='Imobiliário'?50:30)):0;
     const a=prior==='semlance'?0:(gp&&num(gp[E.alvo])>0?num(gp[E.alvo]):x.lm);
     const ll=prior==='semlance'?0:Math.max(0,Math.min(a-le,100-le));
-    const sdPos=ss-x.carta*(ll+le)/100;if(!(ss>0)||sdPos<0)return null;
-    const parcSS=x.parc-seg,g={...(gp||{cod:x.cod,tipo:x.tipo}),pr:x.prazo};if(comp){g.ta=comp.ta;g.fr=comp.fr;}
+    const taEst=x.plano==='Normal'&&sd.parcSem>0?Math.round(((sd.parcSem*x.prazo/x.carta-1)*100-((comp&&comp.fr)??2.5))*100)/100:null;
+    const taBase=comp&&comp.ta!=null?comp.ta:(gp&&num(gp.ta)!=null?num(gp.ta):(taEst>0&&taEst<40?taEst:null)),taEstim=!(comp&&comp.ta!=null)&&!(gp&&num(gp.ta)!=null)&&taBase!=null,camp=campDe({tipo:gp?gp.tipo:x.tipo,carta:x.carta,plano:x.plano,emax:gp?num(gp.emax):null});
+    const red=camp&&taBase!=null?x.carta*(taBase-taCamp(camp,taBase))/100:0; // desconto linear na taxa, durante todo o contrato
+    const sdPos=ss-red-x.carta*(ll+le)/100;if(!(ss>0)||sdPos<0)return null;
+    const parcSS=sd.parcSem-red/x.prazo,g={...(gp||{cod:x.cod,tipo:x.tipo}),pr:x.prazo};if(comp){g.ta=comp.ta;g.fr=comp.fr;}
     return {x,g,seg,le,ll,alvo:a,carta:x.carta,credLiq:x.carta*(1-le/100),bolso:x.carta*ll/100,emb:x.carta*le/100,
-      parcIni:incSeg?x.parc:parcSS,parcPos:(sdPos-parcSS)/x.prazo+(incSeg&&ss>0?seg*sdPos/ss:0),prazo:x.prazo,sd0:ss,est:false,real:true,vagas:x.vagas==null?1:x.vagas,ultimas:x.vagas==null};
+      parcIni:incSeg?parcSS+seg:parcSS,parcPos:(sdPos-parcSS)/x.prazo+(incSeg?seg:0),prazo:x.prazo,sd0:ss-red,camp,red,taBase,taEstim,est:false,real:true,vagas:x.vagas==null?1:x.vagas,ultimas:x.vagas==null};
   }).filter(Boolean);
   if(!items.length)return {erro:'As cotas coladas não deram saldo válido.'};
   const med=c=>E.modo==='liquido'?c.credLiq:c.carta;
   const m=c=>prior==='semlance'?c.parcIni/med(c):prior==='parcela'?(c.parcIni+c.parcPos)/med(c):prior==='cotas'?-c.carta:prior==='mais'?c.carta:prior==='prazo'?c.prazo*1e6+c.bolso/med(c):(c.bolso+0.24*c.parcPos)/med(c);
   const cand=items.slice().sort((a,b)=>m(a)-m(b)).slice(0,18);
   const score=t=>prior==='semlance'?t.p1:prior==='parcela'?t.p1+t.p2:prior==='cotas'?t.n*1e9+t.bolso:prior==='mais'?-t.n*1e9+t.bolso:prior==='prazo'?t.maxPrazo*1e9+t.bolso:t.bolso+0.24*t.p2;
+  const score0=score;const scoreF=t=>score0(t)+0.01*(t.mx-t.mn)+200*t.der;
   const cap=Math.max(1,Math.floor(num(E.max)||3)),totCap=Math.min(8,Math.max(cap*2,4));
   let best=null,nodes=0;
   for(const tol of [1.05,1.15,1.35,1.6]){
     const use=[],usado={};
     const dfs=(i,t)=>{if(nodes++>300000)return;
-      if(t.med>=need*0.99){const sc=score(t);if(!best||sc<best.sc)best={sc,use:use.slice(),t:{...t}};return;}
+      if(t.med>=need*0.99){const sc=scoreF(t);if(!best||sc<best.sc)best={sc,use:use.slice(),t:{...t}};return;}
       if(i>=cand.length||t.n>=totCap)return;
       dfs(i+1,t);const c=cand[i],gk=c.x.gid;
       for(let k=1;k<=c.vagas&&k<=cap-(usado[gk]||0)&&t.n+k<=totCap;k++){
-        const nt={med:t.med+k*med(c),n:t.n+k,bolso:t.bolso+k*c.bolso,p1:t.p1+k*c.parcIni,p2:t.p2+k*c.parcPos,maxPrazo:Math.max(t.maxPrazo,c.prazo)};
+        const nt={med:t.med+k*med(c),n:t.n+k,bolso:t.bolso+k*c.bolso,p1:t.p1+k*c.parcIni,p2:t.p2+k*c.parcPos,maxPrazo:Math.max(t.maxPrazo,c.prazo),mn:Math.min(t.mn,c.carta),mx:Math.max(t.mx,c.carta),der:t.der+(c.x.derivada?k:0)};
         if(nt.med>need*tol)break;
         use.push([c,k]);usado[gk]=(usado[gk]||0)+k;dfs(i+1,nt);usado[gk]-=k;use.pop();}};
-    dfs(0,{med:0,n:0,bolso:0,p1:0,p2:0,maxPrazo:0});if(best)break;}
+    dfs(0,{med:0,n:0,bolso:0,p1:0,p2:0,maxPrazo:0,mn:1e18,mx:0,der:0});if(best)break;}
   if(!best){const maxV=items.reduce((t,c)=>t+Math.min(c.vagas,cap)*med(c),0);return {erro:`Com as cotas coladas (até ${cap} por grupo e vagas do sistema) não fecha ${brl(need)}. Cole mais páginas da lista ou aumente o máximo de cotas.`,parcial:true,linhas:[]};}
   const linhas=best.use.map(([c,k])=>({...c,n:k}));
   const sobra=best.t.med-need;if(sobra>need*0.005){const ml=linhas.reduce((a,b)=>b.carta>a.carta?b:a);ml.sobra=sobra;}
@@ -525,12 +526,11 @@ function instrucaoBusca(r){if(!r||r.erro)return '';const porG={};r.linhas.forEac
   return Object.values(porG).map(x=>`${x.n} cota${x.n>1?'s':''} de ${x.min===x.max?brl(x.min):brl(x.min)+' a '+brl(x.max)} no grupo ${esc(x.g.cod)}`).join(' · ');}
 function renderEstrategia(){const E=S.estr;[...EF,...EF2].forEach(k=>{const el=$('#e-'+k);if(!el)return;el.value=E[k]??'';el.onchange=()=>{E[k]=el.value;save();};});
   $$('#e-tipo-chips .chip').forEach(b=>{b.classList.toggle('on',(E.tipo||'')===b.dataset.v);b.onclick=()=>{E.tipo=b.dataset.v;$('#e-tipo').value=E.tipo;save();renderEstrategia();};});
-  ['desc','val'].forEach(k=>{const el=$('#pr-'+k);el.value=S.promo[k]??'';el.onchange=()=>{S.promo[k]=el.value;save();};});
   $('#e-aviso').innerHTML=avisoPrimeiroUso();
-  $('#e-go').onclick=()=>{[...EF,...EF2].forEach(k=>{const el=$('#e-'+k);if(el)E[k]=el.value;});if(!(num(E.valor)>0)){toast('Informe o valor');return;}E.feito=true;save();go('oferta');};
+  $('#e-go').onclick=()=>{[...EF,...EF2].forEach(k=>{const el=$('#e-'+k);if(el)E[k]=el.value;});if(!(num(E.valor)>0)){toast('Informe o valor');return;}E.feito=true;save();go(S.cotasL.some(x=>!venceu(x)&&(!E.tipo||(E.tipo==='Imobiliário'?x.tipo==='Imobiliário':x.tipo==='Veículos')))?'oferta':'cotas');};
   renderOferta();renderCotas();}
 function blocoSeguro(b,segI){const t=b&&b.r&&!b.r.erro?b.r.tot:null;const v=t?segI(t):0;
-  const custo=v>0?`Cerca de ${brl2(v)} por mês no início; cai conforme o saldo devedor. Já somado na parcela mostrada`:'Valor a confirmar no sistema';
+  const custo=v>0?`Cerca de ${brl2(v)} por mês; na projeção do sistema é um valor fixo. Já somado na parcela mostrada`:'Valor a confirmar no sistema';
   const ic=d=>`<span class="ic"><svg viewBox="0 0 24 24">${d}</svg></span>`;
   return `<div class="seg"><h3>Seguro prestamista: proteção do seu plano</h3><div class="tri">
     <div class="it">${ic('<path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/>')}<div><b>Protege o plano</b><span>Cobertura de morte e de invalidez total e permanente do titular, conforme as condições do contrato.</span></div></div>
@@ -549,26 +549,26 @@ function renderOferta(){const E=S.estr;const out=$('#e-out');
   const cabe=t=>{const a=[];if(rec!=null&&E.rec!=='')a.push(cli(t)<=rec+0.5?null:`lance do bolso ${brl(cli(t))} > ${brl(rec)} (faltam ${brl(cli(t)-rec)})`);if(p1>0)a.push(P1(t)<=p1+0.5?null:`parcela até contemplar ${brl2(P1(t))} > ${brl2(p1)}`);if(p2>0)a.push(P2(t)<=p2+0.5?null:`parcela depois ${brl2(P2(t))} > ${brl2(p2)}`);return a.filter(Boolean);};
   const informou=(rec!=null&&E.rec!=='')||p1>0||p2>0;const ok=vars.map(v=>v.r&&!v.r.erro&&cabe(v.r.tot).length===0);
   let best=-1;{let el=vars.map((v,i)=>({v,i})).filter(x=>x.v.r&&!x.v.r.erro&&(!informou||ok[x.i]));const comLance=el.filter(x=>x.v.r.prior!=='semlance');if(comLance.length)el=comLance; // a oferta consultiva é com lance; "só sorteio" fica como alternativa
-    if(el.length){el.sort((a,b)=>(cli(a.v.r.tot)+0.02*a.v.r.tot.p2*12)-(cli(b.v.r.tot)+0.02*b.v.r.tot.p2*12));best=el[0].i;}}
-  S.estr.bestK=best>=0?vars[best].k:'';S.estr.busca=best>=0?instrucaoBusca(vars[best].r):'';S.estr.buscaL=best>=0?vars[best].r.linhas.map(l=>({cod:l.g.cod,carta:l.carta,n:l.n})):[];save();
+    if(el.length){el.sort((a,b)=>(Math.round(cli(a.v.r.tot)/100)-Math.round(cli(b.v.r.tot)/100))||(b.v.r.tot.cotas-a.v.r.tot.cotas)||(a.v.r.tot.p1-b.v.r.tot.p1));best=el[0].i;}} // foco: menor lance do bolso; empate → mais bilhetes, depois menor parcela
+  S.estr.bestK=best>=0?vars[best].k:'';S.estr.bestReal=best>=0&&!!vars[best].r.real;S.estr.bestN=best>=0?vars[best].r.tot.cotas:0;S.estr.busca=best>=0?instrucaoBusca(vars[best].r):'';S.estr.buscaL=best>=0?vars[best].r.linhas.map(l=>({cod:l.g.cod,carta:l.carta,n:l.n})):[];save();
   const titulo=E.modo==='liquido'?`${brl(num(E.valor))} líquido`:`${brl(num(E.valor))} bruto`;
   const lf=num(E.lf);
   const card=(v,i,principal)=>{const r=v.r;if(!r||r.erro)return `<div class="card path"><h3>${esc(v.nome)}</h3><div class="al" style="margin-top:8px">${esc(r?r.erro:'Informe o valor')}</div></div>`;const t=r.tot;const probs=cabe(t);
     const bilhetes=t.temHist?`<div class="dist" style="margin-top:8px"><b style="color:var(--ink)">Bilhetes por assembleia (histórico):</b> ${t.cotas} cota${t.cotas>1?'s':''} = ${t.cotas} bilhete${t.cotas>1?'s':''} no sorteio (≈ ${(t.sorteio*100).toLocaleString('pt-BR',{maximumFractionDigits:1})}% de chance de pelo menos uma contemplação por sorteio, pelo histórico de 1 sorteado por assembleia)${lf>0?` · lance fixo: cerca de ${Math.round(t.cotas*lf/100*10)/10} cota(s) participando (regra de bolso ${pct(lf)})`:''} · na última assembleia desses grupos, ${t.lanceUlt} contemplaram por lance. Cada contemplação traz entre ${brl(t.menorCota)} e ${brl(t.maiorCota)}.</div>`:'';
-    return `<div class="card path ${principal?'best':''}">${principal?'<div class="best-badge">★ oferta recomendada</div>':''}<h3>${esc(v.nome)}</h3><div class="gname">${t.cotas} cota(s) em ${r.linhas.length} grupo(s) · compra ${brl(t.bruto)} · recebe ${brl(t.liq)}</div>
+    return `<div class="card path ${principal?'best':''}">${principal?'<div class="best-badge">★ oferta recomendada</div>':''}<h3>${esc(v.nome)}</h3><div class="gname">${t.cotas} cota(s) em ${new Set(r.linhas.map(l=>l.g.cod)).size} grupo(s) · compra ${brl(t.bruto)} · recebe ${brl(t.liq)}</div>
     <div class="bignum">${brl(cli(t))}<small>de lance do bolso${fgU(t)>0?' · + '+brl(fgU(t))+' do FGTS':''}${t.emb>0?' · + '+brl(t.emb)+' embutido':''}</small></div>
     <div class="bignum" style="font-size:22px;margin-top:6px">${brl2(P1(t))}<small>por mês até contemplar${E.sg!=='0'&&K>0?' (com seguro)':''} · depois ~ ${brl2(P2(t))} · ${t.prazoMin===t.prazoMax?t.prazoMax:t.prazoMin+'–'+t.prazoMax} meses</small></div>
     ${bilhetes}
-    <details class="adv" ${principal?'open':''}><summary>Grupos e cotas</summary><table class="cmp" style="margin-top:4px;font-size:12px"><thead><tr><th>Grupo</th><th>Cotas</th><th>Carta</th><th>Lance bolso</th><th>Últ. assembleia</th></tr></thead><tbody>${r.linhas.map(l=>`<tr><td>${esc(l.g.cod)}<br><span style="font-size:10px">alvo ${l.alvo!=null?pct(l.alvo):'—'} · emb ${pct(l.le)} · TA ${pct(num(l.g.ta))}${l.real?' · vagas '+(l.ultimas?'últimas':l.vagas):''}${l.x&&l.x.plano==='Reduzida'?' · plano reduzido':''}</span></td><td class="num">${l.n}</td><td class="num">${brl(l.carta)}</td><td class="num">${brl(l.bolso*l.n)}</td><td class="num" style="font-size:11px">${l.g.cs!==''&&l.g.cs!=null?`${l.g.cs} sorteio · ${l.g.cl} lance`:'—'}${(t=>t?`<br><span style="color:${t.sobe?'var(--warn)':'var(--muted)'}">${esc(t.txt)}</span>`:'')(tendencia(l.g))}</td></tr>`).join('')}</tbody></table></details>
-    <div class="alerts">${probs.map(a=>`<div class="al">Não cabe: ${esc(a)}</div>`).join('')}${(()=>{const s=[...new Set(r.linhas.filter(l=>(tendencia(l.g)||{}).sobe).map(l=>l.g.cod))];return s.length?`<div class="al">Lance subindo no grupo ${esc(s.join(', '))}: o alvo do mês passado pode ficar curto. Histórico, não previsão.</div>`:'';})()}${r.linhas.some(l=>l.x&&l.x.plano==='Reduzida')?'<div class="al info">Inclui plano reduzido: parcela até contemplar é a do sistema; a de depois é estimativa linear sobre o saldo da composição (regra da administradora sem fonte confirmada).</div>':''}${informou&&!probs.length?'<div class="al ok">Cabe no bolso</div>':''}${r.linhas.some(l=>l.sobra)?`<div class="al info">Fechou com cota cheia; sobram ${brl(r.linhas.find(l=>l.sobra).sobra)} de crédito.</div>`:''}</div></div>`;};
+    <details class="adv" ${principal?'open':''}><summary>Grupos e cotas</summary><table class="cmp" style="margin-top:4px;font-size:12px"><thead><tr><th>Grupo</th><th>Cotas</th><th>Carta</th><th>Lance bolso</th><th>Últ. assembleia</th></tr></thead><tbody>${r.linhas.map(l=>`<tr><td>${esc(l.g.cod)}<br><span style="font-size:10px">alvo ${l.alvo!=null?pct(l.alvo):'—'} · emb ${pct(l.le)} · TA ${pct(num(l.g.ta))}${l.real?' · vagas '+(l.ultimas?'últimas':l.vagas):''}${l.x&&l.x.plano==='Reduzida'?' · plano reduzido':''}${l.x&&l.x.derivada?' · carta calculada':''}${l.camp?' · <b>código '+esc(l.camp.cod)+'</b>':''}</span></td><td class="num">${l.n}</td><td class="num">${brl(l.carta)}</td><td class="num">${brl(l.bolso*l.n)}</td><td class="num" style="font-size:11px">${l.g.cs!==''&&l.g.cs!=null?`${l.g.cs} sorteio · ${l.g.cl} lance`:'—'}${(t=>t?`<br><span style="color:${t.sobe?'var(--warn)':'var(--muted)'}">${esc(t.txt)}</span>`:'')(tendencia(l.g))}</td></tr>`).join('')}</tbody></table></details>
+    <div class="alerts">${probs.map(a=>`<div class="al">Não cabe: ${esc(a)}</div>`).join('')}${(()=>{const s=[...new Set(r.linhas.filter(l=>(tendencia(l.g)||{}).sobe).map(l=>l.g.cod))];return s.length?`<div class="al">Lance subindo no grupo ${esc(s.join(', '))}: o alvo do mês passado pode ficar curto. Histórico, não previsão.</div>`:'';})()}${(()=>{const l=r.linhas.find(l=>l.x&&l.x.plano==='Reduzida');if(!l)return '';const c=S.comp[compK(l.x)]||compDoGrupo(l.x.gid,'Reduzida')||{},n=compDoGrupo(l.x.gid,'Normal');return `<div class="al info">Plano reduzido: parcela menor, mas taxa adm ${pct(c.ta)}${n?` (normal ${pct(n.ta)})`:''}${c.aCobrarPct>0?` e ${pct(c.aCobrarPct)} do crédito fica a cobrar (já somado no saldo de depois; quando é cobrado: sem fonte confirmada)`:''}.</div>`;})()}${informou&&!probs.length?'<div class="al ok">Cabe no bolso</div>':''}${r.linhas.some(l=>l.sobra)?`<div class="al info">Fechou com cota cheia; sobram ${brl(r.linhas.find(l=>l.sobra).sobra)} de crédito.</div>`:''}</div></div>`;};
   const b=best>=0?vars[best]:null;
   out.innerHTML=`<div class="hero"><h1>Oferta · ${titulo}</h1><p>${E.nome&&!document.body.classList.contains('present')?esc(E.nome)+' · ':''}${esc(E.tipo||'qualquer tipo')} · ${new Date().toLocaleDateString('pt-BR')} · valores estimativos, a confirmar no sistema oficial</p></div>
-  ${fonteOferta(vars)}${(()=>{const d=num(S.promo.desc);if(!(d>0))return '';const v=S.promo.val?new Date(S.promo.val+'T23:59:59'):null,venc=v&&v<new Date();return `<div class="al ${venc?'':'info'}" style="margin-bottom:12px">${venc?'<b>Campanha vencida:</b> ':'Campanha: '}−${pct(d)} na taxa adm${v?(venc?' (venceu ':' até ')+v.toLocaleDateString('pt-BR')+(venc?')':''):''}. Vale para a estimativa pelos grupos; cotas coladas usam a parcela do sistema.</div>`;})()}
-  ${b?`<div class="concl" style="margin:0 0 14px;font-size:16px"><b>Para ter ${titulo}: ${b.r.tot.cotas} cota${b.r.tot.cotas>1?'s':''} (${brl(b.r.tot.bruto)} em cartas).</b>Entra com ${brl(cli(b.r.tot))} de lance do bolso${fgU(b.r.tot)>0?' (+ '+brl(fgU(b.r.tot))+' do FGTS)':''}, paga ${brl2(P1(b.r.tot))} por mês até contemplar${E.sg!=='0'&&K>0?' (já com o seguro prestamista)':''} e cerca de ${brl2(P2(b.r.tot))} depois.${b.r.tot.temHist?` São ${b.r.tot.cotas} bilhetes por assembleia; cada contemplação traz ${b.r.tot.menorCota===b.r.tot.maiorCota?brl(b.r.tot.menorCota):'de '+brl(b.r.tot.menorCota)+' a '+brl(b.r.tot.maiorCota)}.`:''}<ul><li>${b.r.real?`Próximo passo: confirmar no sistema vagas e parcela de ${esc(instrucaoBusca(b.r))}.`:`Próximo passo: buscar no sistema ${esc(instrucaoBusca(b.r))}, e colar as cotas em <a href="#" data-go="cotas" style="color:inherit;font-weight:600">Cotas</a>.`}</li></ul></div>`:`<div class="concl none" style="margin:0 0 14px">Nenhuma variante fechou${informou?' dentro do bolso':''}. Cole mais grupos, aumente o máximo de cotas ou ajuste o bolso.</div>`}
+  ${fonteOferta(vars)}${campOferta(vars)}
+  ${b?`<div class="concl" style="margin:0 0 14px;font-size:16px"><b>Para ter ${titulo}: ${b.r.tot.cotas} cota${b.r.tot.cotas>1?'s':''} (${brl(b.r.tot.bruto)} em cartas).</b>Entra com ${brl(cli(b.r.tot))} de lance do bolso${fgU(b.r.tot)>0?' (+ '+brl(fgU(b.r.tot))+' do FGTS)':''}, paga ${brl2(P1(b.r.tot))} por mês até contemplar${E.sg!=='0'&&K>0?' (já com o seguro prestamista)':''} e cerca de ${brl2(P2(b.r.tot))} depois.${b.r.tot.temHist?` São ${b.r.tot.cotas} bilhetes por assembleia; cada contemplação traz ${b.r.tot.menorCota===b.r.tot.maiorCota?brl(b.r.tot.menorCota):'de '+brl(b.r.tot.menorCota)+' a '+brl(b.r.tot.maiorCota)}.`:''}<ul><li>${b.r.real?`Próximo passo: confirmar no sistema vagas e parcela de ${esc(instrucaoBusca(b.r))}.`:(()=>{const R=roteiro(E);return R?`Próximo passo: pesquise no sistema de ${brl(R.rec.lo)} a ${brl(R.rec.hi)} e cole a página em <a href="#" data-go="cotas" style="color:inherit;font-weight:600">Cotas</a>.`:'';})()}</li></ul></div>`:`<div class="concl none" style="margin:0 0 14px">Nenhuma variante fechou${informou?' dentro do bolso':''}. Cole mais grupos, aumente o máximo de cotas ou ajuste o bolso.</div>`}
   <div class="grid c3" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">${b?card(b,best,true):''}</div>
   <details class="adv no-present" style="margin-top:14px"><summary>Ver as outras ${vars.length-(b?1:0)} variantes</summary><div class="grid c3" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));margin-top:10px">${vars.map((v,i)=>i===best?'':card(v,i,false)).join('')}</div></details>
   ${E.sg!=='0'?blocoSeguro(b,segI):''}
-  <div class="avisos"><b>Avisos</b><ul><li>Contemplação por sorteio ou lance, sem garantia nem previsão de lance vencedor; lance alvo e tendência são histórico das colagens.</li><li>O lance embutido reduz o crédito recebido.</li><li>Parcelas estimadas, sem reajuste${K>0?'; seguro prestamista pela parcela do sistema ou pela amostra de '+pct2(K*100)+' ao mês sobre o saldo':''}; "depois" supõe todas as cotas contempladas.</li>${fg>0?'<li>Uso do FGTS no lance depende das regras do FGTS e da administradora: confirmar antes de oferecer.</li>':''}${E.red==='1'?'<li>Plano reduzido: regra depois da contemplação sem fonte confirmada.</li>':''}${num(S.promo.desc)>0?'<li>Desconto de campanha tem validade; não é permanente.</li>':''}<li>Confirme taxas, parcelas, prazos e grupos no sistema oficial. Esta ferramenta não substitui a simulação oficial.</li></ul></div>
+  <div class="avisos"><b>Avisos</b><ul><li>Contemplação por sorteio ou lance, sem garantia nem previsão de lance vencedor; lance alvo e tendência são histórico das colagens.</li><li>O lance embutido reduz o crédito recebido.</li><li>Parcelas estimadas, sem o reajuste anual do crédito e do saldo pelo INPC${K>0?'; seguro prestamista pelo detalhamento do sistema ou pela amostra de '+pct2(K*100)+' ao mês sobre o saldo, fixo na projeção':''}; "depois" supõe todas as cotas contempladas.</li>${fg>0?'<li>Uso do FGTS no lance depende das regras do FGTS e da administradora: confirmar antes de oferecer.</li>':''}${E.red==='1'?'<li>Plano reduzido: parte do crédito fica a cobrar (detalhamento do sistema); quando é cobrada, sem fonte confirmada.</li>':''}${vars.some(v=>v.r&&!v.r.erro&&v.r.linhas.some(l=>l.camp))?'<li>Campanha: condição promocional com validade; não vale para plano reduzido; exige débito em conta CAIXA a partir da 2ª parcela (banner da administradora).</li>':''}<li>Confirme taxas, parcelas, prazos e grupos no sistema oficial. Esta ferramenta não substitui a simulação oficial.</li></ul></div>
   <div class="dlg-actions no-present">${b?'<button class="btn" id="o-msg">Copiar mensagem</button>':''}<button class="btn" id="o-share">Copiar link</button><button class="btn" onclick="window.print()">PDF / Imprimir</button><button class="btn primary" id="o-present">Apresentar</button></div>`;
   $('#o-present').onclick=()=>{document.body.classList.add('present');};$('#o-share').onclick=shareLink;
   if(b){$('#o-msg').onclick=()=>{const t=b.r.tot,nG=new Set(b.r.linhas.map(l=>l.g.cod)).size,sg=E.sg!=='0'&&K>0;
@@ -585,52 +585,128 @@ const numBR=x=>{const n=parseFloat(String(x).replace(/\./g,'').replace(',','.').
 const reMoney=/^\d{1,3}(\.\d{3})*,\d{2}$/,rePct=/^\d+(,\d+)?%$/,reDate=/^\d{2}\/\d{2}\/\d{4}$/,reNumBR=/^\d{1,3}(\.\d{3})*,\d+$/;
 const codN=c=>String(c||'').replace(/\D/g,'').replace(/^0+/,'');
 const linhasDe=t=>String(t).split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+const compK=x=>x.gid+'|'+x.plano+'|'+x.carta;
 function lerLista(txt){const L=linhasDe(txt),rows=[];
-  for(let i=0;i<L.length-8;i++){
-    if(!/^\d{3,6}$/.test(L[i]))continue;
+  const mk=(cod,d,carta,dt,pr,vg,pa,pc,lm)=>{const [dd,mm,aa]=dt.split('/'),nv=/^\d+$/.test(vg);d=d.trim();
+    return {cod,gid:codN(cod),desc:d,plano:/REDUZIDA/i.test(d)?'Reduzida':'Normal',tipo:/^IMO/i.test(d)?'Imobiliário':/^(VEI|AUTO)/i.test(d)?'Veículos':'',carta:numBR(carta),ass:`${aa}-${mm}-${dd}`,prazo:+pr,vagas:nv?+vg:null,vagasTxt:nv?'':vg,part:+pa,parc:numBR(pc),lm:numBR(lm)};};
+  const reLinha=/^(\d{3,6})\s+(.*?[A-Za-zÀ-ú].*?)\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s+(\d{2}\/\d{2}\/\d{4})\s+(\d+)\s+(.+?)\s+(\d+)\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s+(\d+(?:,\d+)?%)$/;
+  for(let i=0;i<L.length;i++){
+    const m=L[i].match(reLinha);if(m){rows.push(mk(...m.slice(1)));continue;} // uma cota por linha (texto do e-mail)
+    if(i>L.length-9||!/^\d{3,6}$/.test(L[i]))continue; // uma célula por linha (tela do sistema)
     const d=L[i+1];if(!/[A-Za-zÀ-ú]/.test(d)||!reMoney.test(L[i+2]||'')||!reDate.test(L[i+3]||''))continue;
     let j=i+4;const pr=L[j++],vg=L[j++],pa=L[j++],pc=L[j++],lm=L[j++];
     if(!/^\d+$/.test(pr||'')||!/^\d+$/.test(pa||'')||!reMoney.test(pc||'')||!rePct.test(lm||''))continue;
-    const [dd,mm,aa]=L[i+3].split('/');
-    rows.push({cod:L[i],gid:codN(L[i]),desc:d,plano:/REDUZIDA/i.test(d)?'Reduzida':'Normal',tipo:/^IMO/i.test(d)?'Imobiliário':/^(VEI|AUTO)/i.test(d)?'Veículos':'',carta:numBR(L[i+2]),ass:`${aa}-${mm}-${dd}`,prazo:+pr,vagas:/^\d+$/.test(vg)?+vg:null,vagasTxt:/^\d+$/.test(vg)?'':vg,part:+pa,parc:numBR(pc),lm:numBR(lm)});
-    i=j-1;}
+    rows.push(mk(L[i],d,L[i+2],L[i+3],pr,vg,pa,pc,lm));i=j-1;}
   return rows;}
-function lerComp(txt){const L=linhasDe(txt),linhas=[];let sub=null;
-  for(let i=0;i<L.length;i++){
-    if(/^\d+$/.test(L[i])&&/^\d+$/.test(L[i+1]||'')){const v=L.slice(i+2,i+12);if(v.length===10&&v.every(x=>reNumBR.test(x))){linhas.push({ini:+L[i],fim:+L[i+1],v:v.map(numBR)});i+=11;continue;}}
-    if(/^SubTotal$/i.test(L[i])){const v=L.slice(i+1,i+11);if(v.length===10&&v.every(x=>reNumBR.test(x)))sub=v.map(numBR);}}
-  if(!linhas.length||!sub)return null;
-  const [,fc,tap,taR,,adR,frp,frR,segTot,total]=sub,p=linhas[0].v;
-  return {carta:fc,ta:tap,fr:frp,segTot,total,prazo:linhas[linhas.length-1].fim,parc1:p[9],seg1:p[8],saldoSS:fc+taR+adR+frR};}
+// detalhamento: um bloco por cota (normal/reduzida, com/sem prestamista); colunas [fc%,fcR,ta%,taR,ad%,adR,fr%,frR,segR,totalR]
+function lerComp(txt){const L=linhasDe(txt),ini=[],blocos=[];
+  for(let i=0;i<L.length-8;i++)if(/^\d{3,6}$/.test(L[i])&&/[A-Za-zÀ-ú]/.test(L[i+1])&&reMoney.test(L[i+2])&&reDate.test(L[i+3]))ini.push(i);
+  ini.forEach((a,k)=>{const B=L.slice(a,k+1<ini.length?ini[k+1]:L.length);const cab=lerLista(B.slice(0,9).join('\n'))[0];if(!cab)return;
+    const v10=j=>{const v=B.slice(j+1,j+11);return v.length===10&&v.every(x=>reNumBR.test(x))?v.map(numBR):null;};
+    let sub=null,cob=null,tot=null;const linhas=[];
+    for(let i=9;i<B.length;i++){
+      if(/^\d+$/.test(B[i])&&/^\d+$/.test(B[i+1]||'')){const v=B.slice(i+2,i+12);if(v.length===10&&v.every(x=>reNumBR.test(x))){linhas.push({ini:+B[i],fim:+B[i+1],v:v.map(numBR)});i+=11;continue;}}
+      if(/^SubTotal$/i.test(B[i]))sub=v10(i);else if(/^% a cobrar/i.test(B[i]))cob=v10(i);else if(/^Total$/i.test(B[i]))tot=v10(i);}
+    if(!linhas.length||!sub)return;const T=tot||sub;
+    blocos.push({cab,ta:T[2],fr:T[6],seg1:linhas[0].v[8],parc1:linhas[0].v[9],saldoSS:T[9]-T[8],aCobrar:cob?cob[9]:0,aCobrarPct:cob?cob[0]:0,prazo:linhas[linhas.length-1].fim});});
+  return blocos;}
 const venceu=c=>{const hj=new Date().toISOString().slice(0,10);return (c.ass&&c.ass<hj)||(c.em&&(Date.now()-new Date(c.em).getTime())>30*864e5);};
-function guardarColagem(t){
+function regHistLista(rows){const m=new Date().toISOString().slice(0,7);let mudou=false; // lance médio da lista vira ponto do histórico (o do portal tem prioridade no mês)
+  [...new Map(rows.filter(r=>r.lm>0).map(r=>[r.gid,r.lm])).entries()].forEach(([gid,lm])=>{const g=S.grupos.find(x=>codN(x.cod)===gid);if(!g)return;const e=(g.h||[]).find(x=>x.m===m);
+    if(e){if(e.d==null){e.d=lm;mudou=true;}}else{g.h=[...(g.h||[]),{m,n:null,d:lm}].sort((a,b)=>a.m.localeCompare(b.m)).slice(-24);mudou=true;}});
+  if(mudou)empurrarGrupos();}
+function guardarColagem(t){const em=new Date().toISOString();
+  const up=r=>{r.em=em;const i=S.cotasL.findIndex(x=>compK(x)===compK(r));if(i>=0){S.cotasL[i]={...S.cotasL[i],...r};return 0;}S.cotasL.push(r);return 1;};
+  const bl=lerComp(t);
+  if(bl.length){const resumo={};
+    bl.forEach(b=>{const x=b.cab;up(x);const k=compK(x),comSeg=b.seg1>0;
+      S.comp[k]={...(S.comp[k]||{}),ta:b.ta,fr:b.fr,prazo:b.prazo,saldoSS:b.saldoSS,aCobrar:b.aCobrar,aCobrarPct:b.aCobrarPct,em,...(comSeg?{seg1:b.seg1}:{})};
+      if(comSeg){S.segTaxa=Math.round(b.seg1/b.saldoSS*1e6)/1e4;S.segInfo=`composição de ${new Date().toLocaleDateString('pt-BR')}: grupo ${x.cod}, seguro ${brl2(b.seg1)} por mês sobre saldo de ${brl(b.saldoSS)}`;}
+      if(Math.abs(b.parc1-x.parc)<0.02)S.listaSeg=comSeg?'com':'sem'; // a parcela da lista bate com o bloco com ou sem prestamista
+      resumo[x.plano]=`${x.plano}: taxa adm ${pct(b.ta)}${b.aCobrarPct>0?`, ${pct(b.aCobrarPct)} do crédito a cobrar`:''}`;});
+    regHistLista(bl.map(b=>b.cab));save();
+    return `Detalhamento lido (${bl.length} bloco${bl.length>1?'s':''}, grupo ${bl[0].cab.cod}). ${Object.values(resumo).join(' · ')}. Parcela da lista: ${S.listaSeg==='com'?'com':'sem'} seguro.`;}
   const lista=lerLista(t);
-  if(lista.length){const em=new Date().toISOString();let novos=0,atual=0;
-    lista.forEach(r=>{r.em=em;const k=x=>x.gid+'|'+x.plano+'|'+x.carta;const i=S.cotasL.findIndex(x=>k(x)===k(r));if(i>=0){S.cotasL[i]=r;atual++;}else{S.cotasL.push(r);novos++;}});
-    save();return `Lista lida: ${lista.length} linhas, ${new Set(lista.map(r=>r.gid)).size} grupos (${novos} novas, ${atual} atualizadas).`;}
-  const c=lerComp(t);
-  if(c){const m=S.cotasL.filter(x=>Math.abs(x.parc-c.parc1)<0.02&&x.prazo===c.prazo);
-    if(!m.length)return `Composição lida (carta ${brl(c.carta)}, parcela ${brl2(c.parc1)}, ${c.prazo} meses), mas não achei essa cota na lista guardada. Cole a lista primeiro.`;
-    const x=m[0];S.comp[x.gid+'|'+x.plano]={ta:c.ta,fr:c.fr,seg1:c.seg1,segTot:c.segTot,carta:c.carta,prazo:c.prazo,parc1:c.parc1,saldoSS:c.saldoSS,em:new Date().toISOString()};
-    S.segTaxa=Math.round(c.seg1/c.saldoSS*1e6)/1e4;S.segInfo=`1 amostra da composição: grupo ${x.cod}, carta ${brl(c.carta)}, seguro ${brl2(c.seg1)} por mês sobre saldo de ${brl(c.saldoSS)} sem seguro`;
-    save();return `Composição lida e ligada ao grupo ${x.cod} (${x.plano}): taxa adm ${pct(c.ta)}, fundo de reserva ${pct(c.fr)}, seguro ${brl2(c.seg1)} por mês (${pct2(S.segTaxa)} do saldo).`;}
-  return 'Não reconheci o texto. Cole a lista "Grupos Disponíveis" ou a composição da parcela, inteira.';}
-function segDe(x){ // seguro e saldo (sem seguro) de uma cota da lista: real se a composição foi lida, senão derivado
-  const comp=S.comp[x.gid+'|'+x.plano];if(comp&&Math.abs(comp.parc1-x.parc)<0.02&&comp.prazo===x.prazo)return {seg:comp.seg1,real:true,ss:comp.saldoSS};
+  if(lista.length){let novos=0;lista.forEach(r=>{novos+=up(r);});regHistLista(lista);save();
+    return `Lista lida: ${lista.length} linhas, ${new Set(lista.map(r=>r.gid)).size} grupos (${novos} novas, ${lista.length-novos} atualizadas ou repetidas).`;}
+  return 'Não reconheci o texto. Cole a lista "Grupos Disponíveis" ou o detalhamento da cota, inteiro.';}
+function segDe(x){ // seguro, saldo sem seguro e parcela sem seguro de uma cota: real se o detalhamento dela foi lido, senão derivado
+  let c=S.comp[compK(x)],k=1;const r=(S.segTaxa||0)/100,sem=S.listaSeg!=='com';
+  if(!(c&&c.saldoSS>0)){const g=compDoGrupo(x.gid,x.plano);if(g&&g.saldoSS>0&&g.carta>0){c=g;k=x.carta/g.carta;}} // mesmo grupo e plano: tudo é proporcional à carta
+  if(c&&c.saldoSS>0){const ss=c.saldoSS*k,seg=c.seg1!=null?c.seg1*k:(r>0?r*ss:null);return {seg,real:c.seg1!=null&&k===1,ss,parcSem:sem?x.parc:x.parc-(seg||0)};}
   if(x.plano==='Reduzida')return {seg:null,ss:null};
-  const r=(S.segTaxa||0)/100;if(!(r>0))return {seg:null,ss:x.parc*x.prazo};
-  const ss=x.parc*x.prazo/(1+r*x.prazo);return {seg:r*ss,real:false,ss};}
+  if(sem){const ss=x.parc*x.prazo;return {seg:r>0?r*ss:null,real:false,ss,parcSem:x.parc};}
+  const ss=r>0?x.parc*x.prazo/(1+r*x.prazo):x.parc*x.prazo,seg=r>0?r*ss:null;return {seg,real:false,ss,parcSem:x.parc-(seg||0)};}
+const compDoGrupo=(gid,plano)=>{const e=Object.entries(S.comp).find(([k])=>k.startsWith(gid+'|'+plano+'|'));return e?{...e[1],carta:+e[0].split('|')[2]}:null;};
+// uma linha por grupo basta: carta = fator do grupo × valor nominal ("R$ 130 Mil"); parcela = % fixo da carta (conferido em 201 cotas reais)
+const nomDe=d=>{const m=String(d||'').match(/R\$\s*([\d.]+)\s*Mil/i);return m?+m[1].replace(/\./g,'')*1000:null;};
+function cotasComModelo(){const out=[...S.cotasL],por={},fator={};
+  S.cotasL.forEach(x=>{(por[x.gid+'|'+x.plano]=por[x.gid+'|'+x.plano]||[]).push(x);const n=nomDe(x.desc);if(n&&x.plano==='Normal')fator[x.gid]=x.carta/n;});
+  Object.values(por).forEach(rs=>{const b=rs[0],f=fator[b.gid];if(!f)return;const ks=rs.map(r=>r.parc/r.carta).sort((a,c)=>a-c),k=ks[ks.length>>1];
+    const gp=S.grupos.find(g=>codN(g.cod)===b.gid),noms=rs.map(r=>Math.round(r.carta/f/10000)*10);let lo,hi;
+    if(gp&&num(gp.cmax)>0){lo=Math.ceil((num(gp.cmin)||0)/f/10000)*10;hi=Math.floor(num(gp.cmax)/f/10000)*10;}else{lo=Math.max(10,Math.floor(Math.min(...noms)*0.7/10)*10);hi=Math.ceil(Math.max(...noms)*1.3/10)*10;}
+    for(let N=Math.max(10,lo);N<=hi;N+=10){const carta=Math.round(f*N*1000*100)/100;if(out.some(o=>o.gid===b.gid&&o.plano===b.plano&&Math.abs(o.carta-carta)<1))continue;
+      out.push({...b,carta,parc:Math.round(k*carta*100)/100,desc:b.plano==='Normal'?b.desc.replace(/R\$\s*[\d.]+\s*Mil/i,`R$ ${N} Mil`):b.desc,derivada:true});}});
+  return out;}
+// campanhas (códigos de convênio): cadastradas pelo admin, valem para todos
+const hojeL=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+const fmtD=d=>d?new Date(d+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+function campDe({tipo,carta,plano,emax}){if(plano!=='Normal')return null;const h=hojeL(),t=tipo==='Veículos'?'Veículos Leves':tipo;
+  return (S.campanhas||[]).find(c=>(!c.ini||c.ini<=h)&&(!c.fim||h<=c.fim)&&(!c.tipos.length||c.tipos.includes(t))&&(c.cmin==null||carta>=c.cmin-0.01)&&(c.cmax==null||carta<=c.cmax+0.01)&&(c.emb==='ambos'||emax==null||(c.emb==='com'?emax>0:!(emax>0))))||null;}
+const taCamp=(c,ta)=>c.ta!=null?Math.min(c.ta,ta??c.ta):(ta??0)*(1-(c.desc||0)/100);
+function campOferta(vars){const ls=vars.flatMap(v=>v.r&&!v.r.erro?v.r.linhas:[]).filter(l=>l.camp);if(!ls.length)return '';const c=ls[0].camp,sem=ls.some(l=>!l.red),estim=ls.some(l=>l.red&&l.taEstim);
+  return `<div class="al info" style="margin-bottom:12px">Campanha ${esc(c.nome||'')} · <b>código ${esc(c.cod)}</b> (válida até ${fmtD(c.fim)}): ${c.ta!=null?'taxa adm '+pct(c.ta):'−'+pct(c.desc)+' na taxa adm'}, já aplicada nas cotas marcadas.${estim?' Onde não há detalhamento, a taxa foi estimada pela parcela (fundo de reserva de 2,5%).':''}${sem?' Em cotas sem taxa lida, o desconto não entrou na conta: cole o detalhamento de 1 cota do grupo.':''} Plano reduzido fica de fora.</div>`;}
+const CAMP_BANNER=[ // banner Super Sexta Antecipada (portal da administradora, 29/10/2026)
+  {cod:'20262026000030',nome:'Super Sexta · imóvel e leves',tipos:['Imobiliário','Veículos Leves'],cmin:null,cmax:null,emb:'ambos',desc:30,ta:null,ini:'2026-10-29',fim:'2026-10-30'},
+  {cod:'61092031101550',nome:'Super Sexta · pesados',tipos:['Veículos Pesados'],cmin:200000,cmax:1000000,emb:'com',desc:null,ta:13,ini:'2026-10-29',fim:'2026-10-30'},
+  {cod:'61092031101500',nome:'Super Sexta · pesados',tipos:['Veículos Pesados'],cmin:200000,cmax:1000000,emb:'ambos',desc:null,ta:13,ini:'2026-10-29',fim:'2026-10-30'},
+  {cod:'61092031101450',nome:'Super Sexta · pesados',tipos:['Veículos Pesados'],cmin:200000,cmax:400000,emb:'sem',desc:null,ta:13,ini:'2026-10-29',fim:'2026-10-30'}];
+function renderCampanhas(){const el=$('#camp-card');if(!el)return;const adm=!temServidor()||!!(window.SESSAO&&window.SESSAO.admin),cs=S.campanhas||[],h=hojeL();
+  el.innerHTML=`<h2>Campanhas <span class="tag muted">códigos de convênio</span></h2><p class="sub">${adm?'Você cadastra; vale para todos os gerentes.':'Cadastradas pelo admin.'} A Oferta mostra o código em cada cota onde ele vale e já aplica o desconto.</p>
+  ${cs.length?`<div class="cmp-wrap"><table class="cmp" style="font-size:12px"><thead><tr><th>Código</th><th>Vale para</th><th>Carta</th><th>Embutido</th><th>Benefício</th><th>Validade</th>${adm?'<th></th>':''}</tr></thead><tbody>${cs.map((c,i)=>`<tr><td>${esc(c.cod)}${c.nome?'<br><span style="font-size:10px">'+esc(c.nome)+'</span>':''}</td><td>${esc(c.tipos.join(', ')||'todos')}</td><td class="num">${c.cmin!=null||c.cmax!=null?brl(c.cmin)+' a '+brl(c.cmax):'todas'}</td><td>${({com:'com',sem:'sem',ambos:'com ou sem'})[c.emb]||'—'}</td><td>${c.ta!=null?'taxa '+pct(c.ta):'−'+pct(c.desc)+' na taxa'}</td><td>${fmtD(c.ini)} a ${fmtD(c.fim)}${c.fim&&c.fim<h?' <span class="tag warn">vencida</span>':''}</td>${adm?`<td><button class="btn small danger" data-cdel="${i}">Excluir</button></td>`:''}</tr>`).join('')}</tbody></table></div>`:'<div class="empty">Nenhuma campanha cadastrada.</div>'}
+  ${adm?`${cs.length?'':'<button class="btn small" id="cp-seed" style="margin-top:8px">Carregar a Super Sexta do banner (29 e 30/10)</button>'}
+  <details class="adv" style="margin-top:10px"><summary>Adicionar campanha</summary>
+    <div class="two"><div class="f"><label>Código</label><input id="cp-cod"></div><div class="f"><label>Nome (opcional)</label><input id="cp-nome"></div></div>
+    <div class="f"><label>Vale para</label><div class="chips">${['Imobiliário','Veículos Leves','Veículos Pesados'].map(t=>`<label class="chip"><input type="checkbox" data-cpt="${t}"> ${t}</label>`).join('')}</div></div>
+    <div class="two"><div class="f"><label>Carta de (R$, vazio = qualquer)</label><input id="cp-min" type="number" inputmode="decimal"></div><div class="f"><label>Carta até (R$)</label><input id="cp-max" type="number" inputmode="decimal"></div></div>
+    <div class="two"><div class="f"><label>Embutido</label><select id="cp-emb"><option value="ambos">Com ou sem</option><option value="com">Só com embutido</option><option value="sem">Só sem embutido</option></select></div><div class="f"><label>Desconto na taxa (%) <span class="hint">ou a taxa final ao lado</span></label><input id="cp-desc" type="number" inputmode="decimal"></div></div>
+    <div class="two"><div class="f"><label>Taxa adm final (%)</label><input id="cp-ta" type="number" inputmode="decimal"></div><div class="f"><label>Válida de / até</label><div class="two"><input id="cp-ini" type="date"><input id="cp-fim" type="date"></div></div></div>
+    <button class="btn primary small" id="cp-add">Adicionar</button></details>`:''}`;
+  if(!adm)return;const salva=()=>{save();empurrarGrupos();render();};
+  el.querySelectorAll('[data-cdel]').forEach(b=>b.onclick=()=>{S.campanhas.splice(+b.dataset.cdel,1);salva();toast('Campanha excluída');});
+  const sd=$('#cp-seed');if(sd)sd.onclick=()=>{S.campanhas=CAMP_BANNER.map(c=>({...c}));salva();toast('Campanha do banner carregada');};
+  $('#cp-add').onclick=()=>{const v=id=>$('#'+id).value.trim(),cod=v('cp-cod');if(!cod){toast('Informe o código');return;}const desc=num(v('cp-desc')),ta=num(v('cp-ta'));if(desc==null&&ta==null){toast('Informe o desconto ou a taxa final');return;}
+    S.campanhas=[...(S.campanhas||[]),{cod,nome:v('cp-nome'),tipos:[...el.querySelectorAll('[data-cpt]:checked')].map(x=>x.dataset.cpt),cmin:num(v('cp-min')),cmax:num(v('cp-max')),emb:v('cp-emb'),desc,ta,ini:v('cp-ini'),fim:v('cp-fim')}];salva();toast('Campanha adicionada');};}
+// roteiro de busca: quanto comprar, em quantas cotas e que faixa pesquisar no sistema (foco: menor lance do bolso)
+function roteiro(E){const need=num(E.valor)||0;if(!(need>0))return null;const tOk=x=>!E.tipo||(E.tipo==='Imobiliário'?x.tipo==='Imobiliário':x.tipo==='Veículos');
+  const gsT=S.grupos.filter(g=>(!E.tipo||g.tipo===E.tipo)&&num(g.emax)>0);
+  const embP=E.emb==='1'?(gsT.length?Math.max(...gsT.map(g=>num(g.emax))):(E.tipo&&E.tipo!=='Imobiliário'?30:50)):0;
+  const total=E.modo==='liquido'?need/(1-embP/100):need,conh=[];
+  S.grupos.filter(g=>(!E.tipo||g.tipo===E.tipo)&&num(g.cmax)>0).forEach(g=>{const a=num(g[E.alvo])>0?num(g[E.alvo]):(num(g.lmin)>0?num(g.lmin):num(g.lmed));if(a>0)conh.push({cod:g.cod,a,min:num(g.cmin)||0,max:num(g.cmax)});});
+  const mods={};cotasComModelo().filter(x=>x.plano==='Normal'&&tOk(x)).forEach(x=>{const m=mods[x.gid]=mods[x.gid]||{cod:x.cod,a:x.lm,min:1e18,max:0,vagas:x.vagas,vagasTxt:x.vagasTxt,part:x.part};m.min=Math.min(m.min,x.carta);m.max=Math.max(m.max,x.carta);});
+  Object.values(mods).forEach(m=>{const c=conh.find(c=>codN(c.cod)===codN(m.cod));if(c)Object.assign(c,{vagas:m.vagas,vagasTxt:m.vagasTxt,part:m.part});else conh.push(m);});
+  const semVaga=c=>c.vagas===0;
+  const ops=[1,2,3].map(n=>{const t=total/n,lo=Math.floor(t*0.97/5000)*5000,hi=Math.ceil(t*1.09/5000)*5000,gs=conh.filter(c=>!semVaga(c)&&t>=c.min*0.9&&t<=c.max*1.1).sort((a,b)=>a.a-b.a);
+    return {n,t,lo,hi,gs:gs.slice(0,5),bolso:gs.length?Math.max(0,(gs[0].a-embP)/100)*total:null};});
+  const com=ops.filter(o=>o.bolso!=null);let rec=ops[1];if(com.length){const mb=Math.min(...com.map(o=>o.bolso));rec=com.filter(o=>o.bolso<=mb+500).sort((a,b)=>b.n-a.n)[0];}
+  if(E.bestReal&&E.bestN>=1)rec=ops[Math.min(3,E.bestN)-1]; // oferta já fechou: o roteiro acompanha o tamanho de cota dela
+  return {need,total,embP,ops,rec};}
 function renderCotas(){const E=S.estr;
-  let busca=E.busca?`<b>Buscar no sistema:</b> ${E.busca} (oferta “${esc(E.bestK)}”).`:'Monte um pedido primeiro: a instrução de busca aparece aqui.';
+  const R=E.feito?roteiro(E):null,tipoT=E.tipo==='Imobiliário'?'imóvel':(E.tipo||'').toLowerCase()||'o tipo do bem';
+  const pronto=E.bestReal&&E.busca;
+  let busca=R?`${pronto?`<div style="font-size:15px;color:var(--ink)"><b>Pronto:</b> a oferta já fecha com o que você colou. <b>Confirme no sistema:</b> ${E.busca}. <a href="#" data-go="oferta" style="color:inherit;font-weight:600">Ver a oferta →</a></div><div class="hint">Se alguma não tiver vaga, siga o ranking abaixo ou pesquise ${brl(R.rec.lo)} a ${brl(R.rec.hi)}.</div>`:`<div style="font-size:15px;color:var(--ink)"><b>Pesquise no sistema:</b> ${esc(tipoT)} de <b>${brl(R.rec.lo)} a ${brl(R.rec.hi)}</b> e cole a 1ª página abaixo.</div>`}
+    Para ${brl(R.need)} ${E.modo==='liquido'?'líquido':''}${R.embP>0?` com embutido de ${pct(R.embP)}`:''}: ${brl(R.total)} em cartas, em <b>${R.rec.n} cota${R.rec.n>1?'s':''} de ~${brl(R.rec.t)}</b>.${R.rec.gs.length?`<div style="margin-top:6px"><b>Olhe nesta ordem (menor lance primeiro):</b><ol style="margin:4px 0 0;padding-left:20px">${R.rec.gs.map(g=>`<li>Grupo <b>${esc(g.cod)}</b>: lance ${pct(g.a)}${g.vagas!=null?' · '+g.vagas+' vaga'+(g.vagas>1?'s':''):(g.vagasTxt?' · '+esc(g.vagasTxt):'')}${g.part?' · '+g.part+' participantes':''}</li>`).join('')}</ol><div class="hint">Se o 1º não tiver cota nessa faixa, passe pro próximo. Nenhum grupo conhecido? Cole a página que o app aprende.</div></div>`:'<div class="hint">Ainda não há grupos colados desse tipo: cole a página da busca e o app monta o ranking.</div>'}
+    <details class="adv" style="margin-top:6px"><summary>Comparar 1, 2 ou 3 cotas</summary><table class="cmp" style="font-size:12px"><thead><tr><th>Cotas</th><th>Cada uma</th><th>Pesquise</th><th>Lance do bolso ~</th><th>Menor lance</th></tr></thead><tbody>${R.ops.map(o=>`<tr class="${o===R.rec?'best-row':''}"><td>${o.n}</td><td class="num">${brl(o.t)}</td><td class="num">${brl(o.lo)} a ${brl(o.hi)}</td><td class="num">${o.bolso!=null?brl(o.bolso):'—'}</td><td>${o.gs.length?esc(o.gs[0].cod)+' ('+pct(o.gs[0].a)+')':'—'}</td></tr>`).join('')}</tbody></table><div class="hint">Lance do bolso pelo histórico dos grupos já colados; não é garantia. Mais cotas = mais bilhetes por assembleia.</div></details>
+    ${E.busca&&!pronto?`<div style="margin-top:6px"><b>Depois de colar, confirme no sistema:</b> ${E.busca}.</div>`:''}`:'Monte um pedido primeiro: a busca aparece aqui.';
   const reais=(E.buscaL||[]).map(l=>{const cs=S.cotasL.filter(x=>x.gid===codN(l.cod));if(!cs.length)return '';const x=cs.slice().sort((a,b)=>Math.abs(a.carta-l.carta)-Math.abs(b.carta-l.carta))[0];return `<br>Grupo ${esc(l.cod)}: carta mais próxima no sistema ${brl2(x.carta)}, parcela ${brl2(x.parc)}, vagas ${x.vagas!=null?x.vagas:esc(x.vagasTxt)||'?'}${venceu(x)?' <b>(dados vencidos)</b>':''}`;}).join('');
   $('#c-busca').innerHTML=busca+reais;
   const l=$('#c-lista');const porG={};S.cotasL.forEach(x=>{(porG[x.gid]=porG[x.gid]||[]).push(x);});
   const ids=Object.keys(porG).sort((a,b)=>(+a)-(+b));
   l.className=ids.length?'':'empty';
-  l.innerHTML=ids.length?ids.map((id,n)=>{const cs=porG[id].sort((a,b)=>a.carta-b.carta||a.plano.localeCompare(b.plano));const h=cs[0];const comp=cs.map(x=>S.comp[x.gid+'|'+x.plano]).find(Boolean);const vc=cs.some(venceu);
+  l.innerHTML=(ids.length?`<div class="hint" style="margin-bottom:8px">Parcela da lista tratada como <b>${S.listaSeg==='com'?'com':'sem'} seguro</b>${S.listaSeg?' (conferido pelo detalhamento)':' (padrão; cole um detalhamento pra conferir)'}; o seguro entra por cima.</div>`:'')+(ids.length?ids.map((id,n)=>{const cs=porG[id].sort((a,b)=>a.carta-b.carta||a.plano.localeCompare(b.plano));const h=cs[0];const comp=cs.map(x=>S.comp[compK(x)]).find(Boolean);const vc=cs.some(venceu);
     return `<details class="adv" ${n===0?'open':''} style="border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px"><summary style="color:var(--ink);font-weight:600">Grupo ${esc(h.cod)} <span class="tag muted">${esc(h.tipo||'?')}</span> ${comp?`<span class="tag">TA ${pct(comp.ta)} · FR ${pct(comp.fr)}</span>`:'<span class="tag muted">sem composição</span>'} ${vc?'<span class="tag warn">dados vencidos</span>':''}</summary>
     <div class="hint" style="margin-bottom:6px">${h.part} participantes · próxima assembleia ${new Date(h.ass+'T12:00:00').toLocaleDateString('pt-BR')} · lance médio ${pct(h.lm)}</div>
-    <table class="cmp" style="font-size:12px"><thead><tr><th>Plano</th><th>Carta</th><th>Parcela</th><th>Prazo</th><th>Vagas</th><th>Seguro/mês</th></tr></thead><tbody>${cs.map(x=>{const g=segDe(x);return `<tr><td>${esc(x.plano)}</td><td class="num">${brl2(x.carta)}</td><td class="num">${brl2(x.parc)}</td><td class="num">${x.prazo}</td><td class="num">${x.vagas!=null?x.vagas:esc(x.vagasTxt)}</td><td class="num">${g.seg!=null?brl2(g.seg)+(g.real?'':' <span style="color:var(--muted)">(derivado)</span>'):(x.plano==='Reduzida'?'a confirmar':'—')}</td></tr>`;}).join('')}</tbody></table></details>`;}).join(''):'Nada colado ainda.';
+    <table class="cmp" style="font-size:12px"><thead><tr><th>Plano</th><th>Carta</th><th>Parcela</th><th>Prazo</th><th>Vagas</th><th>Seguro/mês</th></tr></thead><tbody>${cs.map(x=>{const g=segDe(x);return `<tr><td>${esc(x.plano)}</td><td class="num">${brl2(x.carta)}</td><td class="num">${brl2(x.parc)}</td><td class="num">${x.prazo}</td><td class="num">${x.vagas!=null?x.vagas:esc(x.vagasTxt)}</td><td class="num">${g.seg!=null?brl2(g.seg)+(g.real?'':' <span style="color:var(--muted)">(derivado)</span>'):(x.plano==='Reduzida'?'a confirmar':'—')}</td></tr>`;}).join('')}</tbody></table></details>`;}).join(''):'Nada colado ainda.');
   $('#c-save').onclick=()=>{const t=$('#c-paste').value.trim();if(!t){toast('Cole o texto primeiro');return;}const m=guardarColagem(t);$('#c-msg').textContent=m;$('#c-paste').value='';renderCotas();toast('Pronto');};
   $('#c-clear').onclick=()=>{if(!S.cotasL.length&&!Object.keys(S.comp).length)return;if(!window.confirm('Apagar as cotas e composições lidas neste aparelho?'))return;S.cotasL=[];S.comp={};save();$('#c-msg').textContent='';renderCotas();};}
 
@@ -638,20 +714,20 @@ function renderCotas(){const E=S.estr;
 let etag=null, syncTimer=null;
 const temServidor=()=>location.protocol.startsWith('http')&&!!window.SESSAO;
 async function puxarGrupos(){if(!temServidor())return;try{const r=await fetch('/api/dados',{cache:'no-store'});if(r.status===401){location.href='/entrar';return;}const j=await r.json();if(!j.ok)return;etag=j.etag;
-  if(j.grupos.length){S.grupos=j.grupos;save();render();}else if(S.grupos.length){empurrarGrupos();}}catch(e){}}
-function empurrarGrupos(){if(!temServidor())return;clearTimeout(syncTimer);syncTimer=setTimeout(async()=>{try{const r=await fetch('/api/dados',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({grupos:S.grupos,etag})});const j=await r.json();
-  if(r.status===409&&j.grupos){S.grupos=j.grupos;etag=j.etag;save();render();toast('Grupos atualizados por outra pessoa; recarreguei.');return;}
+  S.campanhas=j.campanhas||[];if(j.grupos.length){S.grupos=j.grupos;save();render();}else{save();render();if(S.grupos.length)empurrarGrupos();}}catch(e){}}
+function empurrarGrupos(){if(!temServidor())return;clearTimeout(syncTimer);syncTimer=setTimeout(async()=>{try{const r=await fetch('/api/dados',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({grupos:S.grupos,etag,...(window.SESSAO&&window.SESSAO.admin?{campanhas:S.campanhas||[]}:{})})});const j=await r.json();
+  if(r.status===409&&j.grupos){S.grupos=j.grupos;S.campanhas=j.campanhas||[];etag=j.etag;save();render();toast('Grupos atualizados por outra pessoa; recarreguei.');return;}
   if(r.status===401){location.href='/entrar';return;}if(j.ok)etag=j.etag;}catch(e){toast('Sem conexão: grupos salvos só neste aparelho');}},400);}
 if(window.SESSAO){const b=$('#btnSair');b.style.display='';if(window.SESSAO.admin)$('#lnkAdmin').style.display='';b.title='Sair ('+window.SESSAO.email+')';b.onclick=async()=>{try{await fetch('/api/sair',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});}catch(e){}location.href='/entrar';};}
 
 /* ===================== link ===================== */
-function shareLink(){const d={promo:S.promo,grupos:S.grupos.map(({h,...g})=>g),estr:{...S.estr,nome:''}};
+function shareLink(){const d={grupos:S.grupos.map(({h,...g})=>g),estr:{...S.estr,nome:''}};
   const url=location.origin+location.pathname+'#s='+btoa(unescape(encodeURIComponent(JSON.stringify(d))));
   (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>toast('Link copiado (sem nome do cliente)')).catch(()=>prompt('Copie o link:',url));}
 $('#btnShare2').onclick=shareLink;
 
 /* ===================== render ===================== */
-function render(){renderGrupos();renderRank();renderEstrategia();}
+function render(){renderGrupos();renderRank();renderCampanhas();renderEstrategia();}
 editGroup(null);
 let tab='estrategia';try{tab=localStorage.getItem(KEY+'.tab')||'estrategia';}catch(e){}
 if(!['grupos','estrategia','cotas','oferta'].includes(tab))tab='estrategia';if(location.hash)tab='oferta';
