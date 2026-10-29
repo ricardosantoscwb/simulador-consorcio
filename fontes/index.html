@@ -436,6 +436,7 @@ $('#btnBatch').onclick=()=>{const auto=$('#b-tipo').value==='auto',fonte=$('#b-f
   const hoje=new Date().toISOString().slice(0,10);let novos=0,atual=0,mudou=0;
   batch.forEach(p=>{const {tipo,ta,fr,emax}=cfg(p);porTipo[tipo]=(porTipo[tipo]||0)+1;const g={cod:p.cod,tipo,desc:'',ta,fr,cmin:p.cmin,cmax:p.cmax,pt:p.pt,pr:p.pr,parc:'',emax:p.emb?emax:0,lmin:p.lmin,lmed:p.lmed,lmax:p.lmax,assem:p.assem,data:hoje,fonte,cs:p.cs,cl:p.cl,ct:p.ct,clf:p.clf,np:p.np};
     const ex=S.grupos.find(x=>x.cod===p.cod&&x.tipo===tipo);if(ex){const ant=JSON.stringify([ex.lmin,ex.lmed,ex.lmax,ex.cs,ex.cl,ex.assem]);Object.assign(ex,g);if(JSON.stringify([ex.lmin,ex.lmed,ex.lmax,ex.cs,ex.cl,ex.assem])!==ant)mudou++;regHist(ex);atual++;}else{g.id='g'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);regHist(g);S.grupos.push(g);novos++;}});
+  S.grupos=S.grupos.filter(g=>g.fonte!==EXEMPLO); // chegaram grupos reais: os de exemplo saem sozinhos
   save();empurrarGrupos();batch=[];editGroup(null);render();toast((Object.entries(porTipo).map(([t,n])=>t+': '+n).join(' · '))+' — '+(novos||mudou?`${novos} novos, ${mudou} com lance ou assembleia nova`:'nada mudou desde a última colagem'));};
 function renderRank(){const t=$('#rank');const P={valor:S.estr.valor,bem:S.estr.tipo==='Imobiliário'?'Imóvel':S.estr.tipo?'Veículo':''},valor=num(P.valor)||0;
   if(!(valor>0)){t.innerHTML='<tr><td>Faça um pedido para ver o ranking.</td></tr>';return;}
@@ -739,7 +740,8 @@ function renderCotas(){const E=S.estr;
 let etag=null, syncTimer=null;
 const temServidor=()=>location.protocol.startsWith('http')&&!!window.SESSAO;
 async function puxarGrupos(){if(!temServidor())return;try{const r=await fetch('/api/dados',{cache:'no-store'});if(r.status===401){location.href='/entrar';return;}const j=await r.json();if(!j.ok)return;etag=j.etag;
-  S.campanhas=j.campanhas||[];if(j.grupos.length){S.grupos=j.grupos;save();render();}else{save();render();if(S.grupos.length)empurrarGrupos();}}catch(e){}}
+  S.campanhas=j.campanhas||[];if(j.grupos.length){S.grupos=j.grupos;save();render();}else{save();render();if(S.grupos.length)empurrarGrupos();}
+  if(window.SESSAO&&window.SESSAO.admin&&!S.campanhas.length&&hojeL()<=CAMP_BANNER[0].fim){S.campanhas=CAMP_BANNER.map(c=>({...c}));save();render();empurrarGrupos();toast('Campanha Super Sexta carregada');}}catch(e){}}
 function empurrarGrupos(){if(!temServidor())return;clearTimeout(syncTimer);syncTimer=setTimeout(async()=>{try{const r=await fetch('/api/dados',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({grupos:S.grupos,etag,...(window.SESSAO&&window.SESSAO.admin?{campanhas:S.campanhas||[]}:{})})});const j=await r.json();
   if(r.status===409&&j.grupos){S.grupos=j.grupos;S.campanhas=j.campanhas||[];etag=j.etag;save();render();toast('Grupos atualizados por outra pessoa; recarreguei.');return;}
   if(r.status===401){location.href='/entrar';return;}if(j.ok)etag=j.etag;}catch(e){toast('Sem conexão: grupos salvos só neste aparelho');}},400);}
