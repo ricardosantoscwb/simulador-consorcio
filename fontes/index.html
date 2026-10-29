@@ -228,7 +228,7 @@ details.adv{margin-top:6px}details.adv summary{cursor:pointer;font-size:13px;col
       <h2 id="gform-title">Colar grupos do portal</h2>
       <div class="f"><label>Cole as linhas da tabela "Informações dos Grupos" <span class="hint">uma ou várias; preenche código, faixa, prazos, assembleia e lances</span></label><textarea id="g-paste" rows="5" placeholder="Uma ou várias linhas, uma por grupo. ex.: 010016 Não 58948.56 A 106107.42 1000 200 150 28/09/2022 17/11/2026 ..."></textarea><div class="hint" id="g-paste-msg"></div></div>
       <div id="g-batch" style="display:none" class="off">
-        <b>Importar lote</b> — vale para todas as linhas coladas:
+        <b>Importar lote</b> — vale para todas as linhas coladas. Já vem preenchido com o padrão (taxa "a partir de" do banner, fundo 2,5%, embutido usual): confira e troque se o grupo for diferente.
         <div class="two" style="margin-top:8px"><div class="f"><label>Tipo</label><select id="b-tipo"><option>Imobiliário</option><option>Veículos Leves</option><option>Veículos Pesados</option></select></div><div class="f"><label>Embutido máx. p/ grupos "Sim" (%)</label><input id="b-emax" type="number" min="0" max="100" step="0.5" inputmode="decimal"></div></div>
         <div class="two"><div class="f"><label>Taxa adm total (%)</label><input id="b-ta" type="number" min="0" max="100" step="0.01" inputmode="decimal"></div><div class="f"><label>Fundo de reserva (%)</label><input id="b-fr" type="number" min="0" max="100" step="0.01" inputmode="decimal"></div></div>
         <div class="f"><label>Fonte</label><input id="b-fonte" placeholder="ex.: sistema oficial"></div>
@@ -415,7 +415,7 @@ function parseLinha(t){const s=t.replace(/\s+/g,' ').trim();const m=s.match(/^(\
   return {cod:m[1],emb:/^s/i.test(m[2]),cmin:n(m[3]),cmax:n(m[4]),pt:+m[6],pr:+m[7],assem:iso(m[9]),lmed:pcts[0]??'',lmin:pcts[1]??'',lmax:pcts[2]??'',cs,cl,ct,clf,np};}
 let batch=[];
 $('#g-paste').addEventListener('input',e=>{const lines=e.target.value.split(/\n+/).map(x=>x.trim()).filter(Boolean);const msg=$('#g-paste-msg');
-  if(lines.length>1){batch=lines.map(parseLinha).filter(Boolean);$('#g-batch').style.display=batch.length?'':'none';$('#b-n').textContent=batch.length;msg.textContent=batch.length?`${batch.length} de ${lines.length} linhas reconhecidas. Informe tipo, taxa e fundo do lote e importe.`:'Não reconheci o formato das linhas.';return;}
+  if(lines.length>1){batch=lines.map(parseLinha).filter(Boolean);$('#g-batch').style.display=batch.length?'':'none';if(batch.length)padraoLote();$('#b-n').textContent=batch.length;msg.textContent=batch.length?`${batch.length} de ${lines.length} linhas reconhecidas. Informe tipo, taxa e fundo do lote e importe.`:'Não reconheci o formato das linhas.';return;}
   $('#g-batch').style.display='none';batch=[];
   const p=parseLinha(e.target.value);if(!p){msg.textContent=e.target.value.trim()?'Não reconheci o formato. Preencha manualmente.':'';return;}
   window._pasteX={cs:p.cs,cl:p.cl,ct:p.ct,clf:p.clf,np:p.np};$('#g-cod').value=p.cod;$('#g-cmin').value=p.cmin;$('#g-cmax').value=p.cmax;$('#g-pt').value=p.pt;$('#g-pr').value=p.pr;$('#g-assem').value=p.assem;$('#g-lmed').value=p.lmed;$('#g-lmin').value=p.lmin;$('#g-lmax').value=p.lmax;$('#g-data').value=new Date().toISOString().slice(0,10);
@@ -423,6 +423,10 @@ $('#g-paste').addEventListener('input',e=>{const lines=e.target.value.split(/\n+
   $('#g-emax-hint').textContent=p.emb?'Grupo COM embutido: informe o máximo conforme o regulamento (a linha não traz o %).':'Grupo sem embutido (0%).';
   msg.textContent='Preenchi código, faixa, prazos, assembleia e lances. Faltam: tipo, taxa adm, fundo de reserva'+(p.emb?', embutido máximo':'')+'.';});
 
+// valores de partida do lote (banner da administradora: taxa "a partir de"; embutido usual, sem fonte confirmada): o gerente confere e troca
+const PADRAO_LOTE={'Imobiliário':{ta:20,fr:2.5,emax:50},'Veículos Leves':{ta:19.5,fr:2.5,emax:30},'Veículos Pesados':{ta:'',fr:2.5,emax:30}};
+function padraoLote(){const p=PADRAO_LOTE[$('#b-tipo').value]||{};[['b-ta','ta'],['b-fr','fr'],['b-emax','emax']].forEach(([id,k])=>{const el=$('#'+id);if(el.value===''||el.dataset.auto==='1'){el.value=p[k]??'';el.dataset.auto='1';}});}
+$('#b-tipo').addEventListener('change',padraoLote);['b-ta','b-fr','b-emax'].forEach(id=>$('#'+id).addEventListener('input',e=>{e.target.dataset.auto='';}));
 $('#btnBatch').onclick=()=>{const tipo=$('#b-tipo').value,ta=num($('#b-ta').value),fr=num($('#b-fr').value),emax=num($('#b-emax').value),fonte=$('#b-fonte').value.trim();
   if(ta==null||fr==null){toast('Informe taxa adm e fundo de reserva do lote');return;}if(batch.some(p=>p.emb)&&emax==null){toast('Informe o embutido máximo para os grupos "Sim"');return;}
   const hoje=new Date().toISOString().slice(0,10);let novos=0,atual=0,mudou=0;
