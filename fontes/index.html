@@ -123,6 +123,8 @@ summary{cursor:pointer;color:var(--ink);font-weight:500}
 .busca-t tr.res td{color:var(--muted);font-size:14px}
 .busca-t .sel{font-size:12px;color:var(--muted);display:block;font-weight:400}
 .busca-cab{font-size:15px;color:var(--ink-2)}
+.plano-cab{font-size:15px;color:var(--ink-2);margin-top:22px}.plano-cab b{color:var(--ink);font-weight:600}
+.plano-b{margin-top:26px;padding-top:4px;border-top:1px solid var(--line)}.plano-b .busca-t td{font-size:15px;padding-top:10px;padding-bottom:10px}
 @media (max-width:480px){.busca-t td{font-size:15px;padding:12px 8px 12px 0}.busca-t th{padding-right:8px}#s-cotas .wiz-actions{flex-direction:column-reverse;align-items:stretch}}
 .btn{white-space:nowrap}
 .busca-cab b{color:var(--ink)}
@@ -818,7 +820,7 @@ function roteiro(E){const need=num(E.valor)||0;if(!(need>0))return null;const tO
     if(!gs.length)continue;const g=gs[0];let falta=n,custo=0;const uso=[]; // respeita o máximo de cotas por grupo e as vagas: completa com o próximo de menor lance
     for(const c of gs){const k=Math.min(cap,c.vagas!=null?c.vagas:cap,falta);if(k<1)continue;custo+=c.bolso*k/n;uso.push({cod:c.cod,k,a:c.a});falta-=k;if(!falta)break;}
     if(falta)continue;
-    ops.push({n,t:g.t,tot:g.tot,emb:g.emb,a:g.a,lo:Math.floor(g.t*0.97/5000)*5000,hi:Math.ceil(g.t*1.09/5000)*5000,gs:gs.slice(0,5),bolso:custo,uso});}
+    ops.push({n,t:g.t,tot:g.tot,emb:g.emb,a:g.a,lo:Math.floor(g.t*0.97/5000)*5000,hi:Math.ceil(g.t*1.09/5000)*5000,gs:gs.slice(0,12),bolso:custo,uso});}
   if(!ops.length){const emb=E.emb==='1'?embPad:0,tot=E.modo==='liquido'?need/(1-emb/100):need,t=tot/2; // nada colado: ponto de partida de 2 cotas
     const o={n:2,t,tot,emb,a:null,lo:Math.floor(t*0.97/5000)*5000,hi:Math.ceil(t*1.09/5000)*5000,gs:[],bolso:null};return {need,total:tot,embP:emb,ops:[o],rec:o,melhores:[],semDados:true};}
   const mb=Math.min(...ops.map(o=>o.bolso));let rec=ops.filter(o=>o.bolso<=mb+500).sort((x,y)=>y.n-x.n)[0];
@@ -830,14 +832,18 @@ function buscaSimples(R,E,pronto){if(!R)return 'Monte um pedido primeiro: a busc
   const st=statusPortal(),fr=st?`<div class="hint" style="margin-top:8px">Grupos do portal de ${fmtD(st.ult)}${st.velho?` · <b style="color:var(--warn)">teve assembleia em ${fmtD(st.assemPassada)}: lances podem ter mudado${ADM()?' (atualize pelo botão do portal)':' (avise o admin)'}</b>`:''}.</div>`:'';
   if(pronto)return `<div style="font-size:15px;color:var(--ink)"><b>Pronto:</b> a proposta já fecha com o que você colou. Confirme no sistema: ${E.busca}. <a href="#" data-go="oferta" style="color:inherit;font-weight:600">Ver a proposta →</a></div>${fr}`;
   const rc=R.rec,tipoT=E.tipo==='Imobiliário'?'imóvel':(E.tipo||'').toLowerCase()||'o tipo do bem';
-  const faixa=g=>{const lo=g?Math.max(rc.lo,Math.floor((g.min||0)/1000)*1000):rc.lo,hi=g?Math.min(rc.hi,Math.ceil((g.max||rc.hi)/1000)*1000):rc.hi;return lo<=hi?[lo,hi]:[rc.lo,rc.hi];};
-  const cab=`<div class="busca-cab">Para ${brl(R.need)} líquido: <b>${rc.n} cota${rc.n>1?'s':''} de ~${brl(rc.t)}</b> · ${brl(R.total)} em cartas${R.embP>0?` · embutido ${pct(R.embP)}`:''}</div>`;
   const milBR=v=>Math.round(v).toLocaleString('pt-BR');
+  const faixa=(o,g)=>{const lo=g?Math.max(o.lo,Math.floor((g.min||0)/1000)*1000):o.lo,hi=g?Math.min(o.hi,Math.ceil((g.max||o.hi)/1000)*1000):o.hi;return lo<=hi?[lo,hi]:[o.lo,o.hi];};
   const tab=linhas=>`<table class="busca-t"><thead><tr><th scope="col">Grupo</th><th scope="col" class="r">Cotas</th><th scope="col" class="r">De (R$)</th><th scope="col" class="r">Até (R$)</th></tr></thead><tbody>${linhas}</tbody></table>`;
-  if(R.semDados||!rc.uso||!rc.uso.length)return `${cab}${tab(`<tr><td>${esc(tipoT)}<span class="sel">qualquer grupo</span></td><td class="r"><b>${rc.n}</b></td><td class="r"><b>${milBR(rc.lo)}</b></td><td class="r"><b>${milBR(rc.hi)}</b></td></tr>`)}<div class="hint">Ainda não há grupos do portal deste tipo.</div>${fr}`;
-  const usados=new Set(rc.uso.map(u=>u.cod)),res=(rc.gs||[]).filter(g=>!usados.has(g.cod)).slice(0,Math.max(0,5-rc.uso.length));
-  const lin=(g,cod,k,cls)=>{const [lo,hi]=faixa(g);return `<tr class="${cls}"><td><b>${esc(cod)}</b>${g&&g.a?`<span class="sel">lance ${pct(g.a)}</span>`:''}</td><td class="r">${k?`<b>${k}</b>`:'reserva'}</td><td class="r">${milBR(lo)}</td><td class="r">${milBR(hi)}</td></tr>`;};
-  return `${cab}${tab(rc.uso.map(u=>lin((rc.gs||[]).find(g=>g.cod===u.cod),u.cod,u.k,'')).join('')+res.map(g=>lin(g,g.cod,0,'res')).join(''))}<div class="hint">Em ordem de menor lance. Se faltar vaga, siga para a reserva.</div>${fr}`;}
+  const cabP=(o,letra)=>`<div class="plano-cab"><b>Plano ${letra}</b> · ${o.n} carta${o.n>1?'s':''} de ~${brl(o.t)}${o.bolso!=null?` · lance do bolso ~${brl(o.bolso)}`:''}</div>`;
+  if(R.semDados||!rc.uso||!rc.uso.length)return `<div class="busca-cab">Para ${brl(R.need)} líquido · ${brl(R.total)} em cartas${R.embP>0?` · embutido ${pct(R.embP)}`:''}</div>${cabP(rc,'A')}${tab(`<tr><td>${esc(tipoT)}<span class="sel">qualquer grupo</span></td><td class="r"><b>${rc.n}</b></td><td class="r"><b>${milBR(rc.lo)}</b></td><td class="r"><b>${milBR(rc.hi)}</b></td></tr>`)}<div class="hint">Ainda não há grupos do portal deste tipo.</div>${fr}`;
+  const lin=(o,g,cod,k,cls)=>{const [lo,hi]=faixa(o,g);return `<tr class="${cls}"><td><b>${esc(cod)}</b>${g&&g.a?`<span class="sel">lance ${pct(g.a)}</span>`:''}</td><td class="r">${k?`<b>${k}</b>`:'reserva'}</td><td class="r">${milBR(lo)}</td><td class="r">${milBR(hi)}</td></tr>`;};
+  const plano=(o,max)=>{const us=new Set(o.uso.map(u=>u.cod)),res=(o.gs||[]).filter(g=>!us.has(g.cod)).slice(0,Math.max(0,max-o.uso.length));
+    return tab(o.uso.map(u=>lin(o,(o.gs||[]).find(g=>g.cod===u.cod),u.cod,u.k,'')).join('')+res.map(g=>lin(o,g,g.cod,0,'res')).join(''));};
+  const outros=(R.ops||[]).filter(o=>o!==rc&&o.uso&&o.uso.length&&o.n!==rc.n).sort((x,y)=>(x.bolso??9e99)-(y.bolso??9e99)).slice(0,3);
+  return `<div class="busca-cab">Para ${brl(R.need)} líquido · ${brl(R.total)} em cartas${R.embP>0?` · embutido ${pct(R.embP)}`:''}</div>
+    ${cabP(rc,'A')}${plano(rc,8)}<div class="hint">Em ordem de menor lance. Se faltar vaga, siga para a reserva.</div>
+    ${outros.length?`<div class="plano-b"><div class="hint" style="margin-bottom:4px">Se o plano A não fechar, outra divisão:</div>${outros.map((o,k)=>cabP(o,'BCD'[k])+plano(o,5)).join('')}</div>`:''}${fr}`;}
 function renderCotas(){const E=S.estr;
   const R=E.feito?roteiro(E):null,tipoT=E.tipo==='Imobiliário'?'imóvel':(E.tipo||'').toLowerCase()||'o tipo do bem';
   const pronto=E.bestReal&&E.busca;
