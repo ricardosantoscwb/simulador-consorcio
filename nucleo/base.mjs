@@ -3,7 +3,6 @@
 // o código como se fosse lido por qualquer um.
 import { createHash, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
 import { getStore } from "@netlify/blobs";
-import nodemailer from "nodemailer";
 
 // ── store ───────────────────────────────────────────────────────────────────
 // Em produção é o Netlify Blobs. Nos testes, um Map em memória com a mesma cara.
@@ -80,13 +79,28 @@ export async function lerBin(chave) {
 let _mailer = null;
 export function usarMailer(m) { _mailer = m; }
 /** html (opcional): vai junto com o texto (multipart), pra quem lê em HTML. */
+// Resend, o mesmo do Estaleiro: sai de contato@estaleiro.co (domínio já verificado lá).
+export const REMETENTE = "Simulador de Consórcio <contato@estaleiro.co>";
 export async function mandarEmail({ para, assunto, texto, html, responderPara }) {
   if (_mailer) return _mailer({ para, assunto, texto, html, responderPara });
-  const user = process.env.GMAIL_USER || "estaleiro.ai@gmail.com";
-  const pass = process.env.GMAIL_APP_PASSWORD;
-  if (!pass) throw new Error("GMAIL_APP_PASSWORD não configurada");
-  const t = nodemailer.createTransport({ host: "smtp.gmail.com", port: 465, secure: true, auth: { user, pass } });
-  await t.sendMail({ from: `Simulador de Consórcio <${user}>`, to: para, subject: assunto, text: texto, ...(html ? { html } : {}), replyTo: responderPara || user });
+  const chave = process.env.RESEND_API_KEY;
+  if (!chave) throw new Error("RESEND_API_KEY não configurada");
+  let r;
+  try {
+    r = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${chave}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ from: REMETENTE, to: [para], subject: assunto, text: texto, ...(html ? { html } : {}), reply_to: responderPara || EMAIL_CASA }),
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch (e) {
+    // nada do erro de rede vai adiante: pode trazer o endereço e o cabeçalho
+    throw new Error(e?.name === "TimeoutError" ? "e-mail: tempo esgotado" : "e-mail: sem conexão com o Resend");
+  }
+  const status = r.status;
+  try { await r.arrayBuffer(); } catch { /* o corpo não é lido nem guardado */ }
+  // o corpo do erro do Resend não sai daqui: nem na resposta nem no log
+  if (status < 200 || status >= 300) throw new Error(`e-mail: o Resend recusou (${status})`);
 }
 
 // ── quem é da casa ──────────────────────────────────────────────────────────
