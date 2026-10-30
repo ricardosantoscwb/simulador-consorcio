@@ -840,9 +840,10 @@ function buscaSimples(R,E,pronto){if(!R)return 'Monte um pedido primeiro: a busc
   const lin=(o,g,cod,k,cls)=>{const [lo,hi]=faixa(o,g);return `<tr class="${cls}"><td><b>${esc(cod)}</b>${g&&g.a?`<span class="sel">lance ${pct(g.a)}</span>`:''}</td><td class="r">${k?`<b>${k}</b>`:'reserva'}</td><td class="r">${milBR(lo)}</td><td class="r">${milBR(hi)}</td></tr>`;};
   const plano=(o,max)=>{const us=new Set(o.uso.map(u=>u.cod)),res=(o.gs||[]).filter(g=>!us.has(g.cod)).slice(0,Math.max(0,max-o.uso.length));
     return tab(o.uso.map(u=>lin(o,(o.gs||[]).find(g=>g.cod===u.cod),u.cod,u.k,'')).join('')+res.map(g=>lin(o,g,g.cod,0,'res')).join(''));};
-  const outros=(R.ops||[]).filter(o=>o!==rc&&o.uso&&o.uso.length&&o.n!==rc.n).sort((x,y)=>(x.bolso??9e99)-(y.bolso??9e99)).slice(0,3);
+  const pl=(R.ops||[]).filter(o=>o.uso&&o.uso.length).sort((x,y)=>((x.bolso??9e99)-(y.bolso??9e99))||(y.n-x.n)); // menor dinheiro do bolso sempre em cima
+  const pA=pl[0]||rc,outros=pl.slice(1,4);
   return `<div class="busca-cab">Para ${brl(R.need)} líquido · ${brl(R.total)} em cartas${R.embP>0?` · embutido ${pct(R.embP)}`:''}</div>
-    ${cabP(rc,'A')}${plano(rc,8)}<div class="hint">Em ordem de menor lance. Se faltar vaga, siga para a reserva.</div>
+    ${cabP(pA,'A')}${plano(pA,8)}<div class="hint">Plano A é o de menor dinheiro do bolso. Grupos em ordem de menor lance; se faltar vaga, siga para a reserva.</div>
     ${outros.length?`<div class="plano-b"><div class="hint" style="margin-bottom:4px">Se o plano A não fechar, outra divisão:</div>${outros.map((o,k)=>cabP(o,'BCD'[k])+plano(o,5)).join('')}</div>`:''}${fr}`;}
 function renderCotas(){const E=S.estr;
   const R=E.feito?roteiro(E):null,tipoT=E.tipo==='Imobiliário'?'imóvel':(E.tipo||'').toLowerCase()||'o tipo do bem';
