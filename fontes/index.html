@@ -124,6 +124,9 @@ summary{cursor:pointer;color:var(--ink);font-weight:500}
 .busca-t .sel{font-size:12px;color:var(--muted);display:block;font-weight:400}
 .busca-cab{font-size:15px;color:var(--ink-2)}
 .plano-cab{font-size:15px;color:var(--ink-2);margin-top:22px}.plano-cab b{color:var(--ink);font-weight:600}
+.plano-d>summary{font-size:15px;color:var(--ink-2);font-weight:400;border-bottom:1px solid var(--line)}.plano-d>summary b{color:var(--ink);font-weight:600}.plano-d[open]>summary{border-bottom:0}
+details.mais>summary{font-size:13px;color:var(--muted)}
+.seg>summary{font-size:15px!important;color:var(--ink)!important}
 .plano-b{margin-top:26px;padding-top:4px;border-top:1px solid var(--line)}.plano-b .busca-t td{font-size:15px;padding-top:10px;padding-bottom:10px}
 @media (max-width:480px){.busca-t td{font-size:15px;padding:12px 8px 12px 0}.busca-t th{padding-right:8px}#s-cotas .wiz-actions{flex-direction:column-reverse;align-items:stretch}}
 .btn{white-space:nowrap}
@@ -228,7 +231,7 @@ body.present .present-bar{display:flex;gap:6px}
     <div class="f"><label for="e-valor">Valor líquido</label><div class="money-wrap big"><input id="e-valor" class="bigin" type="text" inputmode="numeric" autocomplete="off" data-money></div></div>
     <div class="f so-admin"><label for="e-modo">Esse valor é</label><select id="e-modo"><option value="liquido">Líquido (o que ele recebe)</option><option value="bruto">Bruto (total das cartas)</option></select></div>
     <div class="f" role="group" aria-labelledby="l-tipo"><span class="f-l" id="l-tipo" style="font-size:13px;color:var(--ink-2);font-weight:500">Tipo do bem</span><div class="chips" id="e-tipo-chips"><button type="button" class="chip" data-v="Imobiliário">Imóvel</button><button type="button" class="chip" data-v="Veículos Leves">Veículo leve</button><button type="button" class="chip" data-v="Veículos Pesados">Pesado</button><button type="button" class="chip" data-v="">Qualquer</button></div><select id="e-tipo" hidden><option>Imobiliário</option><option>Veículos Leves</option><option>Veículos Pesados</option><option value="">Qualquer</option></select></div>
-    <div class="sec">Cabe no bolso? <span>opcional · o app marca o que não cabe</span></div>
+    <details class="adv" id="e-bolso"><summary><span>Cabe no bolso? <span class="hint">opcional · o app marca o que não cabe</span></span></summary>
     <div class="two">
       <div class="f"><label for="e-rec">Tem para o lance</label><div class="money-wrap"><input id="e-rec" type="text" inputmode="numeric" autocomplete="off" data-money></div></div>
       <div class="f"><label for="e-fgts">FGTS para o lance <span class="hint">só imóvel</span></label><div class="money-wrap"><input id="e-fgts" type="text" inputmode="numeric" autocomplete="off" data-money></div></div>
@@ -237,6 +240,7 @@ body.present .present-bar{display:flex;gap:6px}
       <div class="f"><label for="e-p1">Parcela até contemplar</label><div class="money-wrap"><input id="e-p1" type="text" inputmode="numeric" autocomplete="off" data-money></div></div>
       <div class="f"><label for="e-p2">Parcela depois</label><div class="money-wrap"><input id="e-p2" type="text" inputmode="numeric" autocomplete="off" data-money></div></div>
     </div>
+    </details>
     <details class="adv"><summary>Avançado</summary>
       <div class="two">
         <div class="f"><label for="e-max">Máximo de cotas por grupo</label><input id="e-max" type="number" min="1" max="20" step="1" inputmode="numeric" value="3"></div>
@@ -643,17 +647,17 @@ function instrucaoBusca(r){if(!r||r.erro)return '';const porG={};r.linhas.forEac
   return Object.values(porG).map(x=>`${x.n} cota${x.n>1?'s':''} de ${x.min===x.max?brl(x.min):brl(x.min)+' a '+brl(x.max)} no grupo ${esc(x.g.cod)}`).join(' · ');}
 function renderEstrategia(){const E=S.estr;[...EF,...EF2].forEach(k=>{const el=$('#e-'+k);if(!el)return;const m=el.dataset.money!=null;el.value=m?moneyFmt(E[k]):(E[k]??'');if(m)el.oninput=()=>{el.value=moneyLive(el.value);};el.onchange=()=>{E[k]=lerCampo(el);save();};});
   $$('#e-tipo-chips .chip').forEach(b=>{b.classList.toggle('on',(E.tipo||'')===b.dataset.v);b.onclick=()=>{E.tipo=b.dataset.v;$('#e-tipo').value=E.tipo;save();renderEstrategia();};});
-  $('#e-aviso').innerHTML=avisoPrimeiroUso();
+  $('#e-aviso').innerHTML=avisoPrimeiroUso();if(['rec','fgts','p1','p2'].some(k=>num(E[k])>0))$('#e-bolso').open=true;
   $('#e-go').onclick=()=>{[...EF,...EF2].forEach(k=>{const el=$('#e-'+k);if(el)E[k]=lerCampo(el);});if(!(num(E.valor)>0)){toast('Informe o valor');return;}if(!ADM())E.modo='liquido';E.feito=true;E.conf={};save();renderOferta();go(E.bestReal?'oferta':'cotas');};
   renderOferta();renderCotas();}
 function blocoSeguro(b,segI){const t=b&&b.r&&!b.r.erro?b.r.tot:null;const v=t?segI(t):0;
   const custo=v>0?`Cerca de ${brl2(v)} por mês; na projeção do sistema é um valor fixo. Já somado na parcela mostrada`:'Valor a confirmar no sistema';
   const ic=d=>`<span class="ic"><svg viewBox="0 0 24 24">${d}</svg></span>`;
-  return `<div class="seg"><h3>Seguro prestamista: proteção do seu plano</h3><div class="tri">
+  return `<details class="adv seg"><summary>Seguro prestamista: proteção do seu plano</summary><div class="tri">
     <div class="it">${ic('<path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/>')}<div><b>Protege o plano</b><span>Cobertura de morte e de invalidez total e permanente do titular, conforme as condições do contrato.</span></div></div>
     <div class="it">${ic('<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6M15 14.2c3 0 6 1.6 6 5.8"/>')}<div><b>Protege quem fica</b><span>Se a cobertura for acionada, a família não herda a parcela de um bem que ainda estava sendo pago.</span></div></div>
     <div class="it">${ic('<circle cx="12" cy="12" r="8"/><path d="M12 8v8M9.5 10.2c.4-1 1.4-1.4 2.5-1.4s2.3.5 2.3 1.6c0 2.2-4.8 1-4.8 3.2 0 1 1.1 1.7 2.5 1.7s2.1-.5 2.5-1.4"/>')}<div><b>Quanto custa</b><span>${custo}.</span></div></div>
-  </div><div class="nota">Fonte: tela de simulação do sistema de vendas (27/10/2026). O sistema também lista seguro de danos físicos ao imóvel; o custo dele não aparece na tela. Carência, idade máxima e exclusões ficam no contrato: confirme antes de vender. A contratação do consórcio não deve ser condicionada ao seguro.</div></div>`;}
+  </div><div class="nota">Fonte: tela de simulação do sistema de vendas (27/10/2026). O sistema também lista seguro de danos físicos ao imóvel; o custo dele não aparece na tela. Carência, idade máxima e exclusões ficam no contrato: confirme antes de vender. A contratação do consórcio não deve ser condicionada ao seguro.</div></details>`;}
 function fonteOferta(vars){const rv=vars.find(v=>v.r&&v.r.real);
   if(rv){const d=rv.r.desde?new Date(rv.r.desde).toLocaleDateString('pt-BR'):'';return `<div class="al ${vars.some(v=>v.r&&v.r.venc)?'':'info'}" style="margin-bottom:12px">${vars.some(v=>v.r&&v.r.venc)?'<b>Dados vencidos:</b> cole a lista de novo. ':''}Cotas reais do sistema de vendas${d?' (colagem de '+d+')':''}: carta e parcela do sistema. Confirme vagas e parcela antes de vender.</div>`;}
   return `<div class="al info" style="margin-bottom:12px">Estimativa pelos grupos do portal: ainda não há cotas reais coladas para este tipo (tela Cotas).</div>`;}
@@ -838,13 +842,15 @@ function buscaSimples(R,E,pronto){if(!R)return 'Monte um pedido primeiro: a busc
   const cabP=(o,letra)=>`<div class="plano-cab"><b>Plano ${letra}</b> · ${o.n} carta${o.n>1?'s':''} de ~${brl(o.t)}${o.bolso!=null?` · lance do bolso ~${brl(o.bolso)}`:''}</div>`;
   if(R.semDados||!rc.uso||!rc.uso.length)return `<div class="busca-cab">Para ${brl(R.need)} líquido · ${brl(R.total)} em cartas${R.embP>0?` · embutido ${pct(R.embP)}`:''}</div>${cabP(rc,'A')}${tab(`<tr><td>${esc(tipoT)}<span class="sel">qualquer grupo</span></td><td class="r"><b>${rc.n}</b></td><td class="r"><b>${milBR(rc.lo)}</b></td><td class="r"><b>${milBR(rc.hi)}</b></td></tr>`)}<div class="hint">Ainda não há grupos do portal deste tipo.</div>${fr}`;
   const lin=(o,g,cod,k,cls)=>{const [lo,hi]=faixa(o,g);return `<tr class="${cls}"><td><b>${esc(cod)}</b>${g&&g.a?`<span class="sel">lance ${pct(g.a)}</span>`:''}</td><td class="r">${k?`<b>${k}</b>`:'reserva'}</td><td class="r">${milBR(lo)}</td><td class="r">${milBR(hi)}</td></tr>`;};
-  const plano=(o,max)=>{const us=new Set(o.uso.map(u=>u.cod)),res=(o.gs||[]).filter(g=>!us.has(g.cod)).slice(0,Math.max(0,max-o.uso.length));
-    return tab(o.uso.map(u=>lin(o,(o.gs||[]).find(g=>g.cod===u.cod),u.cod,u.k,'')).join('')+res.map(g=>lin(o,g,g.cod,0,'res')).join(''));};
+  const plano=(o,max,vis)=>{const us=new Set(o.uso.map(u=>u.cod)),res=(o.gs||[]).filter(g=>!us.has(g.cod)).slice(0,Math.max(0,max-o.uso.length)),a=res.slice(0,vis),b=res.slice(vis);
+    return tab(o.uso.map(u=>lin(o,(o.gs||[]).find(g=>g.cod===u.cod),u.cod,u.k,'')).join('')+a.map(g=>lin(o,g,g.cod,0,'res')).join(''))
+      +(b.length?`<details class="adv mais"><summary>Mais ${b.length} reserva${b.length>1?'s':''}</summary><table class="busca-t" style="margin-top:0"><tbody>${b.map(g=>lin(o,g,g.cod,0,'res')).join('')}</tbody></table></details>`:'');};
+  const sumP=(o,letra)=>`<b>Plano ${letra}</b> · ${o.n} carta${o.n>1?'s':''} de ~${brl(o.t)}${o.bolso!=null?` · bolso ~${brl(o.bolso)}`:''}`;
   const pl=(R.ops||[]).filter(o=>o.uso&&o.uso.length).sort((x,y)=>((x.bolso??9e99)-(y.bolso??9e99))||(y.n-x.n)); // menor dinheiro do bolso sempre em cima
   const pA=pl[0]||rc,outros=pl.slice(1,4);
   return `<div class="busca-cab">Para ${brl(R.need)} líquido · ${brl(R.total)} em cartas${R.embP>0?` · embutido ${pct(R.embP)}`:''}</div>
-    ${cabP(pA,'A')}${plano(pA,8)}<div class="hint">Plano A é o de menor dinheiro do bolso. Grupos em ordem de menor lance; se faltar vaga, siga para a reserva.</div>
-    ${outros.length?`<div class="plano-b"><div class="hint" style="margin-bottom:4px">Se o plano A não fechar, outra divisão:</div>${outros.map((o,k)=>cabP(o,'BCD'[k])+plano(o,5)).join('')}</div>`:''}${fr}`;}
+    ${cabP(pA,'A')}${plano(pA,8,2)}<div class="hint">Plano A é o de menor dinheiro do bolso. Grupos em ordem de menor lance; se faltar vaga, siga para a reserva.</div>
+    ${outros.length?`<div class="plano-b"><div class="hint" style="margin:10px 0 2px">Se o plano A não fechar, outra divisão:</div>${outros.map((o,k)=>`<details class="adv plano-d"><summary><span>${sumP(o,'BCD'[k])}</span></summary>${plano(o,5,5)}</details>`).join('')}</div>`:''}${fr}`;}
 function renderCotas(){const E=S.estr;
   const R=E.feito?roteiro(E):null,tipoT=E.tipo==='Imobiliário'?'imóvel':(E.tipo||'').toLowerCase()||'o tipo do bem';
   const pronto=E.bestReal&&E.busca;
