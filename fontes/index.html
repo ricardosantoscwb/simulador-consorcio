@@ -353,7 +353,8 @@ function calc(c){
   r.lanceLivre=r.total*ll;r.lanceEmb=r.total*le;r.lanceTot=r.lanceLivre+r.lanceEmb;r.lancePct=(ll+le)*100;
   r.credLiq=r.total-r.lanceEmb;r.sdPos=r.sd0-r.lanceTot;
   r.sdAposParc=r.parcIni!=null?r.sdPos-r.parcIni*n:null;r.prazo=prazo;
-  r.parcelaPos=(prazo-n>=1&&r.sdAposParc!=null)?r.sdAposParc/(prazo-n):null; // manter o prazo: saldo no mês da contemplação ÷ meses que faltam
+  r.parcelaPos=(prazo-n>=1&&r.sdAposParc!=null)?Math.max(r.sdAposParc/(prazo-n),0.2*(r.parcIni||0)):null; // manter o prazo: saldo no mês da contemplação ÷ meses que faltam; nunca abaixo de 20% da parcela atual (FAQ do portal, 29/10/2026)
+  r.mesesMant=r.parcelaPos>0?Math.min(prazo-n,Math.ceil(r.sdAposParc/r.parcelaPos-1e-9)):(r.parcelaPos===0?0:null);
   r.mesesRed=(r.parcelaPos!=null&&r.parcCota>0)?(r.sdAposParc<=0?0:Math.min(prazo-n,Math.ceil(r.sdAposParc/r.parcIni-1e-9))):null; // reduzir o prazo: mesma parcela até quitar
   r.recursoProprio=r.parcIni!=null?r.lanceLivre+r.parcIni*n:null;
   r.dinheiroNovo=r.credLiq-r.lanceLivre;r.indice=r.dinheiroNovo>0?r.sdPos/r.dinheiroNovo:null;
@@ -477,7 +478,7 @@ function cotaDe(g,carta,usaEmb,alvoK){ // números de 1 cota desse grupo com ess
   const le=usaEmb?(num(g.emax)||0):0;const a=num(g[alvoK])>0?num(g[alvoK]):(num(g.lmin)>0?num(g.lmin):null);
   const ll=a==null?0:Math.max(0,Math.min(a-le,100-le));
   const r=calc({gid:g.id,carta,cotas:1,ll,le,n:mesC(),prazo:''});
-  return {g,carta,le,ll,alvo:a,camp:r.camp||null,red:r.camp?1:0,taBase:r.taCheia,credLiq:r.credLiq,bolso:r.lanceLivre,emb:r.lanceEmb,parcIni:r.parcIni,parcPos:r.parcelaPos,sdApos:r.sdAposParc,mesesRed:r.mesesRed,prazo:r.prazo,sd0:r.sd0,est:!!r.parcEst,ok:r.parcIni!=null&&r.parcelaPos!=null};
+  return {g,carta,le,ll,alvo:a,camp:r.camp||null,red:r.camp?1:0,taBase:r.taCheia,credLiq:r.credLiq,bolso:r.lanceLivre,emb:r.lanceEmb,parcIni:r.parcIni,parcPos:r.parcelaPos,sdApos:r.sdAposParc,mesesRed:r.mesesRed,mesesMant:r.mesesMant,prazo:r.prazo,sd0:r.sd0,est:!!r.parcEst,ok:r.parcIni!=null&&r.parcelaPos!=null};
 }
 function montar(E,prior){ // prior: 'bolso' | 'parcela' | 'semlance'
   const alvoNeed=num(E.valor)||0;if(!(alvoNeed>0))return null;
@@ -487,7 +488,7 @@ function montar(E,prior){ // prior: 'bolso' | 'parcela' | 'semlance'
   const base=gs.map(g=>cotaDe(g,num(g.cmax),usaEmb,E.alvo)).filter(c=>c.ok);
   if(!base.length)return {erro:'Grupos sem parcela/prazo suficientes para calcular.'};
   const metr=c=>{const liq=E.modo==='liquido'?c.credLiq:c.carta;if(prior==='semlance')return c.parcIni/liq;if(prior==='parcela')return (c.parcIni+c.parcPos)/liq;if(prior==='cotas')return -c.carta;if(prior==='mais')return c.carta;if(prior==='prazo')return (num(c.g.pr)||999)*1e6+c.bolso/liq;return (c.bolso+0.02*c.parcPos)/liq;};
-  const semL=c=>{const r=calc({gid:c.g.id,carta:c.carta,cotas:1,ll:0,le:0,n:mesC(),prazo:''});Object.assign(c,{ll:0,le:0,credLiq:r.credLiq,bolso:0,emb:0,parcIni:r.parcIni,parcPos:r.parcelaPos,sdApos:r.sdAposParc,mesesRed:r.mesesRed,sd0:r.sd0});return c;};
+  const semL=c=>{const r=calc({gid:c.g.id,carta:c.carta,cotas:1,ll:0,le:0,n:mesC(),prazo:''});Object.assign(c,{ll:0,le:0,credLiq:r.credLiq,bolso:0,emb:0,parcIni:r.parcIni,parcPos:r.parcelaPos,sdApos:r.sdAposParc,mesesRed:r.mesesRed,mesesMant:r.mesesMant,sd0:r.sd0});return c;};
   if(prior==='semlance')base.forEach(semL);
   base.sort((a,b)=>metr(a)-metr(b));
   const max=Math.max(1,Math.floor(num(E.max)||3));const linhas=[];let falta=alvoNeed;
@@ -531,7 +532,7 @@ function montarReal(E,prior){ // cotas reais coladas do sistema de vendas; null 
     const sdPos=ss-red-x.carta*(ll+le)/100;if(!(ss>0)||sdPos<0)return null;
     const parcSS=sd.parcSem-red/x.prazo,nr=x.prazo-M,sA=sdPos-parcSS*M;if(nr<1||sA<0)return null;const g={...(gp||{cod:x.cod,tipo:x.tipo}),pr:x.prazo};if(comp){g.ta=comp.ta;g.fr=comp.fr;}
     return {x,g,seg,le,ll,alvo:a,carta:x.carta,credLiq:x.carta*(1-le/100),bolso:x.carta*ll/100,emb:x.carta*le/100,
-      parcIni:incSeg?parcSS+seg:parcSS,parcPos:sA/nr+(incSeg?seg:0),sdApos:sA,mesesRed:sA<=0?0:Math.min(nr,Math.ceil(sA/parcSS-1e-9)),prazo:x.prazo,sd0:ss-red,camp,red,taBase,taEstim,est:false,real:true,vagas:x.vagas==null?1:x.vagas,ultimas:x.vagas==null};
+      parcIni:incSeg?parcSS+seg:parcSS,parcPos:Math.max(sA/nr,0.2*parcSS)+(incSeg?seg:0),mesesMant:sA<=0?0:Math.min(nr,Math.ceil(sA/Math.max(sA/nr,0.2*parcSS)-1e-9)),sdApos:sA,mesesRed:sA<=0?0:Math.min(nr,Math.ceil(sA/parcSS-1e-9)),prazo:x.prazo,sd0:ss-red,camp,red,taBase,taEstim,est:false,real:true,vagas:x.vagas==null?1:x.vagas,ultimas:x.vagas==null};
   }).filter(Boolean);
   if(!items.length)return {erro:'As cotas coladas não deram saldo válido.'};
   const med=c=>E.modo==='liquido'?c.credLiq:c.carta;
@@ -563,7 +564,7 @@ function montarReal(E,prior){ // cotas reais coladas do sistema de vendas; null 
   const ems=linhas.map(l=>l.x.em).filter(Boolean).sort();
   return {linhas,tot,prior,usaEmb,real:true,desde:ems[0]||null,venc:linhas.some(l=>venceu(l.x))};
 }
-function prazosDepois(tot,linhas){const M=mesC();tot.mes=M;tot.pmMax=tot.prazoMax-M;tot.pmMin=tot.prazoMin-M; // manter o prazo: o que falta do prazo
+function prazosDepois(tot,linhas){const M=mesC();tot.mes=M;const pm=linhas.map(l=>l.mesesMant!=null?l.mesesMant:(l.prazo||0)-M);tot.pmMax=Math.max(...pm);tot.pmMin=Math.min(...pm); // manter o prazo: o que falta do prazo (menos, se bater no piso de 20% da parcela)
   const mr=linhas.map(l=>l.mesesRed).filter(v=>v!=null);tot.mrMax=mr.length?Math.max(...mr):null;tot.mrMin=mr.length?Math.min(...mr):null;} // reduzir o prazo: mesma parcela até quitar
 const faixaM=(a,b)=>a===b?String(a):a+' a '+b;
 const montarAuto=(E,pr)=>montarReal(E,pr)||montar(E,pr);
@@ -618,7 +619,7 @@ function renderOferta(){const E=S.estr;const out=$('#e-out');
   ${b?confHtml:''}
   <details class="adv no-present" style="margin-top:14px"><summary>Ver as outras ${vars.length-(b?1:0)} variantes</summary><div class="grid c3" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));margin-top:10px">${vars.map((v,i)=>i===best?'':card(v,i,false)).join('')}</div></details>
   ${E.sg!=='0'?blocoSeguro(b,segI):''}
-  <div class="avisos"><b>Avisos</b><ul><li>Contemplação por sorteio ou lance, sem garantia nem previsão de lance vencedor; lance alvo e tendência são histórico das colagens.</li><li>O lance embutido reduz o crédito recebido.</li><li>Parcelas estimadas, sem o reajuste anual do crédito e do saldo pelo INPC${K>0?'; seguro prestamista pelo detalhamento do sistema ou pela amostra de '+pct2(K*100)+' ao mês sobre o saldo, fixo na projeção':''}; "depois" supõe todas as cotas contempladas no mês ${mesC()} (estimativa: pode ser antes ou depois).</li><li>Manter ou reduzir o prazo depois do lance segue as regras do grupo e da administradora; prazo de "reduzir" estimado pelo saldo.</li>${fg>0?'<li>Uso do FGTS no lance depende das regras do FGTS e da administradora: confirmar antes de oferecer.</li>':''}${E.red==='1'?'<li>Plano reduzido: parte do crédito fica a cobrar (detalhamento do sistema); quando é cobrada, sem fonte confirmada.</li>':''}${vars.some(v=>v.r&&!v.r.erro&&v.r.linhas.some(l=>l.camp))?'<li>Campanha: condição promocional com validade; não vale para plano reduzido; exige débito em conta CAIXA a partir da 2ª parcela (banner da administradora).</li>':''}<li>Confirme taxas, parcelas, prazos e grupos no sistema oficial. Esta ferramenta não substitui a simulação oficial.</li></ul></div>
+  <div class="avisos"><b>Avisos</b><ul><li>Contemplação por sorteio ou lance, sem garantia nem previsão de lance vencedor; lance alvo e tendência são histórico das colagens.</li><li>O lance embutido reduz o crédito recebido.</li><li>Parcelas estimadas, sem o reajuste anual do crédito e do saldo pelo INPC${K>0?'; seguro prestamista pelo detalhamento do sistema ou pela amostra de '+pct2(K*100)+' ao mês sobre o saldo, fixo na projeção':''}; "depois" supõe todas as cotas contempladas no mês ${mesC()} (estimativa: pode ser antes ou depois).</li><li>Depois do lance, o cliente escolhe reduzir o prazo ou a parcela; a parcela nova não pode ficar abaixo de 20% da atual (FAQ do portal). Prazo de "reduzir" estimado pelo saldo.</li>${fg>0?'<li>Uso do FGTS no lance depende das regras do FGTS e da administradora: confirmar antes de oferecer.</li>':''}${E.red==='1'?'<li>Plano reduzido: parte do crédito fica a cobrar (detalhamento do sistema); quando é cobrada, sem fonte confirmada.</li>':''}${vars.some(v=>v.r&&!v.r.erro&&v.r.linhas.some(l=>l.camp))?'<li>Campanha: condição promocional com validade; não vale para plano reduzido; exige débito em conta CAIXA a partir da 2ª parcela (banner da administradora).</li>':''}<li>Confirme taxas, parcelas, prazos e grupos no sistema oficial. Esta ferramenta não substitui a simulação oficial.</li></ul></div>
   <div class="dlg-actions no-present">${b?'<button class="btn" id="o-msg">Copiar mensagem</button>':''}<button class="btn" id="o-share">Copiar link</button><button class="btn" onclick="window.print()">PDF / Imprimir</button><button class="btn primary" id="o-present">Apresentar</button></div>`;
   $('#o-present').onclick=()=>{document.body.classList.add('present');};$('#o-share').onclick=shareLink;
   if(b){const updConf=()=>{let n=0,ok1=0;confIt.forEach(([k,,v])=>{const o=num(C[k]),cel=$('#conf-'+k);if(!(o>0)||v==null){cel.textContent='—';return;}n++;const d=v-o,p=Math.abs(d)/o;if(p<=0.01)ok1++;cel.innerHTML=`${d>=0?'+':'−'} ${brl2(Math.abs(d))} <span class="tag ${p<=0.01?'ok':'warn'}">${pct(p*100)}</span>`;});
