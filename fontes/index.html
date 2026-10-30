@@ -7,137 +7,202 @@
 <meta name="description" content="Estratégia de compra de consórcio a partir dos grupos e cotas colados do sistema oficial.">
 <meta name="robots" content="noindex">
 <!--SESSAO-->
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+/* Pele "livro-razão": branco, tinta carvão, um verde só (ação e "cabe"), linhas finas no lugar de caixas.
+   Assinatura: o número do lance do bolso na Proposta. O resto fica quieto. */
 :root{
-  --bg:#f4f3ef; --card:#fff; --ink:#1b2a2f; --muted:#5d6b70; --line:#e2e0d8;
-  --accent:#0f6e56; --accent-soft:#e3f1ec; --warn:#b4541a; --warn-soft:#fbe9dd; --ok:#1f7a4d; --ok-soft:#e1f3e8;
-  --input:#fff8dc; --input-line:#e6d79a; --best:#dff3e6; --info:#eef2f4;
-  --radius:14px; --shadow:0 1px 2px rgba(20,30,30,.06),0 8px 24px -12px rgba(20,30,30,.18);
+  --bg:#fff; --card:#fff; --surface:#f6f6f5; --ink:#121212; --ink-2:#4a4a48; --muted:#6b6b68; --line:#e6e6e3; --line-2:#cfcfcb;
+  --accent:#0b6b52; --accent-ink:#09553f; --accent-soft:#eaf3ef; --warn:#a2401a; --warn-soft:#fbf1ec; --ok:#0b6b52; --ok-soft:#eaf3ef;
+  --input:#fff; --input-line:#8f8f8b; --best:#f6f6f5; --info:#f6f6f5;
+  --radius:12px; --shadow:none;
+  --font:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
 }
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,sans-serif;-webkit-font-smoothing:antialiased}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--font);-webkit-font-smoothing:antialiased;font-feature-settings:"ss01"}
 button,input,select,textarea{font:inherit;color:inherit}
-h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.01em}
-.num{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-weight:500;font-variant-numeric:tabular-nums}
-.top{position:sticky;top:0;z-index:20;background:rgba(244,243,239,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
-.top .in{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:12px}
-@media (max-width:600px){.top .in{flex-wrap:wrap;gap:6px 10px}.top .brand{flex:1 1 100%}.top .brand small{display:none}}
-.brand{display:flex;align-items:center;gap:10px;font-weight:600}
-.brand .dot{width:28px;height:28px;border-radius:8px;background:var(--accent);display:grid;place-items:center;color:#fff;font-size:13px}
-.brand small{display:block;font-weight:400;color:var(--muted);font-size:11px}
-nav.tabs{display:flex;gap:4px;margin-left:auto}
-nav.tabs button{border:0;background:transparent;padding:8px 12px;border-radius:10px;color:var(--muted);font-weight:500;cursor:pointer}
-nav.tabs button.on{background:var(--ink);color:#fff}
-.btn{border:1px solid var(--line);background:#fff;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:500;display:inline-flex;align-items:center;gap:6px}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
-.btn.small{padding:6px 10px;font-size:13px}.btn.danger{color:var(--warn)}.btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
-main{max-width:1180px;margin:0 auto;padding:16px 16px 96px}
+h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.015em}
+.num,.cmp td,.cmp th,.bignum,.kv b{font-variant-numeric:tabular-nums}
+.num{font-family:inherit;font-weight:500}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* topo */
+.top{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.94);backdrop-filter:saturate(1.2) blur(10px);border-bottom:1px solid var(--line)}
+.top .in{max-width:1080px;margin:0 auto;padding:8px 20px;display:flex;align-items:center;gap:16px;min-height:60px}
+@media (max-width:600px){.top .in{flex-wrap:wrap;gap:4px 6px;padding:8px 16px;min-height:56px}body.usuario .top .in{flex-wrap:nowrap}.top .brand{flex:1 1 auto;font-size:14px;min-width:0}.top .btn{min-height:40px;padding:0 12px;font-size:14px}.top .btn.ghost{padding:0 8px}.hero h1{font-size:24px}}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;letter-spacing:-.01em;font-size:15px}
+.brand .dot{width:26px;height:26px;border-radius:7px;background:var(--ink);display:grid;place-items:center;color:#fff;font-size:12px}
+.brand small{display:none}
+nav.tabs{display:flex;gap:2px;margin-left:auto}
+nav.tabs button{border:0;background:transparent;padding:0 12px;min-height:44px;color:var(--muted);font-weight:500;cursor:pointer;border-bottom:2px solid transparent;border-radius:0}
+nav.tabs button:hover{color:var(--ink)}
+nav.tabs button.on{color:var(--ink);border-bottom-color:var(--ink)}
+
+/* botões */
+.btn{border:1px solid var(--line-2);background:#fff;padding:0 16px;min-height:44px;border-radius:999px;cursor:pointer;font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;transition:background .15s,border-color .15s}
+.btn:hover{border-color:var(--ink)}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn.primary:hover{background:#000}
+.btn.small{min-height:36px;padding:0 12px;font-size:13px}
+.btn.danger{color:var(--warn)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}.btn.ghost:hover{color:var(--ink)}
+@media (pointer:coarse){.btn.small{min-height:44px}}
+
+main{max-width:1080px;margin:0 auto;padding:28px 20px 112px}
+@media (max-width:600px){main{padding:20px 16px 112px}}
 .screen{display:none}.screen.on{display:block}
-.grid{display:grid;gap:14px}
+.grid{display:grid;gap:20px}
 @media(min-width:900px){.grid.c3{grid-template-columns:repeat(3,1fr)}.grid.c2{grid-template-columns:1fr 1fr}.grid.c21{grid-template-columns:2fr 1fr}}
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
-.card h2{font-size:15px;margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.sub{color:var(--muted);font-size:13px;margin:0 0 12px}
-.tag{font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
-.tag.warn{background:var(--warn-soft);color:var(--warn)}.tag.ok{background:var(--ok-soft);color:var(--ok)}.tag.muted{background:#eeede7;color:var(--muted)}
-.f{display:grid;gap:4px;margin-bottom:10px}
-.f label{font-size:12px;color:var(--muted);font-weight:500}
-.f input,.f select,.f textarea{width:100%;padding:10px 12px;border:1px solid var(--input-line);background:var(--input);border-radius:10px;outline:0}
-.f input:focus,.f select:focus,.f textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-.f .hint{font-size:11px;color:var(--muted)}
+.grid>*{min-width:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:24px}
+@media (max-width:600px){.card{padding:18px}}
+.card h2{font-size:17px;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sub{color:var(--muted);font-size:13px;margin:0 0 14px}
+.tag{font-size:11px;font-weight:500;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--ink-2);white-space:nowrap;background:#fff}
+.tag.warn{border-color:#e7c7b8;color:var(--warn);background:#fff}.tag.ok{border-color:#bcd8cc;color:var(--ok);background:#fff}.tag.muted{color:var(--muted)}
+
+/* campos */
+.f{display:grid;gap:6px;margin-bottom:16px}
+.f label{font-size:13px;color:var(--ink-2);font-weight:500}
+.f input,.f select,.f textarea{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--input-line);background:var(--input);border-radius:10px;outline:0;transition:border-color .15s,box-shadow .15s}
+.f textarea{resize:vertical;line-height:1.45}
+.f input::placeholder,.f textarea::placeholder{color:#737370}
+.f input:hover,.f select:hover,.f textarea:hover{border-color:#5f5f5c}
+.f input:focus,.f select:focus,.f textarea:focus{border-color:var(--ink);box-shadow:0 0 0 3px rgba(18,18,18,.08)}
+.f .hint,.hint{font-size:12px;color:var(--muted);font-weight:400}
 .f input[type=range]{padding:0;background:transparent;border:0;accent-color:var(--accent)}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:480px){.two{grid-template-columns:1fr;gap:0}}
 .pct{display:flex;gap:8px;align-items:center}.pct input[type=number]{width:92px;text-align:right}
-.kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:14px}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
 .kv:last-child{border-bottom:0}.kv b{font-weight:600}.kv .lab{color:var(--muted)}.kv.big{font-size:16px}.kv.big b{font-size:18px}
 .kv.est .lab::after{content:" ~";color:var(--warn)}
-.alerts{display:grid;gap:6px;margin-top:10px}
-.al{font-size:13px;padding:8px 10px;border-radius:10px;background:var(--warn-soft);color:var(--warn);display:flex;gap:8px;align-items:flex-start}
-.al.ok{background:var(--ok-soft);color:var(--ok)}.al.info{background:var(--info);color:var(--muted)}
-.al::before{content:"!";font-weight:700;flex:0 0 auto}.al.ok::before{content:"✓"}.al.info::before{content:"i"}
-.off{background:var(--accent-soft);border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:10px}
+
+/* avisos e notas: texto, não caixa */
+.alerts{display:grid;gap:4px;margin-top:12px}
+.al{font-size:13px;padding:6px 0;color:var(--warn);display:flex;gap:8px;align-items:flex-start;background:none;border-radius:0}
+.al.ok{color:var(--ok)}.al.info{color:var(--muted)}
+.al::before{content:"!";font-weight:600;flex:0 0 14px;text-align:center}.al.ok::before{content:"✓"}.al.info::before{content:"i";font-style:italic}
+.off{border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:12px}
 .off .kv{padding:4px 0;border-bottom:0;font-size:13px}
-.empty{color:var(--muted);text-align:center;padding:30px 10px;font-size:14px}
-.why{font-size:13px;color:var(--muted);background:var(--info);border-left:3px solid var(--accent);padding:8px 12px;border-radius:0 10px 10px 0;margin:8px 0 14px}
+.empty{color:var(--muted);text-align:center;padding:28px 10px;font-size:14px}
+.why{font-size:14px;color:var(--ink-2);margin:4px 0 20px}
 .why b{color:var(--ink)}
 
-/* entrevista */
+/* pedido */
 .wiz{max-width:640px;margin:0 auto}
-.steps{display:flex;gap:6px;margin-bottom:14px}
-.steps i{flex:1;height:5px;border-radius:3px;background:#e2e0d8}.steps i.done{background:var(--accent)}.steps i.cur{background:var(--ink)}
-.q{font-size:22px;font-weight:600;line-height:1.25;margin-bottom:6px}
-.q small{display:block;font-size:13px;color:var(--muted);font-weight:400;margin-top:4px}
-.bigin{font-size:26px!important;padding:14px 16px!important}
-.chips{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 12px}
-.chip{border:1px solid var(--line);background:#fff;padding:9px 14px;border-radius:999px;cursor:pointer;font-weight:500}
+.q{font-size:28px;font-weight:600;line-height:1.15;letter-spacing:-.025em;margin-bottom:22px}
+.q small{display:block;font-size:14px;color:var(--muted);font-weight:400;margin-top:8px;letter-spacing:0;line-height:1.45}
+.bigin{font-size:34px!important;font-weight:600;letter-spacing:-.02em;padding:12px 14px!important;min-height:64px!important;font-variant-numeric:tabular-nums}
+.money-wrap{position:relative}.money-wrap::before{content:"R$";position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:15px;pointer-events:none}
+.money-wrap input{padding-left:40px!important}.money-wrap.big::before{font-size:20px;left:16px}.money-wrap.big input{padding-left:54px!important}
+.sec{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:26px 0 14px;padding-top:18px;border-top:1px solid var(--line)}
+.sec span{text-transform:none;letter-spacing:0;font-weight:400;margin-left:6px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 4px}
+.chip{border:1px solid var(--line-2);background:#fff;padding:0 16px;min-height:44px;border-radius:999px;cursor:pointer;font-weight:500}
+.chip:hover{border-color:var(--ink)}
 .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
-.wiz-actions{display:flex;justify-content:space-between;gap:8px;margin-top:14px}
+.wiz-actions{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:22px}
 .live{font-size:13px;color:var(--muted);margin-top:10px}
+details.adv{margin-top:8px}
+details.adv>summary{cursor:pointer;font-size:14px;color:var(--ink-2);min-height:44px;display:flex;align-items:center;gap:8px;list-style:none;font-weight:500}
+details.adv>summary::-webkit-details-marker{display:none}
+details.adv>summary::before{content:"";width:7px;height:7px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(-45deg);transition:transform .15s;margin:0 4px 0 2px}
+details.adv[open]>summary::before{transform:rotate(45deg)}
+summary{cursor:pointer;color:var(--ink);font-weight:500}
 
-/* laudo */
-.hero{background:var(--ink);color:#fff;border-radius:var(--radius);padding:18px;margin-bottom:14px}
-.hero h1{font-size:20px}.hero p{margin:6px 0 0;opacity:.75;font-size:13px}
-.hero .meta{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:12px;font-size:13px}.hero .meta span{opacity:.7}
+/* busca */
+.busca-t{width:100%;border-collapse:collapse;margin:14px 0 6px;font-variant-numeric:tabular-nums}
+.busca-t th{font-size:12px;font-weight:500;color:var(--muted);text-align:left;padding:0 10px 8px 0;border-bottom:1px solid var(--ink)}
+.busca-t td{padding:14px 10px 14px 0;border-bottom:1px solid var(--line);font-size:16px;vertical-align:middle}
+.busca-t th.r,.busca-t td.r{text-align:right;padding-right:0}
+.busca-t td b{font-weight:600}
+.busca-t tr.res td{color:var(--muted);font-size:14px}
+.busca-t .sel{font-size:12px;color:var(--muted);display:block;font-weight:400}
+.busca-cab{font-size:15px;color:var(--ink-2)}
+@media (max-width:480px){.busca-t td{font-size:15px;padding:12px 8px 12px 0}.busca-t th{padding-right:8px}#s-cotas .wiz-actions{flex-direction:column-reverse;align-items:stretch}}
+.btn{white-space:nowrap}
+.busca-cab b{color:var(--ink)}
+
+/* proposta */
+#e-out{max-width:760px;margin:0 auto}
+#e-out details.adv{max-width:100%;overflow-x:auto}#e-out .cmp-wrap{max-width:100%}
+.hero{padding:0 0 18px;margin-bottom:22px;border-bottom:1px solid var(--line)}
+.hero h1{font-size:28px;letter-spacing:-.025em}.hero p{margin:6px 0 0;color:var(--muted);font-size:13px}
 .path{position:relative;display:flex;flex-direction:column}
-.path.best{outline:2px solid var(--accent);background:linear-gradient(180deg,var(--best),#fff 40%)}
-.path .best-badge{position:absolute;top:-10px;left:14px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px}
-.path h3{font-size:15px}.path .gname{color:var(--muted);font-size:12px;margin-bottom:8px}
-.path .bignum{font-size:30px;font-weight:600;letter-spacing:-.02em;line-height:1.1}
-.path .bignum small{display:block;font-size:12px;color:var(--muted);font-weight:500;letter-spacing:0}
+.path.best{border-color:var(--ink)}
+.path .best-badge{font-size:12px;font-weight:500;color:var(--accent);margin-bottom:4px}
+.path h3{font-size:15px}.path .gname{color:var(--muted);font-size:13px;margin:2px 0 14px}
+.path .bignum{font-size:30px;font-weight:600;letter-spacing:-.025em;line-height:1.05}
+.path .bignum small{display:block;font-size:13px;color:var(--muted);font-weight:400;letter-spacing:0;margin-top:6px;line-height:1.4}
+.path.best .bignum:first-of-type{font-size:clamp(44px,9vw,64px);letter-spacing:-.04em}
+.path .bignum.p2{font-size:22px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
 .path .sent{font-size:14px;margin:10px 0;line-height:1.45}
-.path .mini{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:13px;margin-top:4px}
-.path .mini span{color:var(--muted);display:block;font-size:11px}
-.dist{margin-top:10px;font-size:12px;color:var(--muted)}
-.dist .track{height:10px;background:#eeede7;border-radius:5px;position:relative;margin:4px 0}
-.dist .fill{height:100%;background:var(--accent);border-radius:5px}
-.dist .mark{position:absolute;top:-4px;width:2px;height:18px;background:var(--warn)}
+.dist{margin-top:14px;font-size:13px;color:var(--muted);line-height:1.5}
+.dist .track{height:6px;background:var(--surface);border-radius:3px;position:relative;margin:4px 0}
+.dist .fill{height:100%;background:var(--ink);border-radius:3px}
+.dist .mark{position:absolute;top:-4px;width:2px;height:14px;background:var(--warn)}
 .verdict{margin-top:auto;padding-top:10px}
-.concl{font-size:15px;padding:14px;border-radius:12px;background:var(--accent-soft);color:var(--accent);margin-top:14px}
-.concl.none{background:var(--warn-soft);color:var(--warn)}
-.concl b{display:block;margin-bottom:4px}
-.concl ul{margin:6px 0 0;padding-left:18px;font-size:13px}
-.avisos{font-size:12px;color:var(--warn);background:var(--warn-soft);border-radius:12px;padding:12px 14px;margin-top:14px}
-.avisos b{display:block;margin-bottom:6px}.avisos ul{margin:0;padding-left:18px}
+.concl{font-size:15px;padding:0;margin:0 0 22px;color:var(--ink-2);line-height:1.55}
+.concl.none{color:var(--warn)}
+.concl b{display:block;margin-bottom:4px;color:var(--ink)}
+.concl ul{margin:8px 0 0;padding-left:18px;font-size:14px}
+.passo{font-size:14px;color:var(--ink-2);margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.passo b{color:var(--ink)}
+.avisos{font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding:16px 0 0;margin-top:28px;line-height:1.55}
+.avisos b{display:block;margin-bottom:6px;color:var(--ink-2);font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}.avisos ul{margin:0;padding-left:16px}
 .glossary{font-size:13px;color:var(--muted);margin-top:12px}
-.glossary details{margin:4px 0}.glossary summary{cursor:pointer;color:var(--ink);font-weight:500}
+.glossary details{margin:4px 0}
+
+
+.dlg-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:24px;flex-wrap:wrap}
+@media (max-width:600px){.dlg-actions{justify-content:stretch}.dlg-actions .btn{flex:1 1 calc(50% - 4px)}}
+.path .bignum.lance{font-size:clamp(46px,10vw,68px);letter-spacing:-.045em;line-height:1;margin-top:4px}
+.path .bignum.lance small{font-size:14px;margin-top:10px}
+
+/* tabelas */
 .cmp{width:100%;border-collapse:collapse;font-size:13px}
-.cmp th,.cmp td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top}
-.cmp th:first-child,.cmp td:first-child{text-align:left;color:var(--muted);font-weight:500}
-.cmp thead th{font-weight:600;color:var(--ink);border-bottom:2px solid var(--ink)}
-.cmp td.best{background:var(--best);font-weight:600}.cmp tr.best-row td{background:var(--best);font-weight:600}
+.cmp th,.cmp td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top}
+.cmp th:first-child,.cmp td:first-child{text-align:left;padding-left:0;color:var(--ink-2);font-weight:500}
+.cmp th:last-child,.cmp td:last-child{padding-right:0}
+.cmp thead th{font-weight:500;color:var(--muted);font-size:12px;border-bottom:1px solid var(--ink)}
+.cmp td.best,.cmp tr.best-row td{font-weight:600;color:var(--ink)}
 .cmp-wrap{overflow:auto}
-.glist{display:grid;gap:10px}
-.gitem{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;grid-template-columns:1fr auto;gap:6px 10px;cursor:pointer}
-.gitem:hover{border-color:var(--accent)}.gitem .code{font-weight:600}.gitem .meta{color:var(--muted);font-size:12px;grid-column:1/-1}
+#c-lista table,#c-busca table:not(.busca-t){display:block;overflow-x:auto}
+.glist{display:grid;gap:8px}
+.gitem{border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:6px 10px;cursor:pointer}
+.gitem:hover{border-color:var(--ink)}.gitem .code{font-weight:600}.gitem .meta{color:var(--muted);font-size:12px;grid-column:1/-1}
 .promo{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px}
+
+/* navegação no celular */
 .bnav{display:none}
 @media(max-width:899px){
   nav.tabs{display:none}
-  #s-estrategia details.adv:not([data-keep]){}
-
-  .bnav{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;left:0;right:0;bottom:0;z-index:20;background:#fff;border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
-  .bnav button{border:0;background:transparent;padding:6px 2px;border-radius:10px;color:var(--muted);font-size:11px;font-weight:500;display:grid;gap:2px;justify-items:center}
-  .bnav button b{font-size:16px;line-height:1}.bnav button.on{color:var(--accent);background:var(--accent-soft)}
-  .q{font-size:20px}
+  .bnav{display:grid;grid-template-columns:repeat(3,1fr);position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
+  body:not(.usuario) .bnav{grid-template-columns:repeat(4,1fr)}
+  .bnav button{border:0;background:transparent;min-height:48px;padding:4px 2px;border-radius:10px;color:var(--muted);font-size:12px;font-weight:500;display:grid;gap:2px;justify-items:center;align-content:center;cursor:pointer}
+  .bnav button b{font-size:15px;line-height:1;font-weight:600}.bnav button.on{color:var(--ink);background:var(--surface)}
+  .q{font-size:24px}
 }
-body.present .top,body.present .bnav,body.present .no-present{display:none!important}
 body.usuario .so-admin{display:none!important}
-.grid>*{min-width:0}#c-lista table,#c-busca table{display:block;overflow-x:auto}
-.busca-l{list-style:none;margin:8px 0 0;padding:0}.busca-l li{padding:8px 10px;border:1px solid var(--line);border-radius:10px;margin-bottom:6px;font-size:15px;color:var(--ink)}.busca-l li.res{opacity:.75;font-size:13px}
-body.present main{padding-top:10px}
-body.present .path .bignum{font-size:38px}body.present .path .why,body.present .glossary,body.present .criteria,body.present .path .mini span{font-size:13px}body.present .path .why{display:none}body.present .al.info{display:none}
-.present-bar{display:none;position:fixed;top:10px;right:10px;z-index:30}
+body.present .top,body.present .bnav,body.present .no-present{display:none!important}
+body.present main{padding-top:24px}
+body.present .path .why,body.present .glossary,body.present .criteria{font-size:13px}body.present .path .why{display:none}body.present .al.info{display:none}
+.present-bar{display:none;position:fixed;top:12px;right:12px;z-index:30}
 body.present .present-bar{display:flex;gap:6px}
-@media print{.top,.bnav,.no-present,.present-bar{display:none!important}body{background:#fff}main{padding:0;max-width:none}.card{box-shadow:none;break-inside:avoid}.screen{display:none}.screen#s-oferta{display:block}.grid.c3{grid-template-columns:repeat(3,1fr)}}
-.toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 14px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:40}
+@media print{.top,.bnav,.no-present,.present-bar{display:none!important}body{background:#fff}main{padding:0;max-width:none}.card{break-inside:avoid}.screen{display:none}.screen#s-oferta{display:block}.grid.c3{grid-template-columns:repeat(3,1fr)}}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:40;max-width:calc(100vw - 32px)}
 .toast.on{opacity:1}
-.seg{margin-top:14px;border:1px solid var(--line);border-radius:14px;background:var(--card);padding:14px}
-.seg h3{margin:0 0 10px;font-size:15px}.seg .tri{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
-.seg .it{display:flex;gap:10px;align-items:flex-start}.seg .ic{flex:none;width:32px;height:32px;border-radius:50%;background:var(--accent-soft);display:grid;place-items:center}.seg .ic svg{width:17px;height:17px;stroke:var(--accent);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.seg .it b{display:block;font-size:14px}.seg .it span{font-size:13px;color:var(--muted)}
-.seg .nota{margin-top:10px;padding-top:8px;border-top:1px solid var(--line);font-size:11px;color:var(--muted)}
-.dlg-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
-details.adv{margin-top:6px}details.adv summary{cursor:pointer;font-size:13px;color:var(--muted);margin-bottom:8px}
+
+/* seguro */
+.seg{margin-top:28px;border-top:1px solid var(--line);padding-top:20px}
+.seg h3{margin:0 0 14px;font-size:15px}.seg .tri{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px}
+.seg .it{display:flex;gap:12px;align-items:flex-start}.seg .ic{flex:none;width:20px;height:20px;display:grid;place-items:center;margin-top:1px}.seg .ic svg{width:20px;height:20px;stroke:var(--ink);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.seg .it b{display:block;font-size:14px;margin-bottom:2px}.seg .it span{font-size:13px;color:var(--muted)}
+.seg .nota{margin-top:16px;font-size:12px;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -156,63 +221,57 @@ details.adv{margin-top:6px}details.adv summary{cursor:pointer;font-size:13px;col
 <!-- ================= ESTRATÉGIA ================= -->
 <section class="screen" id="s-estrategia">
   <div class="wiz"><div class="card inputs no-present">
-    <div class="q">Quanto o cliente precisa, líquido?<small>O app escolhe os grupos e diz onde buscar no vendas.seguridade.</small></div>
+    <h1 class="q">Quanto o cliente precisa?<small>Valor líquido, o que ele recebe. O app escolhe os grupos e diz onde buscar no vendas.seguridade.</small></h1>
     <div id="e-aviso"></div>
+    <div class="f"><label for="e-valor">Valor líquido</label><div class="money-wrap big"><input id="e-valor" class="bigin" type="text" inputmode="numeric" autocomplete="off" data-money></div></div>
+    <div class="f so-admin"><label for="e-modo">Esse valor é</label><select id="e-modo"><option value="liquido">Líquido (o que ele recebe)</option><option value="bruto">Bruto (total das cartas)</option></select></div>
+    <div class="f" role="group" aria-labelledby="l-tipo"><span class="f-l" id="l-tipo" style="font-size:13px;color:var(--ink-2);font-weight:500">Tipo do bem</span><div class="chips" id="e-tipo-chips"><button type="button" class="chip" data-v="Imobiliário">Imóvel</button><button type="button" class="chip" data-v="Veículos Leves">Veículo leve</button><button type="button" class="chip" data-v="Veículos Pesados">Pesado</button><button type="button" class="chip" data-v="">Qualquer</button></div><select id="e-tipo" hidden><option>Imobiliário</option><option>Veículos Leves</option><option>Veículos Pesados</option><option value="">Qualquer</option></select></div>
+    <div class="sec">Cabe no bolso? <span>opcional · o app marca o que não cabe</span></div>
     <div class="two">
-      <div class="f"><label>Valor (R$)</label><input id="e-valor" class="bigin" type="number" min="0" step="10000" inputmode="decimal" placeholder="650000"></div>
-      <div class="f so-admin"><label>Esse valor é</label><select id="e-modo"><option value="liquido">Líquido (o que ele recebe)</option><option value="bruto">Bruto (total das cartas)</option></select></div>
-    </div>
-    <div class="f"><label>Tipo</label><div class="chips" id="e-tipo-chips"><button class="chip" data-v="Imobiliário">Imóvel</button><button class="chip" data-v="Veículos Leves">Veículo leve</button><button class="chip" data-v="Veículos Pesados">Pesado</button><button class="chip" data-v="">Qualquer</button></div><select id="e-tipo" hidden><option>Imobiliário</option><option>Veículos Leves</option><option>Veículos Pesados</option><option value="">Qualquer</option></select></div>
-    <div class="f" style="margin-top:4px"><label>Cabe no bolso do cliente? <span class="hint">opcional · o app marca o que não cabe</span></label></div>
-    <div class="two">
-      <div class="f"><label>Junta para lance (R$)</label><input id="e-rec" type="number" min="0" step="5000" inputmode="decimal"></div>
-      <div class="f"><label>FGTS para o lance (R$) <span class="hint">só imóvel</span></label><input id="e-fgts" type="number" min="0" step="1000" inputmode="decimal"></div>
+      <div class="f"><label for="e-rec">Tem para o lance</label><div class="money-wrap"><input id="e-rec" type="text" inputmode="numeric" autocomplete="off" data-money></div></div>
+      <div class="f"><label for="e-fgts">FGTS para o lance <span class="hint">só imóvel</span></label><div class="money-wrap"><input id="e-fgts" type="text" inputmode="numeric" autocomplete="off" data-money></div></div>
     </div>
     <div class="two">
-      <div class="f"><label>Cabe por mês até contemplar (R$)</label><input id="e-p1" type="number" min="0" step="100" inputmode="decimal"></div>
-      <div class="f"><label>Cabe por mês depois (R$)</label><input id="e-p2" type="number" min="0" step="100" inputmode="decimal"></div>
+      <div class="f"><label for="e-p1">Parcela até contemplar</label><div class="money-wrap"><input id="e-p1" type="text" inputmode="numeric" autocomplete="off" data-money></div></div>
+      <div class="f"><label for="e-p2">Parcela depois</label><div class="money-wrap"><input id="e-p2" type="text" inputmode="numeric" autocomplete="off" data-money></div></div>
     </div>
     <details class="adv"><summary>Avançado</summary>
       <div class="two">
-        <div class="f"><label>Máximo de cotas por grupo</label><input id="e-max" type="number" min="1" max="20" step="1" inputmode="numeric" value="3"></div>
-        <div class="f"><label>Lance alvo (histórico do grupo)</label><select id="e-alvo"><option value="lmin">Menor contemplado na última</option><option value="lmed">Média das 3 últimas</option><option value="lmax">Maior contemplado na última</option></select></div>
+        <div class="f"><label for="e-max">Máximo de cotas por grupo</label><input id="e-max" type="number" min="1" max="20" step="1" inputmode="numeric" value="3"></div>
+        <div class="f"><label for="e-alvo">Lance alvo (histórico do grupo)</label><select id="e-alvo"><option value="lmin">Menor contemplado na última</option><option value="lmed">Média das 3 últimas</option><option value="lmax">Maior contemplado na última</option></select></div>
       </div>
       <div class="two">
-        <div class="f"><label>Lance embutido</label><select id="e-emb"><option value="1">Sim (padrão: 50% imóvel, 30% veículo)</option><option value="0">Não</option></select></div>
-        <div class="f"><label>Plano reduzido</label><select id="e-red"><option value="">Não usar</option><option value="1">Usar, se a composição da cota foi colada</option></select></div>
+        <div class="f"><label for="e-emb">Lance embutido</label><select id="e-emb"><option value="1">Sim (50% imóvel, 30% veículo)</option><option value="0">Não</option></select></div>
+        <div class="f"><label for="e-red">Plano reduzido</label><select id="e-red"><option value="">Não usar</option><option value="1">Usar, se o detalhamento foi colado</option></select></div>
       </div>
       <div class="two">
-        <div class="f"><label>Contemplação estimada no mês <span class="hint">estimativa, não previsão · vazio = 1</span></label><input id="e-mc" type="number" min="1" max="240" step="1" inputmode="numeric" placeholder="1"></div>
-        <div class="f"></div>
+        <div class="f"><label for="e-mc">Contemplação estimada no mês <span class="hint">vazio = 1 · estimativa</span></label><input id="e-mc" type="number" min="1" max="240" step="1" inputmode="numeric" placeholder="1"></div>
+        <div class="f"><label for="e-sg">Seguro prestamista</label><select id="e-sg"><option value="">Incluir (como no sistema)</option><option value="0">Não incluir</option></select></div>
       </div>
       <div class="two">
-        <div class="f"><label>Seguro prestamista</label><select id="e-sg"><option value="">Incluir (como no sistema)</option><option value="0">Não incluir</option></select></div>
-        <div class="f"><label>Seguro: % ao mês sobre o saldo <span class="hint">vazio = amostra do sistema</span></label><input id="e-sgp" type="number" min="0" max="5" step="0.001" inputmode="decimal" placeholder="amostra: 0,0433"></div>
+        <div class="f"><label for="e-sgp">Seguro: % ao mês sobre o saldo <span class="hint">vazio = amostra</span></label><input id="e-sgp" type="number" min="0" max="5" step="0.001" inputmode="decimal" placeholder="0,0433"></div>
+        <div class="f"><label for="e-lf">Lance fixo: % do grupo que participa</label><input id="e-lf" type="number" min="0" max="100" step="1" inputmode="numeric" placeholder="ex.: 20"></div>
       </div>
-      <div class="two">
-        <div class="f"><label>Lance fixo: % do grupo que participa <span class="hint">regra de bolso sua</span></label><input id="e-lf" type="number" min="0" max="100" step="1" inputmode="numeric" placeholder="ex.: 20"></div>
-        <div class="f"><label>Nome do cliente (não vai no link)</label><input id="e-nome"></div>
-      </div>
+      <div class="f"><label for="e-nome">Nome do cliente <span class="hint">fica só neste aparelho, não vai no link</span></label><input id="e-nome" autocomplete="off"></div>
     </details>
     <div class="wiz-actions"><span></span><button class="btn primary" id="e-go">Ver onde buscar →</button></div>
   </div></div>
 </section>
 
-<!-- ================= COTAS ================= -->
+<!-- ================= BUSCA ================= -->
 <section class="screen" id="s-cotas">
-  <div class="grid c2">
+  <div class="wiz" style="max-width:760px">
     <div class="card">
-      <h2>Busque no vendas.seguridade</h2>
+      <h1 class="q" style="margin-bottom:6px">Busque no vendas.seguridade</h1>
       <div id="c-busca" class="why">Monte um pedido primeiro: a busca aparece aqui.</div>
-      <div class="f"><label>Cole aqui o que veio <span class="hint">lista e detalhamento juntos, do jeito que vieram · sem nome nem CPF do cliente</span></label><textarea id="c-paste" rows="7" placeholder="Cole a lista Grupos Disponíveis e o detalhamento das cotas."></textarea><div class="hint" id="c-msg"></div></div>
-      <button class="btn primary" id="c-save">Ler e montar a proposta</button> <button class="btn small" id="c-clear">Limpar o que foi lido</button>
-      <div class="wiz-actions"><span></span><button class="btn" data-go="oferta">Ver a proposta →</button></div>
+      <div class="sec" style="margin-top:8px">Cole o que veio</div>
+      <div class="f"><label for="c-paste">Lista e detalhamento juntos <span class="hint">do jeito que vieram · sem nome nem CPF do cliente</span></label><textarea id="c-paste" rows="6" placeholder="Cole aqui a lista Grupos Disponíveis e o detalhamento das cotas."></textarea><div class="hint" id="c-msg" role="status"></div></div>
+      <div class="wiz-actions" style="margin-top:4px"><button class="btn ghost small" id="c-clear">Limpar o que foi lido</button><button class="btn primary" id="c-save">Ler e montar a proposta</button></div>
     </div>
-    <div class="card">
-      <h2>Grupos lidos</h2>
-      <p class="sub">Parcela e carta são as do sistema. Dado guardado só neste aparelho. Confirme vagas e parcela no sistema antes de vender.</p>
+    <details class="adv" style="margin-top:18px"><summary id="c-lista-t">O que foi lido</summary>
+      <p class="sub">Parcela e carta são as do sistema. Guardado só neste aparelho. Confirme vagas e parcela no sistema antes de vender.</p>
       <div id="c-lista" class="empty">Nada colado ainda.</div>
-    </div>
+    </details>
   </div>
 </section>
 
@@ -422,7 +481,7 @@ function renderGrupos(){renderImport();const l=$('#glist');l.innerHTML=avisoPort
   l.insertAdjacentHTML('beforebegin','');const cab=document.createElement('div');cab.className='sub';cab.textContent=`${lista.length} de ${S.grupos.length} grupos`;l.appendChild(cab);
   lista.forEach(g=>{const d=document.createElement('div');d.className='gitem';
     d.innerHTML=`<div class="code">${esc(g.cod)} <span style="color:var(--muted);font-weight:400">· ${esc(g.tipo)}</span></div><span class="tag ${semFonte(g)?'warn':'ok'}">${semFonte(g)?'sem fonte':'fonte ok'}</span>
-      <div class="meta">${esc(g.desc||'')}${g.desc?'<br>':''}Carta ${brl(num(g.cmin))}${num(g.cmax)!==num(g.cmin)?' a '+brl(num(g.cmax)):''} · TA ${pct(num(g.ta))} · FR ${pct(num(g.fr))} · embutido máx ${pct(num(g.emax))}${num(g.pr)?' · remanescente '+g.pr+'m':' · <b style="color:var(--warn)">sem prazo</b>'}${num(g.lmin)?' · menor lance últ. '+pct(num(g.lmin)):''}${(()=>{const t=tendencia(g);return t?` · <b style="color:${t.sobe?'var(--warn)':'var(--ok)'}">${esc(t.txt)}</b>`:'';})()}</div>`;
+      <div class="meta">${esc(g.desc||'')}${g.desc?'<br>':''}Carta ${brl(num(g.cmin))}${num(g.cmax)!==num(g.cmin)?' a '+brl(num(g.cmax)):''} · TA ${pct(num(g.ta))} · FR ${pct(num(g.fr))} · embutido ${pct(num(g.emax))}${num(g.pr)?' · remanescente '+g.pr+'m':' · <b style="color:var(--warn)">sem prazo</b>'}${num(g.lmin)?' · menor lance últ. '+pct(num(g.lmin)):''}${(()=>{const t=tendencia(g);return t?` · <b style="color:${t.sobe?'var(--warn)':'var(--ok)'}">${esc(t.txt)}</b>`:'';})()}</div>`;
     d.onclick=()=>editGroup(g.id);l.appendChild(d);});}
 function editGroup(id){editing=id;const g=id?grupo(id):{};$('#g-manual').open=!!id;$('#gform-title').textContent=id?'Editar grupo '+g.cod:'Atualizar grupos';GF.forEach(k=>$('#g-'+k).value=g[k]??'');$('#g-paste').value='';$('#g-paste-msg').textContent='';$('#g-emax-hint').textContent='';$('#btnDelGroup').style.display=id?'':'none';if(window.innerWidth<900&&id)$('#gform-card').scrollIntoView({behavior:'smooth'});}
 $('#btnNewGroup').onclick=()=>{editGroup(null);$('#g-manual').open=true;$('#gform-title').textContent='Novo grupo (manual)';$('#gform-card').scrollIntoView({behavior:'smooth'});};$('#btnCancelGroup').onclick=()=>editGroup(null);
@@ -476,6 +535,11 @@ function renderRank(){const t=$('#rank');const P={valor:S.estr.valor,bem:S.estr.
 
 /* ===================== estratégia de compra ===================== */
 const EF=['modo','valor','tipo','max','alvo','emb','rec','p1','p2','nome','sg','sgp','fgts','red','mc'];
+// valores em reais: o campo mostra 150.000 ou 2.730,55; o estado guarda 150000 ou 2730.55
+const moneyFmt=v=>{const n=num(v);if(n==null||v==='')return '';const [i,d]=n.toFixed(2).split('.');const ip=Math.trunc(+i).toLocaleString('pt-BR');return d==='00'?ip:ip+','+d;};
+const moneyParse=t=>{t=String(t||'').replace(/[^\d,]/g,'');if(!t)return '';const k=t.indexOf(',');const a=(k<0?t:t.slice(0,k))||'0',b=k<0?'':t.slice(k+1).replace(/,/g,'').slice(0,2);return b?a+'.'+b:String(+a);};
+const moneyLive=t=>{t=String(t).replace(/[^\d,]/g,'');const k=t.indexOf(',');let a=k<0?t:t.slice(0,k);const b=k<0?null:t.slice(k+1).replace(/,/g,'').slice(0,2);a=a.replace(/^0+(?=\d)/,'');a=a?(+a).toLocaleString('pt-BR'):'';return b==null?a:(a||'0')+','+b;};
+const lerCampo=el=>el.dataset.money!=null?moneyParse(el.value):el.value;
 const mesC=()=>Math.max(1,Math.floor(num(S.estr&&S.estr.mc)||1)); // mês estimado da contemplação (parcelas pagas antes dela)
 S.estr=S.estr||{modo:'liquido',valor:'',tipo:'Imobiliário',max:3,alvo:'lmin',emb:'1',rec:'',p1:'',p2:'',nome:'',lf:''};
 const EF2=['lf'];
@@ -575,10 +639,10 @@ const faixaM=(a,b)=>a===b?String(a):a+' a '+b;
 const montarAuto=(E,pr)=>montarReal(E,pr)||montar(E,pr);
 function instrucaoBusca(r){if(!r||r.erro)return '';const porG={};r.linhas.forEach(l=>{const k=l.g.cod;porG[k]=porG[k]||{g:l.g,n:0,min:1e18,max:0};porG[k].n+=l.n;porG[k].min=Math.min(porG[k].min,l.carta);porG[k].max=Math.max(porG[k].max,l.carta);});
   return Object.values(porG).map(x=>`${x.n} cota${x.n>1?'s':''} de ${x.min===x.max?brl(x.min):brl(x.min)+' a '+brl(x.max)} no grupo ${esc(x.g.cod)}`).join(' · ');}
-function renderEstrategia(){const E=S.estr;[...EF,...EF2].forEach(k=>{const el=$('#e-'+k);if(!el)return;el.value=E[k]??'';el.onchange=()=>{E[k]=el.value;save();};});
+function renderEstrategia(){const E=S.estr;[...EF,...EF2].forEach(k=>{const el=$('#e-'+k);if(!el)return;const m=el.dataset.money!=null;el.value=m?moneyFmt(E[k]):(E[k]??'');if(m)el.oninput=()=>{el.value=moneyLive(el.value);};el.onchange=()=>{E[k]=lerCampo(el);save();};});
   $$('#e-tipo-chips .chip').forEach(b=>{b.classList.toggle('on',(E.tipo||'')===b.dataset.v);b.onclick=()=>{E.tipo=b.dataset.v;$('#e-tipo').value=E.tipo;save();renderEstrategia();};});
   $('#e-aviso').innerHTML=avisoPrimeiroUso();
-  $('#e-go').onclick=()=>{[...EF,...EF2].forEach(k=>{const el=$('#e-'+k);if(el)E[k]=el.value;});if(!(num(E.valor)>0)){toast('Informe o valor');return;}if(!ADM())E.modo='liquido';E.feito=true;E.conf={};save();renderOferta();go(E.bestReal?'oferta':'cotas');};
+  $('#e-go').onclick=()=>{[...EF,...EF2].forEach(k=>{const el=$('#e-'+k);if(el)E[k]=lerCampo(el);});if(!(num(E.valor)>0)){toast('Informe o valor');return;}if(!ADM())E.modo='liquido';E.feito=true;E.conf={};save();renderOferta();go(E.bestReal?'oferta':'cotas');};
   renderOferta();renderCotas();}
 function blocoSeguro(b,segI){const t=b&&b.r&&!b.r.erro?b.r.tot:null;const v=t?segI(t):0;
   const custo=v>0?`Cerca de ${brl2(v)} por mês; na projeção do sistema é um valor fixo. Já somado na parcela mostrada`:'Valor a confirmar no sistema';
@@ -593,9 +657,9 @@ function fonteOferta(vars){const rv=vars.find(v=>v.r&&v.r.real);
   return `<div class="al info" style="margin-bottom:12px">Estimativa pelos grupos do portal: ainda não há cotas reais coladas para este tipo (tela Cotas).</div>`;}
 function renderOferta(){const E=S.estr;const out=$('#e-out');
   if(!E.feito||!(num(E.valor)>0)){out.innerHTML=`<div class="card empty">Monte um pedido primeiro. <a href="#" data-go="estrategia">Ir para Pedido</a></div>`;return;}
-  const vars=[['Menor lance do bolso','bolso'],['Mais cartas (microvitórias)','mais'],['Menor parcela','parcela'],['Sem lance (só sorteio)','semlance'],['Menos cartas','cotas'],['Menor prazo','prazo']].map(([nome,pr])=>[nome,nome,pr]).map(([k,nome,pr])=>({k,nome,r:montarAuto(E,pr)}));
+  const vars=[['Menor lance do bolso','bolso'],['Mais cartas','mais'],['Menor parcela','parcela'],['Sem lance (só sorteio)','semlance'],['Menos cartas','cotas'],['Menor prazo','prazo']].map(([nome,pr])=>[nome,nome,pr]).map(([k,nome,pr])=>({k,nome,r:montarAuto(E,pr)}));
   const R=E.sg!=='0'?((num(E.sgp)>0?num(E.sgp):(S.segTaxa||0))/100):0;const K=R;const segE=t=>R*(t.sdEst||0),segI=t=>segE(t)+(t.segReal||0);const P1=t=>t.p1+segE(t),P2=t=>t.p2+(t.p1>0?segE(t)*t.p2/t.p1:0);
-  const depois=t=>`<table class="cmp" style="margin-top:8px;font-size:12px"><thead><tr><th>Depois de contemplar (mês ${t.mes}), o cliente escolhe</th><th>Parcela</th><th>Por mais</th></tr></thead><tbody><tr><td><b>Manter o prazo</b><br><span style="font-size:11px">parcela mais leve</span></td><td class="num" style="white-space:nowrap">~ ${brl2(P2(t))}</td><td class="num" style="white-space:nowrap">${faixaM(t.pmMin,t.pmMax)} meses</td></tr>${t.mrMax!=null?`<tr><td><b>Reduzir o prazo</b><br><span style="font-size:11px">mesma parcela, quita antes</span></td><td class="num" style="white-space:nowrap">${brl2(P1(t))}</td><td class="num" style="white-space:nowrap">~ ${faixaM(t.mrMin,t.mrMax)} meses</td></tr>`:''}</tbody></table>`;
+  const depois=t=>`<table class="cmp" style="margin-top:8px;font-size:12px"><thead><tr><th>Depois de contemplar (mês ${t.mes})</th><th>Parcela</th><th>Por mais</th></tr></thead><tbody><tr><td><b>Manter o prazo</b><br><span style="font-size:11px">parcela mais leve</span></td><td class="num" style="white-space:nowrap">~ ${brl2(P2(t))}</td><td class="num" style="white-space:nowrap">${faixaM(t.pmMin,t.pmMax)} meses</td></tr>${t.mrMax!=null?`<tr><td><b>Reduzir o prazo</b><br><span style="font-size:11px">mesma parcela, quita antes</span></td><td class="num" style="white-space:nowrap">${brl2(P1(t))}</td><td class="num" style="white-space:nowrap">~ ${faixaM(t.mrMin,t.mrMax)} meses</td></tr>`:''}</tbody></table>`;
   const rec=num(E.rec),p1=num(E.p1),p2=num(E.p2);
   const fg=E.tipo==='Imobiliário'?Math.max(0,num(E.fgts)||0):0;const fgU=t=>Math.min(fg,t.bolso),cli=t=>t.bolso-fgU(t); // FGTS cobre parte do lance livre
   const cabe=t=>{const a=[];if(rec!=null&&E.rec!=='')a.push(cli(t)<=rec+0.5?null:`lance do bolso ${brl(cli(t))} > ${brl(rec)} (faltam ${brl(cli(t)-rec)})`);if(p1>0)a.push(P1(t)<=p1+0.5?null:`parcela até contemplar ${brl2(P1(t))} > ${brl2(p1)}`);if(p2>0)a.push(P2(t)<=p2+0.5?null:`parcela depois ${brl2(P2(t))} > ${brl2(p2)}`);return a.filter(Boolean);};
@@ -605,22 +669,24 @@ function renderOferta(){const E=S.estr;const out=$('#e-out');
   S.estr.bestK=best>=0?vars[best].k:'';S.estr.bestReal=best>=0&&!!vars[best].r.real;S.estr.bestN=best>=0?vars[best].r.tot.cotas:0;S.estr.busca=best>=0?instrucaoBusca(vars[best].r):'';S.estr.buscaL=best>=0?vars[best].r.linhas.map(l=>({cod:l.g.cod,carta:l.carta,n:l.n})):[];save();
   const titulo=E.modo==='liquido'?`${brl(num(E.valor))} líquido`:`${brl(num(E.valor))} bruto`;
   const lf=num(E.lf);
+  const passo=r=>{const tx=r.real?`<b>Próximo passo:</b> confirmar no sistema vagas e parcela de ${esc(instrucaoBusca(r))}.`:(()=>{const R=roteiro(E);return R?`<b>Próximo passo:</b> buscar as cotas no vendas.seguridade e colar em <a href="#" data-go="cotas" style="font-weight:600">Busca</a>. Até lá, os valores são estimativa pelos grupos do portal.`:'';})();return tx?`<div class="passo">${tx}</div>`:'';};
   const card=(v,i,principal)=>{const r=v.r;if(!r||r.erro)return `<div class="card path"><h3>${esc(v.nome)}</h3><div class="al" style="margin-top:8px">${esc(r?r.erro:'Informe o valor')}</div></div>`;const t=r.tot;const probs=cabe(t);
     const bilhetes=t.temHist?`<div class="dist" style="margin-top:8px"><b style="color:var(--ink)">Bilhetes por assembleia (histórico):</b> ${t.cotas} cota${t.cotas>1?'s':''} = ${t.cotas} bilhete${t.cotas>1?'s':''} no sorteio (≈ ${(t.sorteio*100).toLocaleString('pt-BR',{maximumFractionDigits:1})}% de chance de pelo menos uma contemplação por sorteio, pelo histórico de 1 sorteado por assembleia)${lf>0?` · lance fixo: cerca de ${Math.round(t.cotas*lf/100*10)/10} cota(s) participando (regra de bolso ${pct(lf)})`:''} · na última assembleia desses grupos, ${t.lanceUlt} contemplaram por lance. Cada contemplação traz ${t.menorCota===t.maiorCota?brl(t.menorCota):'entre '+brl(t.menorCota)+' e '+brl(t.maiorCota)}.</div>`:'';
-    return `<div class="card path ${principal?'best':''}">${principal?'<div class="best-badge">★ oferta recomendada</div>':''}<h3>${esc(v.nome)}</h3><div class="gname">${t.cotas} cota(s) em ${new Set(r.linhas.map(l=>l.g.cod)).size} grupo(s) · compra ${brl(t.bruto)} · recebe ${brl(t.liq)}</div>
-    <div class="bignum">${brl(cli(t))}<small>de lance do bolso${fgU(t)>0?' · + '+brl(fgU(t))+' do FGTS':''}${t.emb>0?' · + '+brl(t.emb)+' embutido':''}</small></div>
-    <div class="bignum" style="font-size:22px;margin-top:6px">${brl2(P1(t))}<small>por mês até contemplar${E.sg!=='0'&&K>0?' (com seguro)':''}</small></div>
+    return `<div class="card path ${principal?'best':''}">${principal?'<div class="best-badge">Recomendada</div>':''}<h3>${esc(v.nome)}</h3><div class="gname">${(n=>`${t.cotas} cota${t.cotas>1?'s':''} em ${n} grupo${n>1?'s':''}`)(new Set(r.linhas.map(l=>l.g.cod)).size)} · ${brl(t.bruto)} em cartas · recebe ${brl(t.liq)}</div>
+    <div class="bignum${principal?' lance':''}">${brl(cli(t))}<small>de lance do bolso${fgU(t)>0?' · + '+brl(fgU(t))+' do FGTS':''}${t.emb>0?' · + '+brl(t.emb)+' embutido':''}</small></div>
+    <div class="bignum p2">${brl2(P1(t))}<small>por mês até contemplar${E.sg!=='0'&&K>0?' (com seguro)':''}</small></div>
     ${depois(t)}
     ${bilhetes}
-    <details class="adv" ${principal?'open':''}><summary>Grupos e cotas</summary><table class="cmp" style="margin-top:4px;font-size:12px"><thead><tr><th>Grupo</th><th>Cotas</th><th>Carta</th><th>Lance bolso</th><th>Últ. assembleia</th></tr></thead><tbody>${r.linhas.map(l=>`<tr><td>${esc(l.g.cod)}<br><span style="font-size:10px">alvo ${l.alvo!=null?pct(l.alvo):'—'} · emb ${pct(l.le)} · TA ${pct(num(l.g.ta))}${l.real?' · vagas '+(l.ultimas?'últimas':l.vagas):''}${l.x&&l.x.plano==='Reduzida'?' · plano reduzido':''}${l.x&&l.x.derivada?' · carta calculada':''}${l.camp?' · <b>código '+esc(l.camp.cod)+'</b>':''}</span></td><td class="num">${l.n}</td><td class="num">${brl(l.carta)}</td><td class="num">${brl(l.bolso*l.n)}</td><td class="num" style="font-size:11px">${l.g.cs!==''&&l.g.cs!=null?`${l.g.cs} sorteio · ${l.g.cl} lance`:'—'}${(t=>t?`<br><span style="color:${t.sobe?'var(--warn)':'var(--muted)'}">${esc(t.txt)}</span>`:'')(tendencia(l.g))}</td></tr>`).join('')}</tbody></table></details>
+    ${principal?passo(r):''}
+    <details class="adv"><summary>Grupos e cotas</summary><table class="cmp" style="margin-top:4px;font-size:12px"><thead><tr><th>Grupo</th><th>Cotas</th><th>Carta</th><th>Lance bolso</th><th>Últ. assembleia</th></tr></thead><tbody>${r.linhas.map(l=>`<tr><td>${esc(l.g.cod)}<br><span style="font-size:11px;color:var(--muted);font-weight:400">alvo ${l.alvo!=null?pct(l.alvo):'—'} · emb ${pct(l.le)} · TA ${pct(num(l.g.ta))}${l.real?' · vagas '+(l.ultimas?'últimas':l.vagas):''}${l.x&&l.x.plano==='Reduzida'?' · plano reduzido':''}${l.x&&l.x.derivada?' · carta calculada':''}${l.camp?' · <b>código '+esc(l.camp.cod)+'</b>':''}</span></td><td class="num">${l.n}</td><td class="num">${brl(l.carta)}</td><td class="num">${brl(l.bolso*l.n)}</td><td class="num" style="font-size:11px">${l.g.cs!==''&&l.g.cs!=null?`${l.g.cs} sorteio · ${l.g.cl} lance`:'—'}${(t=>t?`<br><span style="color:${t.sobe?'var(--warn)':'var(--muted)'}">${esc(t.txt)}</span>`:'')(tendencia(l.g))}</td></tr>`).join('')}</tbody></table></details>
     <div class="alerts">${probs.map(a=>`<div class="al">Não cabe: ${esc(a)}</div>`).join('')}${(()=>{const s=[...new Set(r.linhas.filter(l=>(tendencia(l.g)||{}).sobe).map(l=>l.g.cod))];return s.length?`<div class="al">Lance subindo no grupo ${esc(s.join(', '))}: o alvo do mês passado pode ficar curto. Histórico, não previsão.</div>`:'';})()}${(()=>{const l=r.linhas.find(l=>l.x&&l.x.plano==='Reduzida');if(!l)return '';const c=S.comp[compK(l.x)]||compDoGrupo(l.x.gid,'Reduzida')||{},n=compDoGrupo(l.x.gid,'Normal');return `<div class="al info">Plano reduzido: parcela menor, mas taxa adm ${pct(c.ta)}${n?` (normal ${pct(n.ta)})`:''}${c.aCobrarPct>0?` e ${pct(c.aCobrarPct)} do crédito fica a cobrar (já somado no saldo de depois; quando é cobrado: sem fonte confirmada)`:''}.</div>`;})()}${informou&&!probs.length?'<div class="al ok">Cabe no bolso</div>':''}${r.linhas.some(l=>l.sobra)?`<div class="al info">Fechou com cota cheia; sobram ${brl(r.linhas.find(l=>l.sobra).sobra)} de crédito.</div>`:''}</div></div>`;};
   const b=best>=0?vars[best]:null;
   const C=E.conf||(E.conf={});const confIt=b?[['p1','Parcela até contemplar',P1(b.r.tot)],['p2','Parcela depois (manter prazo)',P2(b.r.tot)],['liq','Crédito líquido',b.r.tot.liq],['sd','Saldo após o lance (sem seguro)',b.r.tot.sdApos]]:[];
   const confHtml=`<details class="adv no-present" style="margin-top:14px" ${confIt.some(([k])=>num(C[k])>0)?'open':''}><summary>Conferir com a proposta oficial</summary><p class="sub" style="margin-top:6px">Digite os números da proposta do sistema para a oferta recomendada (proposta por cota: some as cotas). Diferença acima de 1% fica marcada. Confere a conta, não substitui a proposta.</p><div class="cmp-wrap"><table class="cmp" style="font-size:12px"><thead><tr><th></th><th>Simulador</th><th>Oficial</th><th>Diferença</th></tr></thead><tbody>${confIt.map(([k,n,v])=>`<tr><td>${n}</td><td class="num">${brl2(v)}</td><td><input data-conf="${k}" type="number" min="0" step="0.01" inputmode="decimal" value="${esc(C[k]??'')}" style="width:105px"></td><td class="num" id="conf-${k}">—</td></tr>`).join('')}</tbody></table></div><div id="conf-res" class="hint" style="margin-top:6px"></div></details>`;
-  out.innerHTML=`<div class="hero"><h1>Oferta · ${titulo}</h1><p>${E.nome&&!document.body.classList.contains('present')?esc(E.nome)+' · ':''}${esc(E.tipo||'qualquer tipo')} · ${new Date().toLocaleDateString('pt-BR')} · valores estimativos, a confirmar no sistema oficial</p></div>
+  out.innerHTML=`<div class="hero"><h1>Proposta · ${titulo}</h1><p>${E.nome&&!document.body.classList.contains('present')?esc(E.nome)+' · ':''}${esc(E.tipo||'qualquer tipo')} · ${new Date().toLocaleDateString('pt-BR')} · valores estimativos, a confirmar no sistema oficial</p></div>
   ${fonteOferta(vars)}${campOferta(vars)}
-  ${b?`<div class="concl" style="margin:0 0 14px;font-size:16px"><b>Para ter ${titulo}: ${b.r.tot.cotas} cota${b.r.tot.cotas>1?'s':''} (${brl(b.r.tot.bruto)} em cartas).</b>Entra com ${brl(cli(b.r.tot))} de lance do bolso${fgU(b.r.tot)>0?' (+ '+brl(fgU(b.r.tot))+' do FGTS)':''}, paga ${brl2(P1(b.r.tot))} por mês até contemplar${E.sg!=='0'&&K>0?' (já com o seguro prestamista)':''}. Depois de contemplar: cerca de ${brl2(P2(b.r.tot))} mantendo o prazo (${faixaM(b.r.tot.pmMin,b.r.tot.pmMax)} meses)${b.r.tot.mrMax!=null?`, ou segue com ${brl2(P1(b.r.tot))} e quita em ~${faixaM(b.r.tot.mrMin,b.r.tot.mrMax)} meses reduzindo o prazo`:''}.${b.r.tot.temHist?` ${b.r.tot.cotas>1?`São ${b.r.tot.cotas} bilhetes por assembleia`:'É 1 bilhete por assembleia'}; cada contemplação traz ${b.r.tot.menorCota===b.r.tot.maiorCota?brl(b.r.tot.menorCota):'de '+brl(b.r.tot.menorCota)+' a '+brl(b.r.tot.maiorCota)}.`:''}<ul><li>${b.r.real?`Próximo passo: confirmar no sistema vagas e parcela de ${esc(instrucaoBusca(b.r))}.`:(()=>{const R=roteiro(E);return R?`Próximo passo: pesquise no sistema de ${brl(R.rec.lo)} a ${brl(R.rec.hi)} e cole a página em <a href="#" data-go="cotas" style="color:inherit;font-weight:600">Cotas</a>.`:'';})()}</li></ul></div>`:`<div class="concl none" style="margin:0 0 14px">Nenhuma variante fechou${informou?' dentro do bolso':''}. Cole mais grupos, aumente o máximo de cotas ou ajuste o bolso.</div>`}
-  <div class="grid c3" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">${b?card(b,best,true):''}</div>
+  ${b?'':`<div class="concl none" style="margin:0 0 14px">Nenhuma variante fechou${informou?' dentro do bolso':''}. Cole mais grupos, aumente o máximo de cotas ou ajuste o bolso.</div>`}
+  ${b?card(b,best,true):''}
   ${b?confHtml:''}
   <details class="adv no-present" style="margin-top:14px"><summary>Ver as outras ${vars.length-(b?1:0)} variantes</summary><div class="grid c3" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));margin-top:10px">${vars.map((v,i)=>i===best?'':card(v,i,false)).join('')}</div></details>
   ${E.sg!=='0'?blocoSeguro(b,segI):''}
@@ -723,7 +789,7 @@ const CAMP_BANNER=[ // banner Super Sexta Antecipada (portal da administradora, 
   {cod:'61092031101500',nome:'Super Sexta · pesados',tipos:['Veículos Pesados'],cmin:200000,cmax:1000000,emb:'com',desc:null,ta:13,ini:'2026-10-29',fim:'2026-10-30'},
   {cod:'61092031101450',nome:'Super Sexta · pesados',tipos:['Veículos Pesados'],cmin:200000,cmax:400000,emb:'sem',desc:null,ta:13,ini:'2026-10-29',fim:'2026-10-30'}];
 function renderCampanhas(){const el=$('#camp-card');if(!el)return;const adm=!temServidor()||!!(window.SESSAO&&window.SESSAO.admin),cs=S.campanhas||[],h=hojeL();
-  el.innerHTML=`<h2>Campanhas <span class="tag muted">códigos de convênio</span></h2><p class="sub">${adm?'Você cadastra; vale para todos os gerentes.':'Cadastradas pelo admin.'} A Oferta mostra o código em cada cota onde ele vale e já aplica o desconto.</p>
+  el.innerHTML=`<h2>Campanhas <span class="tag muted">códigos de convênio</span></h2><p class="sub">${adm?'Você cadastra; vale para todos os gerentes.':'Cadastradas pelo admin.'} A Proposta mostra o código em cada cota onde ele vale e já aplica o desconto.</p>
   ${(S.convenios||[]).length?`<details class="adv" open><summary>Códigos de convênio do portal (${S.convenios.length}) · percentual e regras no arquivo "Baixar" de cada um no portal</summary><table class="cmp" style="font-size:12px"><tbody>${S.convenios.map(c=>`<tr><td class="num">${esc(c.cod||'—')}</td><td style="text-align:left">${esc(c.nome)}</td></tr>`).join('')}</tbody></table></details>`:''}
   ${cs.length?`<div class="cmp-wrap"><table class="cmp" style="font-size:12px"><thead><tr><th>Código</th><th>Vale para</th><th>Carta</th><th>Embutido</th><th>Benefício</th><th>Validade</th>${adm?'<th></th>':''}</tr></thead><tbody>${cs.map((c,i)=>`<tr><td>${esc(c.cod)}${c.nome?'<br><span style="font-size:10px">'+esc(c.nome)+'</span>':''}</td><td>${esc(c.tipos.join(', ')||'todos')}</td><td class="num">${c.cmin!=null||c.cmax!=null?brl(c.cmin)+' a '+brl(c.cmax):'todas'}</td><td>${({com:'com',sem:'sem',ambos:'com ou sem'})[c.emb]||'—'}</td><td>${c.ta!=null?'taxa '+pct(c.ta):'−'+pct(c.desc)+' na taxa'}</td><td>${fmtD(c.ini)} a ${fmtD(c.fim)}${c.fim&&c.fim<h?' <span class="tag warn">vencida</span>':''}</td>${adm?`<td><button class="btn small danger" data-cdel="${i}">Excluir</button></td>`:''}</tr>`).join('')}</tbody></table></div>`:'<div class="empty">Nenhuma campanha cadastrada.</div>'}
   ${adm?`${cs.length?'':'<button class="btn small" id="cp-seed" style="margin-top:8px">Carregar a Super Sexta do banner (29 e 30/10)</button>'}
@@ -765,16 +831,18 @@ function buscaSimples(R,E,pronto){if(!R)return 'Monte um pedido primeiro: a busc
   if(pronto)return `<div style="font-size:15px;color:var(--ink)"><b>Pronto:</b> a proposta já fecha com o que você colou. Confirme no sistema: ${E.busca}. <a href="#" data-go="oferta" style="color:inherit;font-weight:600">Ver a proposta →</a></div>${fr}`;
   const rc=R.rec,tipoT=E.tipo==='Imobiliário'?'imóvel':(E.tipo||'').toLowerCase()||'o tipo do bem';
   const faixa=g=>{const lo=g?Math.max(rc.lo,Math.floor((g.min||0)/1000)*1000):rc.lo,hi=g?Math.min(rc.hi,Math.ceil((g.max||rc.hi)/1000)*1000):rc.hi;return lo<=hi?[lo,hi]:[rc.lo,rc.hi];};
-  const cab=`<div style="color:var(--ink)">Para ${brl(R.need)} líquido: <b>${rc.n} cota${rc.n>1?'s':''} de ~${brl(rc.t)}</b> (${brl(R.total)} em cartas${R.embP>0?`, embutido ${pct(R.embP)}`:''}).</div>`;
-  if(R.semDados||!rc.uso||!rc.uso.length)return `${cab}<ul class="busca-l"><li>${esc(tipoT)} · valor entre <b>${brl(rc.lo)}</b> e <b>${brl(rc.hi)}</b></li></ul><div class="hint">Ainda não há grupos do portal deste tipo.</div>${fr}`;
-  const usados=new Set(rc.uso.map(u=>u.cod)),res=(rc.gs||[]).filter(g=>!usados.has(g.cod)).slice(0,2);
-  const li=(g,cod,k)=>{const [lo,hi]=faixa(g);return `Grupo <b>${esc(cod)}</b>${k?` · ${k} cota${k>1?'s':''}`:''} · valor entre <b>${brl(lo)}</b> e <b>${brl(hi)}</b>`;};
-  return `${cab}<ul class="busca-l">${rc.uso.map(u=>`<li>${li((rc.gs||[]).find(g=>g.cod===u.cod),u.cod,u.k)}</li>`).join('')}${res.map(g=>`<li class="res">Se faltar vaga: ${li(g,g.cod,0)}</li>`).join('')}</ul><div class="hint">Cole embaixo a lista e o detalhamento das cotas que achar.</div>${fr}`;}
+  const cab=`<div class="busca-cab">Para ${brl(R.need)} líquido: <b>${rc.n} cota${rc.n>1?'s':''} de ~${brl(rc.t)}</b> · ${brl(R.total)} em cartas${R.embP>0?` · embutido ${pct(R.embP)}`:''}</div>`;
+  const milBR=v=>Math.round(v).toLocaleString('pt-BR');
+  const tab=linhas=>`<table class="busca-t"><thead><tr><th scope="col">Grupo</th><th scope="col" class="r">Cotas</th><th scope="col" class="r">De (R$)</th><th scope="col" class="r">Até (R$)</th></tr></thead><tbody>${linhas}</tbody></table>`;
+  if(R.semDados||!rc.uso||!rc.uso.length)return `${cab}${tab(`<tr><td>${esc(tipoT)}<span class="sel">qualquer grupo</span></td><td class="r"><b>${rc.n}</b></td><td class="r"><b>${milBR(rc.lo)}</b></td><td class="r"><b>${milBR(rc.hi)}</b></td></tr>`)}<div class="hint">Ainda não há grupos do portal deste tipo.</div>${fr}`;
+  const usados=new Set(rc.uso.map(u=>u.cod)),res=(rc.gs||[]).filter(g=>!usados.has(g.cod)).slice(0,Math.max(0,5-rc.uso.length));
+  const lin=(g,cod,k,cls)=>{const [lo,hi]=faixa(g);return `<tr class="${cls}"><td><b>${esc(cod)}</b>${g&&g.a?`<span class="sel">lance ${pct(g.a)}</span>`:''}</td><td class="r">${k?`<b>${k}</b>`:'reserva'}</td><td class="r">${milBR(lo)}</td><td class="r">${milBR(hi)}</td></tr>`;};
+  return `${cab}${tab(rc.uso.map(u=>lin((rc.gs||[]).find(g=>g.cod===u.cod),u.cod,u.k,'')).join('')+res.map(g=>lin(g,g.cod,0,'res')).join(''))}<div class="hint">Em ordem de menor lance. Se faltar vaga, siga para a reserva.</div>${fr}`;}
 function renderCotas(){const E=S.estr;
   const R=E.feito?roteiro(E):null,tipoT=E.tipo==='Imobiliário'?'imóvel':(E.tipo||'').toLowerCase()||'o tipo do bem';
   const pronto=E.bestReal&&E.busca;
   const velho=(statusPortal()||{}).velho;
-  let det=R?`${velho?avisoPortal():''}${pronto?`<div style="font-size:15px;color:var(--ink)"><b>Pronto:</b> a oferta já fecha com o que você colou. <b>Confirme no sistema:</b> ${E.busca}. <a href="#" data-go="oferta" style="color:inherit;font-weight:600">Ver a oferta →</a></div><div class="hint">Se alguma não tiver vaga, siga o ranking abaixo ou pesquise ${brl(R.rec.lo)} a ${brl(R.rec.hi)}.</div>`:`<div style="font-size:15px;color:var(--ink)"><b>Pesquise no sistema:</b> ${esc(tipoT)} de <b>${brl(R.rec.lo)} a ${brl(R.rec.hi)}</b> e cole a 1ª página abaixo.</div>`}
+  let det=R?`${velho?avisoPortal():''}${pronto?`<div style="font-size:15px;color:var(--ink)"><b>Pronto:</b> a proposta já fecha com o que você colou. <b>Confirme no sistema:</b> ${E.busca}. <a href="#" data-go="oferta" style="color:inherit;font-weight:600">Ver a proposta →</a></div><div class="hint">Se alguma não tiver vaga, siga o ranking abaixo ou pesquise ${brl(R.rec.lo)} a ${brl(R.rec.hi)}.</div>`:`<div style="font-size:15px;color:var(--ink)"><b>Pesquise no sistema:</b> ${esc(tipoT)} de <b>${brl(R.rec.lo)} a ${brl(R.rec.hi)}</b> e cole a 1ª página abaixo.</div>`}
     Para ${brl(R.need)} ${E.modo==='liquido'?'líquido':''}${R.embP>0?` com embutido de ${pct(R.embP)}`:''}: ${brl(R.total)} em cartas, em <b>${R.rec.n} cota${R.rec.n>1?'s':''} de ~${brl(R.rec.t)}</b>.${R.melhores&&R.melhores.length>1?`<div style="margin-top:6px"><b>Melhores faixas:</b> ${R.melhores.map(o=>`${o.n} carta${o.n>1?'s':''} de ~${brl(o.t)} (${o.uso.map(u=>u.k+'× '+esc(u.cod)+' '+pct(u.a)).join(' + ')}; bolso ~${brl(o.bolso)})`).join(' · ')}.${R.um&&R.um!==R.rec&&R.um.bolso>R.rec.bolso+500?` Não compensa 1 carta de ${brl(R.um.t)}: lance ${pct(R.um.a)}, bolso ~${brl(R.um.bolso)}.`:''}</div>`:''}
     ${R.rec.gs.length?`<div style="margin-top:6px"><b>Olhe nesta ordem (menor lance primeiro):</b><ol style="margin:4px 0 0;padding-left:20px">${R.rec.gs.map(g=>`<li>Grupo <b>${esc(g.cod)}</b>: lance ${pct(g.a)}${g.vagas!=null?' · '+g.vagas+' vaga'+(g.vagas>1?'s':''):(g.vagasTxt?' · '+esc(g.vagasTxt):'')}${g.part?' · '+g.part+' participantes':''}</li>`).join('')}</ol><div class="hint">Se o 1º não tiver cota nessa faixa, passe pro próximo. Nenhum grupo conhecido? Cole a página que o app aprende.</div></div>`:'<div class="hint">Ainda não há grupos colados desse tipo: cole a página da busca e o app monta o ranking.</div>'}
     <details class="adv" style="margin-top:6px"><summary>Comparar todas as divisões (1 a 8 cartas)</summary><table class="cmp" style="font-size:12px"><thead><tr><th>Cartas</th><th>Cada uma</th><th>Pesquise</th><th>Grupo de menor lance</th><th>Lance do bolso ~</th></tr></thead><tbody>${R.ops.map(o=>`<tr class="${o===R.rec?'best-row':''}"><td>${o.n}</td><td class="num">${brl(o.t)}</td><td class="num">${brl(o.lo)} a ${brl(o.hi)}</td><td>${o.uso?o.uso.map(u=>u.k+'× '+esc(u.cod)+' ('+pct(u.a)+')').join(' + '):'—'}</td><td class="num">${o.bolso!=null?brl(o.bolso):'—'}</td></tr>`).join('')}</tbody></table><div class="hint">Só aparecem tamanhos em que há grupo conhecido (tabela do portal em Grupos ou páginas coladas aqui). Lance pelo histórico do grupo, não é garantia. Empate no bolso: mais cartas = mais bilhetes por assembleia.</div></details>
@@ -785,6 +853,7 @@ function renderCotas(){const E=S.estr;
   const l=$('#c-lista');const porG={};S.cotasL.forEach(x=>{(porG[x.gid]=porG[x.gid]||[]).push(x);});
   const ids=Object.keys(porG).sort((a,b)=>(+a)-(+b));
   l.className=ids.length?'':'empty';
+  const lt=$('#c-lista-t');if(lt)lt.textContent=ids.length?`O que foi lido · ${ids.length} grupo${ids.length>1?'s':''}`:'O que foi lido';
   l.innerHTML=(ids.length?`<div class="hint" style="margin-bottom:8px">Parcela da lista tratada como <b>${S.listaSeg==='com'?'com':'sem'} seguro</b>${S.listaSeg?' (conferido pelo detalhamento)':' (padrão; cole um detalhamento pra conferir)'}; o seguro entra por cima.</div>`:'')+(ids.length?ids.map((id,n)=>{const cs=porG[id].sort((a,b)=>a.carta-b.carta||a.plano.localeCompare(b.plano));const h=cs[0];const comp=cs.map(x=>S.comp[compK(x)]).find(Boolean);const vc=cs.some(venceu);
     return `<details class="adv" ${n===0?'open':''} style="border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px"><summary style="color:var(--ink);font-weight:600">Grupo ${esc(h.cod)} <span class="tag muted">${esc(h.tipo||'?')}</span> ${comp?`<span class="tag">TA ${pct(comp.ta)} · FR ${pct(comp.fr)}</span>`:'<span class="tag muted">sem composição</span>'} ${vc?'<span class="tag warn">dados vencidos</span>':''}</summary>
     <div class="hint" style="margin-bottom:6px">${h.part} participantes · próxima assembleia ${new Date(h.ass+'T12:00:00').toLocaleDateString('pt-BR')} · lance médio ${pct(h.lm)}</div>
