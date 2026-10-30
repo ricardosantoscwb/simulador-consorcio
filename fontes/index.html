@@ -21,6 +21,7 @@ h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.01em}
 .num{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-weight:500;font-variant-numeric:tabular-nums}
 .top{position:sticky;top:0;z-index:20;background:rgba(244,243,239,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
 .top .in{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:12px}
+@media (max-width:600px){.top .in{flex-wrap:wrap;gap:6px 10px}.top .brand{flex:1 1 100%}.top .brand small{display:none}}
 .brand{display:flex;align-items:center;gap:10px;font-weight:600}
 .brand .dot{width:28px;height:28px;border-radius:8px;background:var(--accent);display:grid;place-items:center;color:#fff;font-size:13px}
 .brand small{display:block;font-weight:400;color:var(--muted);font-size:11px}
@@ -140,11 +141,12 @@ details.adv{margin-top:6px}details.adv summary{cursor:pointer;font-size:13px;col
 </style>
 </head>
 <body>
-<script>document.body.classList.toggle('usuario',!!(window.SESSAO&&!window.SESSAO.admin));</script>
+<script>document.body.classList.toggle('usuario',!!(window.SESSAO&&!window.SESSAO.admin)||(()=>{try{return localStorage.getItem('simcons.verComo')==='1';}catch(e){return false;}})());</script>
 <header class="top"><div class="in">
   <div class="brand"><div class="dot">∑</div><div>Simulador de Consórcio<small>pedido · busca · proposta</small></div></div>
   <nav class="tabs"><button data-go="grupos" class="so-admin">Grupos</button><button data-go="estrategia">1 Pedido</button><button data-go="cotas">2 Busca</button><button data-go="oferta">3 Proposta</button></nav>
   <button class="btn primary" id="btnPresent">Apresentar</button>
+  <button class="btn ghost small" id="btnVer" style="display:none" title="Só muda o que você vê; as permissões continuam de admin">Ver como gerente</button>
   <a class="btn ghost small" id="lnkAdmin" href="/admin" style="display:none">Admin</a>
   <button class="btn ghost small" id="btnSair" title="Sair" style="display:none">Sair</button>
 </div></header>
@@ -757,7 +759,7 @@ function roteiro(E){const need=num(E.valor)||0;if(!(need>0))return null;const tO
   if(E.bestReal&&E.bestN>=1)rec=ops.find(o=>o.n===E.bestN)||rec; // oferta já fechou: o roteiro acompanha o tamanho de cota dela
   const melhores=ops.slice().sort((x,y)=>x.bolso-y.bolso||y.n-x.n).slice(0,2);
   return {need,total:rec.tot,embP:rec.emb,ops,rec,melhores,um:ops.find(o=>o.n===1)};}
-const ADM=()=>!(window.SESSAO&&!window.SESSAO.admin); // sem sessão (arquivo local) = visão completa
+const ADM=()=>!document.body.classList.contains('usuario'); // visão de admin (o admin pode ver como gerente pelo botão)
 function buscaSimples(R,E,pronto){if(!R)return 'Monte um pedido primeiro: a busca aparece aqui.';
   const st=statusPortal(),fr=st?`<div class="hint" style="margin-top:8px">Grupos do portal de ${fmtD(st.ult)}${st.velho?` · <b style="color:var(--warn)">teve assembleia em ${fmtD(st.assemPassada)}: lances podem ter mudado${ADM()?' (atualize pelo botão do portal)':' (avise o admin)'}</b>`:''}.</div>`:'';
   if(pronto)return `<div style="font-size:15px;color:var(--ink)"><b>Pronto:</b> a proposta já fecha com o que você colou. Confirme no sistema: ${E.busca}. <a href="#" data-go="oferta" style="color:inherit;font-weight:600">Ver a proposta →</a></div>${fr}`;
@@ -792,6 +794,8 @@ function renderCotas(){const E=S.estr;
 
 /* ===================== grupos compartilhados (servidor) ===================== */
 let etag=null, syncTimer=null;
+{const bv=$('#btnVer'),podeVer=!window.SESSAO||window.SESSAO.admin,lbl=()=>{bv.textContent=document.body.classList.contains('usuario')?'Visão admin':'Ver como gerente';};
+  if(podeVer){bv.style.display='';lbl();bv.onclick=()=>{const u=!document.body.classList.contains('usuario');document.body.classList.toggle('usuario',u);try{localStorage.setItem('simcons.verComo',u?'1':'');}catch(e){}lbl();render();if(u&&$('#s-grupos').classList.contains('on'))go('estrategia');toast(u?'Vendo como gerente (só a tela muda)':'Visão admin');};}}
 const temServidor=()=>location.protocol.startsWith('http')&&!!window.SESSAO;
 async function puxarGrupos(){if(!temServidor())return;try{const r=await fetch('/api/dados',{cache:'no-store'});if(r.status===401){location.href='/entrar';return;}const j=await r.json();if(!j.ok)return;etag=j.etag;
   S.campanhas=j.campanhas||[];S.convenios=j.convenios||[];if(j.grupos.length){S.grupos=j.grupos;save();render();}else{save();render();if(S.grupos.length)empurrarGrupos();}
