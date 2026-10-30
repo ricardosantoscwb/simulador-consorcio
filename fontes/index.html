@@ -120,6 +120,9 @@ main{max-width:1180px;margin:0 auto;padding:16px 16px 96px}
   .q{font-size:20px}
 }
 body.present .top,body.present .bnav,body.present .no-present{display:none!important}
+body.usuario .so-admin{display:none!important}
+.grid>*{min-width:0}#c-lista table,#c-busca table{display:block;overflow-x:auto}
+.busca-l{list-style:none;margin:8px 0 0;padding:0}.busca-l li{padding:8px 10px;border:1px solid var(--line);border-radius:10px;margin-bottom:6px;font-size:15px;color:var(--ink)}.busca-l li.res{opacity:.75;font-size:13px}
 body.present main{padding-top:10px}
 body.present .path .bignum{font-size:38px}body.present .path .why,body.present .glossary,body.present .criteria,body.present .path .mini span{font-size:13px}body.present .path .why{display:none}body.present .al.info{display:none}
 .present-bar{display:none;position:fixed;top:10px;right:10px;z-index:30}
@@ -137,9 +140,10 @@ details.adv{margin-top:6px}details.adv summary{cursor:pointer;font-size:13px;col
 </style>
 </head>
 <body>
+<script>document.body.classList.toggle('usuario',!!(window.SESSAO&&!window.SESSAO.admin));</script>
 <header class="top"><div class="in">
-  <div class="brand"><div class="dot">∑</div><div>Simulador de Consórcio<small>grupos · pedido · cotas · oferta</small></div></div>
-  <nav class="tabs"><button data-go="grupos">1 Grupos</button><button data-go="estrategia">2 Pedido</button><button data-go="cotas">3 Cotas</button><button data-go="oferta">4 Oferta</button></nav>
+  <div class="brand"><div class="dot">∑</div><div>Simulador de Consórcio<small>pedido · busca · proposta</small></div></div>
+  <nav class="tabs"><button data-go="grupos" class="so-admin">Grupos</button><button data-go="estrategia">1 Pedido</button><button data-go="cotas">2 Busca</button><button data-go="oferta">3 Proposta</button></nav>
   <button class="btn primary" id="btnPresent">Apresentar</button>
   <a class="btn ghost small" id="lnkAdmin" href="/admin" style="display:none">Admin</a>
   <button class="btn ghost small" id="btnSair" title="Sair" style="display:none">Sair</button>
@@ -150,11 +154,11 @@ details.adv{margin-top:6px}details.adv summary{cursor:pointer;font-size:13px;col
 <!-- ================= ESTRATÉGIA ================= -->
 <section class="screen" id="s-estrategia">
   <div class="wiz"><div class="card inputs no-present">
-    <div class="q">Quanto o cliente precisa?<small>O app escolhe grupos e cotas pela tabela colada e diz onde buscar as cotas.</small></div>
+    <div class="q">Quanto o cliente precisa, líquido?<small>O app escolhe os grupos e diz onde buscar no vendas.seguridade.</small></div>
     <div id="e-aviso"></div>
     <div class="two">
       <div class="f"><label>Valor (R$)</label><input id="e-valor" class="bigin" type="number" min="0" step="10000" inputmode="decimal" placeholder="650000"></div>
-      <div class="f"><label>Esse valor é</label><select id="e-modo"><option value="liquido">Líquido (o que ele recebe)</option><option value="bruto">Bruto (total das cartas)</option></select></div>
+      <div class="f so-admin"><label>Esse valor é</label><select id="e-modo"><option value="liquido">Líquido (o que ele recebe)</option><option value="bruto">Bruto (total das cartas)</option></select></div>
     </div>
     <div class="f"><label>Tipo</label><div class="chips" id="e-tipo-chips"><button class="chip" data-v="Imobiliário">Imóvel</button><button class="chip" data-v="Veículos Leves">Veículo leve</button><button class="chip" data-v="Veículos Pesados">Pesado</button><button class="chip" data-v="">Qualquer</button></div><select id="e-tipo" hidden><option>Imobiliário</option><option>Veículos Leves</option><option>Veículos Pesados</option><option value="">Qualquer</option></select></div>
     <div class="f" style="margin-top:4px"><label>Cabe no bolso do cliente? <span class="hint">opcional · o app marca o que não cabe</span></label></div>
@@ -188,7 +192,7 @@ details.adv{margin-top:6px}details.adv summary{cursor:pointer;font-size:13px;col
         <div class="f"><label>Nome do cliente (não vai no link)</label><input id="e-nome"></div>
       </div>
     </details>
-    <div class="wiz-actions"><span></span><button class="btn primary" id="e-go">Montar oferta</button></div>
+    <div class="wiz-actions"><span></span><button class="btn primary" id="e-go">Ver onde buscar →</button></div>
   </div></div>
 </section>
 
@@ -196,12 +200,11 @@ details.adv{margin-top:6px}details.adv summary{cursor:pointer;font-size:13px;col
 <section class="screen" id="s-cotas">
   <div class="grid c2">
     <div class="card">
-      <h2>Colar do sistema de vendas <span class="tag muted">leitura automática</span></h2>
-      <p class="sub">Cole a lista "Grupos Disponíveis" (uma página por vez) ou a tela de composição de uma cota. O app reconhece qual é. Sem CPF e sem nome de cliente.</p>
-      <div id="c-busca" class="why">Monte um pedido primeiro: a instrução de busca aparece aqui.</div>
-      <div class="f"><label>Texto da tela</label><textarea id="c-paste" rows="7" placeholder="Cole aqui a lista de grupos ou a composição da parcela."></textarea><div class="hint" id="c-msg"></div></div>
-      <button class="btn primary" id="c-save">Ler e guardar</button> <button class="btn" id="c-clear">Limpar tudo</button>
-      <div class="wiz-actions"><span></span><button class="btn" data-go="oferta">Ver a oferta →</button></div>
+      <h2>Busque no vendas.seguridade</h2>
+      <div id="c-busca" class="why">Monte um pedido primeiro: a busca aparece aqui.</div>
+      <div class="f"><label>Cole aqui o que veio <span class="hint">lista e detalhamento juntos, do jeito que vieram · sem nome nem CPF do cliente</span></label><textarea id="c-paste" rows="7" placeholder="Cole a lista Grupos Disponíveis e o detalhamento das cotas."></textarea><div class="hint" id="c-msg"></div></div>
+      <button class="btn primary" id="c-save">Ler e montar a proposta</button> <button class="btn small" id="c-clear">Limpar o que foi lido</button>
+      <div class="wiz-actions"><span></span><button class="btn" data-go="oferta">Ver a proposta →</button></div>
     </div>
     <div class="card">
       <h2>Grupos lidos</h2>
@@ -215,7 +218,7 @@ details.adv{margin-top:6px}details.adv summary{cursor:pointer;font-size:13px;col
 <section class="screen" id="s-oferta"><div id="e-out"></div></section>
 
 <!-- ================= GRUPOS ================= -->
-<section class="screen" id="s-grupos">
+<section class="screen so-admin" id="s-grupos">
   <div id="imp-card"></div>
   <div class="grid c2">
     <div class="card">
@@ -291,7 +294,7 @@ details.adv{margin-top:6px}details.adv summary{cursor:pointer;font-size:13px;col
 </section>
 </main>
 
-<nav class="bnav"><button data-go="grupos"><b>1</b>Grupos</button><button data-go="estrategia"><b>2</b>Pedido</button><button data-go="cotas"><b>3</b>Cotas</button><button data-go="oferta"><b>4</b>Oferta</button></nav>
+<nav class="bnav"><button data-go="grupos" class="so-admin"><b>·</b>Grupos</button><button data-go="estrategia"><b>1</b>Pedido</button><button data-go="cotas"><b>2</b>Busca</button><button data-go="oferta"><b>3</b>Proposta</button></nav>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -380,14 +383,14 @@ function calc(c){
 function candidatos(){const t=S.estr&&S.estr.tipo?[S.estr.tipo]:tipoDoBem(S.perfil.bem);const gs=S.grupos.filter(g=>num(g.cmax)>0&&num(g.ta)!=null);const f=gs.filter(g=>t.includes(g.tipo));return f.length?f:gs;}
 const clamp=(v,g)=>Math.min(Math.max(v,num(g.cmin)||0),num(g.cmax)||v);
 /* ===================== navegação ===================== */
-function go(id){$$('.screen').forEach(s=>s.classList.toggle('on',s.id==='s-'+id));$$('[data-go]').forEach(b=>b.classList.toggle('on',b.dataset.go===id));try{localStorage.setItem(KEY+'.tab',id);}catch(e){}window.scrollTo({top:0});render();}
+function go(id){if(id==='grupos'&&document.body.classList.contains('usuario'))id='estrategia';$$('.screen').forEach(s=>s.classList.toggle('on',s.id==='s-'+id));$$('[data-go]').forEach(b=>b.classList.toggle('on',b.dataset.go===id));try{localStorage.setItem(KEY+'.tab',id);}catch(e){}window.scrollTo({top:0});render();}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b){e.preventDefault();go(b.dataset.go);}});
 function present(on){document.body.classList.toggle('present',on);if(on)go('oferta');}
 $('#btnPresent').onclick=()=>present(true);$('#btnExitPresent').onclick=()=>present(false);
 document.addEventListener('keydown',e=>{if(e.key==='Escape')present(false);});
 
 /* ===================== aviso ===================== */
-function avisoPrimeiroUso(){return soExemplo()?`<div class="al info" style="margin-bottom:12px">Primeiro uso: os grupos cadastrados são só exemplo. Cole a tabela do sistema oficial em <a href="#" data-go="grupos" style="color:inherit;font-weight:600">Grupos</a> antes de montar uma oferta real.</div>`:'';}
+function avisoPrimeiroUso(){return soExemplo()?`<div class="al info" style="margin-bottom:12px">${ADM()?'Primeiro uso: os grupos cadastrados são só exemplo. Atualize pelo botão do portal (ou cole em <a href="#" data-go="grupos" style="color:inherit;font-weight:600">Grupos</a>) antes de montar uma oferta real.':'Os grupos do portal ainda não chegaram: avise o admin para atualizar antes de montar uma proposta real.'}</div>`:'';}
 
 /* ===================== grupos ===================== */
 const GF=['cod','tipo','desc','ta','fr','cmin','cmax','pt','pr','parc','emax','lmin','lmed','lmax','assem','data','fonte'];
@@ -573,7 +576,7 @@ function instrucaoBusca(r){if(!r||r.erro)return '';const porG={};r.linhas.forEac
 function renderEstrategia(){const E=S.estr;[...EF,...EF2].forEach(k=>{const el=$('#e-'+k);if(!el)return;el.value=E[k]??'';el.onchange=()=>{E[k]=el.value;save();};});
   $$('#e-tipo-chips .chip').forEach(b=>{b.classList.toggle('on',(E.tipo||'')===b.dataset.v);b.onclick=()=>{E.tipo=b.dataset.v;$('#e-tipo').value=E.tipo;save();renderEstrategia();};});
   $('#e-aviso').innerHTML=avisoPrimeiroUso();
-  $('#e-go').onclick=()=>{[...EF,...EF2].forEach(k=>{const el=$('#e-'+k);if(el)E[k]=el.value;});if(!(num(E.valor)>0)){toast('Informe o valor');return;}E.feito=true;E.conf={};save();go(S.cotasL.some(x=>!venceu(x)&&(!E.tipo||(E.tipo==='Imobiliário'?x.tipo==='Imobiliário':x.tipo==='Veículos')))||S.grupos.some(g=>g.fonte!==EXEMPLO&&(!E.tipo||g.tipo===E.tipo)&&num(g.pr)>0)?'oferta':'cotas');};
+  $('#e-go').onclick=()=>{[...EF,...EF2].forEach(k=>{const el=$('#e-'+k);if(el)E[k]=el.value;});if(!(num(E.valor)>0)){toast('Informe o valor');return;}if(!ADM())E.modo='liquido';E.feito=true;E.conf={};save();renderOferta();go(E.bestReal?'oferta':'cotas');};
   renderOferta();renderCotas();}
 function blocoSeguro(b,segI){const t=b&&b.r&&!b.r.erro?b.r.tot:null;const v=t?segI(t):0;
   const custo=v>0?`Cerca de ${brl2(v)} por mês; na projeção do sistema é um valor fixo. Já somado na parcela mostrada`:'Valor a confirmar no sistema';
@@ -680,8 +683,8 @@ function guardarColagem(t){const em=new Date().toISOString();
       if(comSeg){S.segTaxa=Math.round(b.seg1/b.saldoSS*1e6)/1e4;S.segInfo=`composição de ${new Date().toLocaleDateString('pt-BR')}: grupo ${x.cod}, seguro ${brl2(b.seg1)} por mês sobre saldo de ${brl(b.saldoSS)}`;}
       if(Math.abs(b.parc1-x.parc)<0.02)S.listaSeg=comSeg?'com':'sem'; // a parcela da lista bate com o bloco com ou sem prestamista
       resumo[x.plano]=`${x.plano}: taxa adm ${pct(b.ta)}${b.aCobrarPct>0?`, ${pct(b.aCobrarPct)} do crédito a cobrar`:''}`;});
-    regHistLista(bl.map(b=>b.cab));save();
-    return `Detalhamento lido (${bl.length} bloco${bl.length>1?'s':''}, grupo ${bl[0].cab.cod}). ${Object.values(resumo).join(' · ')}. Parcela da lista: ${S.listaSeg==='com'?'com':'sem'} seguro.`;}
+    regHistLista(bl.map(b=>b.cab));const ls=lerLista(t).filter(r=>!bl.some(b=>compK(b.cab)===compK(r)));let nv=0;ls.forEach(r=>{nv+=up(r);});if(ls.length)regHistLista(ls);save(); // colagem mista: a lista que veio junto também entra
+    return `Detalhamento lido (${bl.length} bloco${bl.length>1?'s':''}, grupo${new Set(bl.map(b=>b.cab.gid)).size>1?'s':''} ${[...new Set(bl.map(b=>b.cab.cod))].join(', ')}). ${Object.values(resumo).join(' · ')}.${ls.length?` Lista: ${ls.length} linhas, ${new Set(ls.map(r=>r.gid)).size} grupos.`:''} Parcela da lista: ${S.listaSeg==='com'?'com':'sem'} seguro.`;}
   const lista=lerLista(t);
   if(lista.length){let novos=0;lista.forEach(r=>{novos+=up(r);});regHistLista(lista);save();
     return `Lista lida: ${lista.length} linhas, ${new Set(lista.map(r=>r.gid)).size} grupos (${novos} novas, ${lista.length-novos} atualizadas ou repetidas).`;}
@@ -754,15 +757,27 @@ function roteiro(E){const need=num(E.valor)||0;if(!(need>0))return null;const tO
   if(E.bestReal&&E.bestN>=1)rec=ops.find(o=>o.n===E.bestN)||rec; // oferta já fechou: o roteiro acompanha o tamanho de cota dela
   const melhores=ops.slice().sort((x,y)=>x.bolso-y.bolso||y.n-x.n).slice(0,2);
   return {need,total:rec.tot,embP:rec.emb,ops,rec,melhores,um:ops.find(o=>o.n===1)};}
+const ADM=()=>!(window.SESSAO&&!window.SESSAO.admin); // sem sessão (arquivo local) = visão completa
+function buscaSimples(R,E,pronto){if(!R)return 'Monte um pedido primeiro: a busca aparece aqui.';
+  const st=statusPortal(),fr=st?`<div class="hint" style="margin-top:8px">Grupos do portal de ${fmtD(st.ult)}${st.velho?` · <b style="color:var(--warn)">teve assembleia em ${fmtD(st.assemPassada)}: lances podem ter mudado${ADM()?' (atualize pelo botão do portal)':' (avise o admin)'}</b>`:''}.</div>`:'';
+  if(pronto)return `<div style="font-size:15px;color:var(--ink)"><b>Pronto:</b> a proposta já fecha com o que você colou. Confirme no sistema: ${E.busca}. <a href="#" data-go="oferta" style="color:inherit;font-weight:600">Ver a proposta →</a></div>${fr}`;
+  const rc=R.rec,tipoT=E.tipo==='Imobiliário'?'imóvel':(E.tipo||'').toLowerCase()||'o tipo do bem';
+  const faixa=g=>{const lo=g?Math.max(rc.lo,Math.floor((g.min||0)/1000)*1000):rc.lo,hi=g?Math.min(rc.hi,Math.ceil((g.max||rc.hi)/1000)*1000):rc.hi;return lo<=hi?[lo,hi]:[rc.lo,rc.hi];};
+  const cab=`<div style="color:var(--ink)">Para ${brl(R.need)} líquido: <b>${rc.n} cota${rc.n>1?'s':''} de ~${brl(rc.t)}</b> (${brl(R.total)} em cartas${R.embP>0?`, embutido ${pct(R.embP)}`:''}).</div>`;
+  if(R.semDados||!rc.uso||!rc.uso.length)return `${cab}<ul class="busca-l"><li>${esc(tipoT)} · valor entre <b>${brl(rc.lo)}</b> e <b>${brl(rc.hi)}</b></li></ul><div class="hint">Ainda não há grupos do portal deste tipo.</div>${fr}`;
+  const usados=new Set(rc.uso.map(u=>u.cod)),res=(rc.gs||[]).filter(g=>!usados.has(g.cod)).slice(0,2);
+  const li=(g,cod,k)=>{const [lo,hi]=faixa(g);return `Grupo <b>${esc(cod)}</b>${k?` · ${k} cota${k>1?'s':''}`:''} · valor entre <b>${brl(lo)}</b> e <b>${brl(hi)}</b>`;};
+  return `${cab}<ul class="busca-l">${rc.uso.map(u=>`<li>${li((rc.gs||[]).find(g=>g.cod===u.cod),u.cod,u.k)}</li>`).join('')}${res.map(g=>`<li class="res">Se faltar vaga: ${li(g,g.cod,0)}</li>`).join('')}</ul><div class="hint">Cole embaixo a lista e o detalhamento das cotas que achar.</div>${fr}`;}
 function renderCotas(){const E=S.estr;
   const R=E.feito?roteiro(E):null,tipoT=E.tipo==='Imobiliário'?'imóvel':(E.tipo||'').toLowerCase()||'o tipo do bem';
   const pronto=E.bestReal&&E.busca;
   const velho=(statusPortal()||{}).velho;
-  let busca=R?`${velho?avisoPortal():''}${pronto?`<div style="font-size:15px;color:var(--ink)"><b>Pronto:</b> a oferta já fecha com o que você colou. <b>Confirme no sistema:</b> ${E.busca}. <a href="#" data-go="oferta" style="color:inherit;font-weight:600">Ver a oferta →</a></div><div class="hint">Se alguma não tiver vaga, siga o ranking abaixo ou pesquise ${brl(R.rec.lo)} a ${brl(R.rec.hi)}.</div>`:`<div style="font-size:15px;color:var(--ink)"><b>Pesquise no sistema:</b> ${esc(tipoT)} de <b>${brl(R.rec.lo)} a ${brl(R.rec.hi)}</b> e cole a 1ª página abaixo.</div>`}
+  let det=R?`${velho?avisoPortal():''}${pronto?`<div style="font-size:15px;color:var(--ink)"><b>Pronto:</b> a oferta já fecha com o que você colou. <b>Confirme no sistema:</b> ${E.busca}. <a href="#" data-go="oferta" style="color:inherit;font-weight:600">Ver a oferta →</a></div><div class="hint">Se alguma não tiver vaga, siga o ranking abaixo ou pesquise ${brl(R.rec.lo)} a ${brl(R.rec.hi)}.</div>`:`<div style="font-size:15px;color:var(--ink)"><b>Pesquise no sistema:</b> ${esc(tipoT)} de <b>${brl(R.rec.lo)} a ${brl(R.rec.hi)}</b> e cole a 1ª página abaixo.</div>`}
     Para ${brl(R.need)} ${E.modo==='liquido'?'líquido':''}${R.embP>0?` com embutido de ${pct(R.embP)}`:''}: ${brl(R.total)} em cartas, em <b>${R.rec.n} cota${R.rec.n>1?'s':''} de ~${brl(R.rec.t)}</b>.${R.melhores&&R.melhores.length>1?`<div style="margin-top:6px"><b>Melhores faixas:</b> ${R.melhores.map(o=>`${o.n} carta${o.n>1?'s':''} de ~${brl(o.t)} (${o.uso.map(u=>u.k+'× '+esc(u.cod)+' '+pct(u.a)).join(' + ')}; bolso ~${brl(o.bolso)})`).join(' · ')}.${R.um&&R.um!==R.rec&&R.um.bolso>R.rec.bolso+500?` Não compensa 1 carta de ${brl(R.um.t)}: lance ${pct(R.um.a)}, bolso ~${brl(R.um.bolso)}.`:''}</div>`:''}
     ${R.rec.gs.length?`<div style="margin-top:6px"><b>Olhe nesta ordem (menor lance primeiro):</b><ol style="margin:4px 0 0;padding-left:20px">${R.rec.gs.map(g=>`<li>Grupo <b>${esc(g.cod)}</b>: lance ${pct(g.a)}${g.vagas!=null?' · '+g.vagas+' vaga'+(g.vagas>1?'s':''):(g.vagasTxt?' · '+esc(g.vagasTxt):'')}${g.part?' · '+g.part+' participantes':''}</li>`).join('')}</ol><div class="hint">Se o 1º não tiver cota nessa faixa, passe pro próximo. Nenhum grupo conhecido? Cole a página que o app aprende.</div></div>`:'<div class="hint">Ainda não há grupos colados desse tipo: cole a página da busca e o app monta o ranking.</div>'}
     <details class="adv" style="margin-top:6px"><summary>Comparar todas as divisões (1 a 8 cartas)</summary><table class="cmp" style="font-size:12px"><thead><tr><th>Cartas</th><th>Cada uma</th><th>Pesquise</th><th>Grupo de menor lance</th><th>Lance do bolso ~</th></tr></thead><tbody>${R.ops.map(o=>`<tr class="${o===R.rec?'best-row':''}"><td>${o.n}</td><td class="num">${brl(o.t)}</td><td class="num">${brl(o.lo)} a ${brl(o.hi)}</td><td>${o.uso?o.uso.map(u=>u.k+'× '+esc(u.cod)+' ('+pct(u.a)+')').join(' + '):'—'}</td><td class="num">${o.bolso!=null?brl(o.bolso):'—'}</td></tr>`).join('')}</tbody></table><div class="hint">Só aparecem tamanhos em que há grupo conhecido (tabela do portal em Grupos ou páginas coladas aqui). Lance pelo histórico do grupo, não é garantia. Empate no bolso: mais cartas = mais bilhetes por assembleia.</div></details>
-    ${E.busca&&!pronto?`<div style="margin-top:6px"><b>Depois de colar, confirme no sistema:</b> ${E.busca}.</div>`:''}`:'Monte um pedido primeiro: a busca aparece aqui.';
+    ${E.busca&&!pronto?`<div style="margin-top:6px"><b>Depois de colar, confirme no sistema:</b> ${E.busca}.</div>`:''}`:'';
+  const busca=buscaSimples(R,E,pronto)+(det?`<details class="adv so-admin" style="margin-top:8px"><summary>Roteiro completo (admin)</summary>${det}</details>`:'');
   const reais=(E.buscaL||[]).map(l=>{const cs=S.cotasL.filter(x=>x.gid===codN(l.cod));if(!cs.length)return '';const x=cs.slice().sort((a,b)=>Math.abs(a.carta-l.carta)-Math.abs(b.carta-l.carta))[0];return `<br>Grupo ${esc(l.cod)}: carta mais próxima no sistema ${brl2(x.carta)}, parcela ${brl2(x.parc)}, vagas ${x.vagas!=null?x.vagas:esc(x.vagasTxt)||'?'}${venceu(x)?' <b>(dados vencidos)</b>':''}`;}).join('');
   $('#c-busca').innerHTML=busca+reais;
   const l=$('#c-lista');const porG={};S.cotasL.forEach(x=>{(porG[x.gid]=porG[x.gid]||[]).push(x);});
@@ -772,7 +787,7 @@ function renderCotas(){const E=S.estr;
     return `<details class="adv" ${n===0?'open':''} style="border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px"><summary style="color:var(--ink);font-weight:600">Grupo ${esc(h.cod)} <span class="tag muted">${esc(h.tipo||'?')}</span> ${comp?`<span class="tag">TA ${pct(comp.ta)} · FR ${pct(comp.fr)}</span>`:'<span class="tag muted">sem composição</span>'} ${vc?'<span class="tag warn">dados vencidos</span>':''}</summary>
     <div class="hint" style="margin-bottom:6px">${h.part} participantes · próxima assembleia ${new Date(h.ass+'T12:00:00').toLocaleDateString('pt-BR')} · lance médio ${pct(h.lm)}</div>
     <table class="cmp" style="font-size:12px"><thead><tr><th>Plano</th><th>Carta</th><th>Parcela</th><th>Prazo</th><th>Vagas</th><th>Seguro/mês</th></tr></thead><tbody>${cs.map(x=>{const g=segDe(x);return `<tr><td>${esc(x.plano)}</td><td class="num">${brl2(x.carta)}</td><td class="num">${brl2(x.parc)}</td><td class="num">${x.prazo}</td><td class="num">${x.vagas!=null?x.vagas:esc(x.vagasTxt)}</td><td class="num">${g.seg!=null?brl2(g.seg)+(g.real?'':' <span style="color:var(--muted)">(derivado)</span>'):(x.plano==='Reduzida'?'a confirmar':'—')}</td></tr>`;}).join('')}</tbody></table></details>`;}).join(''):'Nada colado ainda.');
-  $('#c-save').onclick=()=>{const t=$('#c-paste').value.trim();if(!t){toast('Cole o texto primeiro');return;}const m=guardarColagem(t);$('#c-msg').textContent=m;$('#c-paste').value='';renderCotas();toast('Pronto');};
+  $('#c-save').onclick=()=>{const t=$('#c-paste').value.trim();if(!t){toast('Cole o texto primeiro');return;}const m=guardarColagem(t);$('#c-msg').textContent=m;$('#c-paste').value='';renderOferta();renderCotas();if(S.estr.feito&&S.estr.bestReal){go('oferta');toast('Proposta montada com as cotas coladas');}else toast(/^Não reconheci/.test(m)?'Não reconheci o texto':'Lido. Falta cota pra fechar o valor: veja a busca');};
   $('#c-clear').onclick=()=>{if(!S.cotasL.length&&!Object.keys(S.comp).length)return;if(!window.confirm('Apagar as cotas e composições lidas neste aparelho?'))return;S.cotasL=[];S.comp={};save();$('#c-msg').textContent='';renderCotas();};}
 
 /* ===================== grupos compartilhados (servidor) ===================== */
