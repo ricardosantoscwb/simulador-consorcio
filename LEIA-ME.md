@@ -2,8 +2,9 @@
 
 Entrevista → Laudo → Detalhe → Grupos. Acesso por código no e-mail (sem senha), portado da área do Estaleiro.
 
-- `fontes/index.html` · o app (edite aqui). `node build.mjs` cola em `nucleo/app-html.mjs` (gerado, não versionado).
+- `fontes/index.html` · o app (edite aqui). `node build.mjs` cola em `nucleo/app-html.mjs` (gerado, não versionado). O build também cola `nucleo/alavancagem.mjs` (sem `export`) no marcador `/*__ALAVANCAGEM__*/` do index.html: as contas da tela Alavancagem rodam no navegador e continuam testáveis em Node. Fumaça da tela (navegador, fora do `npm test`): `node testes/fumaca-alavancagem.mjs`.
 - `funcoes/` · Netlify Functions: `/` (app, só com sessão), `/entrar`, `/api/codigo`, `/api/entrar`, `/api/sair`, `/api/dados` (grupos compartilhados, Netlify Blobs), `/admin` + `/api/usuarios` (painel: incluir, pausar, reativar, excluir; só admin).
+- `funcoes/publicos.mjs` + `publicos-agendada.mjs` · dados públicos do Banco Central (CDI série 4389, Selic meta 432, taxa média de veículos PF 20749; sem login, nada da Caixa). A agendada roda todo dia ~09:00 UTC, busca as 3 séries em paralelo (`Promise.allSettled`, timeout de 8 s cada, para caber nos 30 s da função agendada) e grava no Blobs (`publicos`); `GET /api/publicos` devolve (só com sessão). Se o BCB falhar, fica o último valor com `erro`. FipeZap não tem API pública: segue entrada manual.
 - Usuários: ADMIN_EMAILS e USUARIOS (Netlify) entram sempre; os demais vêm do painel (`nucleo/usuarios.mjs`, Blobs). Pausado perde a sessão na hora. O módulo é portável pra outros apps (holerite).
 - `nucleo/` · sessão, limites, e-mail, páginas. Nunca é publicado.
 - Variáveis na Netlify: `RESEND_API_KEY` (segredo; a mesma do Estaleiro, envio por contato@estaleiro.co), `ADMIN_EMAILS`, `USUARIOS` (opcional: e-mails fixos, separados por vírgula; o normal é cadastrar pelo painel).

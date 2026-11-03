@@ -186,8 +186,8 @@ details.mais>summary{font-size:13px;color:var(--muted)}
 .bnav{display:none}
 @media(max-width:899px){
   nav.tabs{display:none}
-  .bnav{display:grid;grid-template-columns:repeat(3,1fr);position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
-  body:not(.usuario) .bnav{grid-template-columns:repeat(4,1fr)}
+  .bnav{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
+  body:not(.usuario) .bnav{grid-template-columns:repeat(5,1fr)}
   .bnav button{border:0;background:transparent;min-height:48px;padding:4px 2px;border-radius:10px;color:var(--muted);font-size:12px;font-weight:500;display:grid;gap:2px;justify-items:center;align-content:center;cursor:pointer}
   .bnav button b{font-size:15px;line-height:1;font-weight:600}.bnav button.on{color:var(--ink);background:var(--surface)}
   .q{font-size:24px}
@@ -208,13 +208,45 @@ body.present .present-bar{display:flex;gap:6px}
 .seg .it{display:flex;gap:12px;align-items:flex-start}.seg .ic{flex:none;width:20px;height:20px;display:grid;place-items:center;margin-top:1px}.seg .ic svg{width:20px;height:20px;stroke:var(--ink);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
 .seg .it b{display:block;font-size:14px;margin-bottom:2px}.seg .it span{font-size:13px;color:var(--muted)}
 .seg .nota{margin-top:16px;font-size:12px;color:var(--muted)}
+
+/* alavancagem: quatro blocos recolhíveis, cada um com um resultado dominante no topo */
+.lv{max-width:760px;margin:0 auto}
+.lv-blk{border-top:1px solid var(--line)}
+.lv-blk:last-of-type{border-bottom:1px solid var(--line)}
+.lv-blk>summary{list-style:none;display:grid;gap:3px;padding:16px 30px 16px 0;min-height:44px;position:relative;cursor:pointer}
+.lv-blk>summary::-webkit-details-marker{display:none}
+.lv-blk>summary::after{content:"";position:absolute;right:8px;top:24px;width:8px;height:8px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(45deg);transition:transform .15s}
+.lv-blk[open]>summary::after{transform:rotate(-135deg);top:28px}
+.lv-t{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.lv-t i{font-style:normal;text-transform:none;letter-spacing:0;font-weight:400;margin-left:6px}
+.lv-big{font-size:clamp(26px,7vw,40px);font-weight:600;letter-spacing:-.03em;line-height:1.1;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;color:var(--ink)}
+.lv-big.pos{color:var(--accent)}.lv-big.neg{color:var(--warn)}
+.lv-sub{font-size:13px;color:var(--ink-2);overflow-wrap:anywhere}
+.lv-body{padding:2px 0 24px}
+.lv-body .hint{overflow-wrap:anywhere}
+.lv input.lv-auto{background:var(--accent-soft)}
+.lv-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0 22px;margin:8px 0 6px}
+.lv-cols>*{min-width:0}
+.lv-col{border-top:1px solid var(--ink);padding-top:12px;margin-top:10px}
+.lv-col[hidden],.lv [hidden]{display:none}
+.lv-tb caption{caption-side:top;text-align:left;font-size:12px;color:var(--muted);padding:2px 0 6px}
+.lv-ch{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.lv-ro{min-height:44px;display:flex;align-items:center;font-weight:600;font-variant-numeric:tabular-nums}
+.lv-tb{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;margin:10px 0 4px}
+.lv-tb th,.lv-tb td{padding:10px 4px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top}
+.lv-tb th:first-child,.lv-tb td:first-child{text-align:left;padding-left:0}
+.lv-tb th:last-child,.lv-tb td:last-child{padding-right:0}
+.lv-tb thead th{font-size:12px;font-weight:500;color:var(--muted);border-bottom:1px solid var(--ink)}
+.lv-tb td small{display:block;color:var(--muted);font-size:11px}
+.lv-tb td:last-child{font-weight:600;color:var(--ink)}
+.lv-avisos{margin-top:22px}
 </style>
 </head>
 <body>
 <script>document.body.classList.toggle('usuario',!!(window.SESSAO&&!window.SESSAO.admin)||(()=>{try{return localStorage.getItem('simcons.verComo')==='1';}catch(e){return false;}})());</script>
 <header class="top"><div class="in">
   <div class="brand"><div class="dot">∑</div><div>Simulador de Consórcio<small>pedido · busca · proposta</small></div></div>
-  <nav class="tabs"><button data-go="grupos" class="so-admin">Grupos</button><button data-go="estrategia">1 Pedido</button><button data-go="cotas">2 Busca</button><button data-go="oferta">3 Proposta</button></nav>
+  <nav class="tabs"><button data-go="grupos" class="so-admin">Grupos</button><button data-go="estrategia">1 Pedido</button><button data-go="cotas">2 Busca</button><button data-go="oferta">3 Proposta</button><button data-go="alavanca">Alavancagem</button></nav>
   <button class="btn primary" id="btnPresent">Apresentar</button>
   <button class="btn ghost small" id="btnVer" style="display:none" title="Só muda o que você vê; as permissões continuam de admin">Ver como gerente</button>
   <a class="btn ghost small" id="lnkAdmin" href="/admin" style="display:none">Admin</a>
@@ -230,7 +262,8 @@ body.present .present-bar{display:flex;gap:6px}
     <div id="e-aviso"></div>
     <div class="f"><label for="e-valor">Valor líquido</label><div class="money-wrap big"><input id="e-valor" class="bigin" type="text" inputmode="numeric" autocomplete="off" data-money></div></div>
     <div class="f so-admin"><label for="e-modo">Esse valor é</label><select id="e-modo"><option value="liquido">Líquido (o que ele recebe)</option><option value="bruto">Bruto (total das cartas)</option></select></div>
-    <div class="f" role="group" aria-labelledby="l-tipo"><span class="f-l" id="l-tipo" style="font-size:13px;color:var(--ink-2);font-weight:500">Tipo do bem</span><div class="chips" id="e-tipo-chips"><button type="button" class="chip" data-v="Imobiliário">Imóvel</button><button type="button" class="chip" data-v="Veículos Leves">Veículo leve</button><button type="button" class="chip" data-v="Veículos Pesados">Pesado</button><button type="button" class="chip" data-v="">Qualquer</button></div><select id="e-tipo" hidden><option>Imobiliário</option><option>Veículos Leves</option><option>Veículos Pesados</option><option value="">Qualquer</option></select></div>
+    <div class="f" role="group" aria-labelledby="l-tipo"><span class="f-l" id="l-tipo" style="font-size:13px;color:var(--ink-2);font-weight:500">Tipo do bem</span><div class="chips" id="e-tipo-chips"><button type="button" class="chip" data-v="Imobiliário">Imóvel</button><button type="button" class="chip" data-v="Veículos Leves">Veículo leve</button><button type="button" class="chip" data-v="Veículos Leves" data-menor="1">Menor valor / moto</button><button type="button" class="chip" data-v="Veículos Pesados">Pesado</button><button type="button" class="chip" data-v="">Qualquer</button></div><select id="e-tipo" hidden><option>Imobiliário</option><option>Veículos Leves</option><option>Veículos Pesados</option><option value="">Qualquer</option></select></div>
+    <div id="e-menor"></div>
     <details class="adv" id="e-bolso"><summary><span>Cabe no bolso? <span class="hint">opcional · o app marca o que não cabe</span></span></summary>
     <div class="two">
       <div class="f"><label for="e-rec">Tem para o lance</label><div class="money-wrap"><input id="e-rec" type="text" inputmode="numeric" autocomplete="off" data-money></div></div>
@@ -257,6 +290,10 @@ body.present .present-bar{display:flex;gap:6px}
       <div class="two">
         <div class="f"><label for="e-sgp">Seguro: % ao mês sobre o saldo <span class="hint">vazio = amostra</span></label><input id="e-sgp" type="number" min="0" max="5" step="0.001" inputmode="decimal" placeholder="0,0433"></div>
         <div class="f"><label for="e-lf">Lance fixo: % do grupo que participa</label><input id="e-lf" type="number" min="0" max="100" step="1" inputmode="numeric" placeholder="ex.: 20"></div>
+      </div>
+      <div class="two">
+        <div class="f"><label for="e-teto">Teto do menor valor <span class="hint">carta até · escolha do app, sem fonte confirmada</span></label><div class="money-wrap"><input id="e-teto" type="text" inputmode="numeric" autocomplete="off" data-money placeholder="60.000"></div></div>
+        <div></div>
       </div>
       <div class="f"><label for="e-nome">Nome do cliente <span class="hint">fica só neste aparelho, não vai no link</span></label><input id="e-nome" autocomplete="off"></div>
     </details>
@@ -359,9 +396,68 @@ body.present .present-bar{display:flex;gap:6px}
   </div>
   <div class="card" style="margin-top:14px" id="camp-card"></div>
 </section>
+
+<!-- ================= ALAVANCAGEM ================= -->
+<section class="screen" id="s-alavanca">
+ <div class="lv">
+  <h1 class="q">Alavancagem<small>Quatro contas para conversar com o cliente. Premissas editáveis, guardadas só neste aparelho; nada de cliente vai ao servidor.</small></h1>
+  <details class="lv-blk" id="lv-d1" open>
+    <summary><span class="lv-t">1 · Aluguel × parcela<i>imóvel</i></span><span class="lv-big" id="lv-b1">—</span><span class="lv-sub" id="lv-s1"></span></summary>
+    <div class="lv-body">
+<div class="two"><div class="f"><label for="lv-a_valor">Valor do imóvel</label><div class="money-wrap"><input id="lv-a_valor" data-lv="a_valor" data-money type="text" inputmode="numeric" autocomplete="off"></div></div><div class="f"><label for="lv-a_rend">Rendimento do aluguel (% a.a.)</label><input id="lv-a_rend" data-lv="a_rend" data-dec type="text" inputmode="decimal" autocomplete="off" placeholder="ex.: 4,74"><span class="hint">FipeZap Curitiba residencial 4,74% a.a., abr/2026 · comercial 5,96%, mar/2026; FipeZap não tem API, atualize à mão.</span></div></div>
+<div class="two"><div class="f"><label for="lv-a_desc">Descontos (% do aluguel) <span class="hint">vacância, condomínio, IPTU</span></label><input id="lv-a_desc" data-lv="a_desc" data-dec type="text" inputmode="decimal" autocomplete="off" placeholder="0"></div><div class="f"><label for="lv-a_parc">Parcela depois da contemplação</label><div class="money-wrap"><input id="lv-a_parc" data-lv="a_parc" data-money type="text" inputmode="numeric" autocomplete="off"></div></div></div>
+<div class="hint" id="lv-h1"></div>
+<div id="lv-o1"></div>
+    </div>
+  </details>
+  <details class="lv-blk" id="lv-d2">
+    <summary><span class="lv-t">2 · Consórcio × financiamento<i>veículo e imóvel</i></span><span class="lv-big" id="lv-b2">—</span><span class="lv-sub" id="lv-s2"></span></summary>
+    <div class="lv-body">
+<div class="f" role="group" aria-labelledby="lv-l-bem"><span id="lv-l-bem" style="font-size:13px;color:var(--ink-2);font-weight:500">Bem</span><div class="chips"><button type="button" class="chip" data-lvchip="f_bem" data-v="veiculo">Veículo</button><button type="button" class="chip" data-lvchip="f_bem" data-v="imovel">Imóvel</button></div></div>
+<div class="two"><div class="f"><label for="lv-f_cred">Crédito líquido <span class="hint">o que o cliente recebe</span></label><div class="money-wrap"><input id="lv-f_cred" data-lv="f_cred" data-money type="text" inputmode="numeric" autocomplete="off"></div></div><div class="f"><label for="lv-f_lance">Lance do bolso <span class="hint">vazio = 0</span></label><div class="money-wrap"><input id="lv-f_lance" data-lv="f_lance" data-money type="text" inputmode="numeric" autocomplete="off"></div></div></div>
+<div class="two"><div class="f"><label for="lv-f_n">Parcelas até contemplar <span class="hint">quantidade</span></label><input id="lv-f_n" data-lv="f_n" type="number" min="0" step="1" inputmode="numeric" placeholder="ex.: 1"></div><div class="f"><label for="lv-f_p1">Valor da parcela até contemplar</label><div class="money-wrap"><input id="lv-f_p1" data-lv="f_p1" data-money type="text" inputmode="numeric" autocomplete="off"></div></div></div>
+<div class="two"><div class="f"><label for="lv-f_p2">Parcela depois da contemplação</label><div class="money-wrap"><input id="lv-f_p2" data-lv="f_p2" data-money type="text" inputmode="numeric" autocomplete="off"></div></div><div class="f"><label for="lv-f_m2">Meses depois da contemplação</label><input id="lv-f_m2" data-lv="f_m2" type="number" min="0" step="1" inputmode="numeric" placeholder=""></div></div>
+<div class="two"><div class="f" id="lv-w-prazo"><label for="lv-f_prazo">Prazo do financiamento (meses) <span class="hint">padrão editável</span></label><input id="lv-f_prazo" data-lv="f_prazo" type="number" min="0" step="1" inputmode="numeric" placeholder=""></div><div></div></div>
+<div class="hint" id="lv-h2"></div>
+<div id="lv-o2a"></div>
+<div class="lv-cols"><div class="lv-col" id="lv-c-itau"><div class="lv-ch"><b>Itaú Unibanco</b><span class="tag muted">padrão editável</span></div><div class="f"><label for="lv-f_tx_itau">Taxa do financiamento (% a.a.)</label><input id="lv-f_tx_itau" data-lv="f_tx_itau" data-dec type="text" inputmode="decimal" autocomplete="off" placeholder=""></div><div id="lv-fr-itau"></div></div><div class="lv-col" id="lv-c-san"><div class="lv-ch"><b>Santander</b><span class="tag muted">padrão editável</span></div><div class="f"><label for="lv-f_tx_san">Taxa do financiamento (% a.a.)</label><input id="lv-f_tx_san" data-lv="f_tx_san" data-dec type="text" inputmode="decimal" autocomplete="off" placeholder=""></div><div id="lv-fr-san"></div></div><div class="lv-col" id="lv-c-bra"><div class="lv-ch"><b>Bradesco</b><span class="tag muted">padrão editável</span></div><div class="f"><label for="lv-f_tx_bra">Taxa do financiamento (% a.a.)</label><input id="lv-f_tx_bra" data-lv="f_tx_bra" data-dec type="text" inputmode="decimal" autocomplete="off" placeholder=""></div><div id="lv-fr-bra"></div></div><div class="lv-col" id="lv-c-mkt"><div class="lv-ch"><b>Média do mercado</b><span class="tag muted">BCB</span></div><div class="f"><span style="font-size:13px;color:var(--ink-2);font-weight:500">Taxa do financiamento (% a.a.)</span><div class="lv-ro" id="lv-mkt-tx">—</div><span class="hint" id="lv-mkt-nota"></span></div><div id="lv-fr-mkt"></div></div><div class="lv-col" id="lv-c-cx"><div class="lv-ch"><b>Simulador habitacional da Caixa</b><span class="tag muted">sem fonte confirmada</span></div><div class="f"><label for="lv-f_total_cx">Total pago do financiamento <span class="hint">cole do simulador habitacional da Caixa; sem padrão</span></label><div class="money-wrap"><input id="lv-f_total_cx" data-lv="f_total_cx" data-money type="text" inputmode="numeric" autocomplete="off"></div><span class="hint">O simulador da Caixa costuma ser SAC com correção pela TR; o app não recalcula por Price no imóvel (sem fonte confirmada).</span></div><div id="lv-fr-cx"></div></div></div>
+<div class="hint" id="lv-fonte2">Taxas padrão dos três grandes bancos: média do Banco Central, aquisição de veículos PF prefixado, coleta 26/08 a 01/09/2026, via iDinheiro. É média de mercado, não a taxa do cliente; edite se tiver a taxa real.</div>
+<div id="lv-o2"></div>
+    </div>
+  </details>
+  <details class="lv-blk" id="lv-d3">
+    <summary><span class="lv-t">3 · Ágio de carta contemplada<i></i></span><span class="lv-big" id="lv-b3">—</span><span class="lv-sub" id="lv-s3"></span></summary>
+    <div class="lv-body">
+<p class="sub">Cota contemplada que o dono quer passar adiante. Piso: o que ele já pagou. Teto conservador: o comprador paga o ágio à vista e assume as parcelas, então o limite é o crédito recebido menos o valor presente dessas parcelas (descontadas à taxa do financiamento escolhido).</p>
+<div class="two"><div class="f"><label for="lv-g_lance">Lance do bolso pago <span class="hint">vazio = 0</span></label><div class="money-wrap"><input id="lv-g_lance" data-lv="g_lance" data-money type="text" inputmode="numeric" autocomplete="off"></div></div><div class="f"><label for="lv-g_np">Parcelas pagas <span class="hint">quantidade</span></label><input id="lv-g_np" data-lv="g_np" type="number" min="0" step="1" inputmode="numeric" placeholder="ex.: 1"></div></div>
+<div class="two"><div class="f"><label for="lv-g_vp">Valor de cada parcela paga</label><div class="money-wrap"><input id="lv-g_vp" data-lv="g_vp" data-money type="text" inputmode="numeric" autocomplete="off"></div></div><div class="f"><label for="lv-g_cred">Crédito recebido</label><div class="money-wrap"><input id="lv-g_cred" data-lv="g_cred" data-money type="text" inputmode="numeric" autocomplete="off"></div></div></div>
+<div class="two"><div class="f"><label for="lv-g_saldo">Saldo que o comprador assume</label><div class="money-wrap"><input id="lv-g_saldo" data-lv="g_saldo" data-money type="text" inputmode="numeric" autocomplete="off"></div></div><div class="f"><label for="lv-g_parc">Parcela assumida</label><div class="money-wrap"><input id="lv-g_parc" data-lv="g_parc" data-money type="text" inputmode="numeric" autocomplete="off"></div></div></div>
+<div class="two"><div class="f"><label for="lv-g_prazo">Meses que faltam da cota</label><input id="lv-g_prazo" data-lv="g_prazo" type="number" min="0" step="1" inputmode="numeric" placeholder=""></div><div class="f" id="lv-g_finwrap"><label for="lv-g_fin">Taxa do financiamento de referência</label><select id="lv-g_fin" data-lvsel="g_fin"></select></div><div class="f" id="lv-g_txwrap" hidden><label for="lv-g_tx">Taxa do financiamento (% a.a.) <span class="hint">imóvel: sem taxa padrão</span></label><input id="lv-g_tx" data-lv="g_tx" data-dec type="text" inputmode="decimal" autocomplete="off" placeholder="cole ou digite"></div></div>
+<div class="two"><div class="f"><label for="lv-g_prazoFin">Prazo do financiamento de referência (meses) <span class="hint">veículo: vazio = o do bloco 2; imóvel: digite</span></label><input id="lv-g_prazoFin" data-lv="g_prazoFin" type="number" min="0" step="1" inputmode="numeric" placeholder="igual ao do bloco 2"></div><div class="f"><label for="lv-g_preco">Preço de venda <span class="hint">seu preço, livre</span></label><div class="money-wrap"><input id="lv-g_preco" data-lv="g_preco" data-money type="text" inputmode="numeric" autocomplete="off"></div></div></div>
+<div id="lv-o3"></div>
+    </div>
+  </details>
+  <details class="lv-blk" id="lv-d4">
+    <summary><span class="lv-t">4 · Carta parada rendendo<i>fundo</i></span><span class="lv-big" id="lv-b4">—</span><span class="lv-sub" id="lv-s4"></span></summary>
+    <div class="lv-body">
+<p class="sub">Quanto rende o valor da carta se ficar parado num fundo atrelado ao CDI. Rentabilidade passada não garante a futura.</p>
+<div class="two"><div class="f"><label for="lv-h_valor">Valor</label><div class="money-wrap"><input id="lv-h_valor" data-lv="h_valor" data-money type="text" inputmode="numeric" autocomplete="off"></div></div><div class="f"><label for="lv-h_meses">Meses</label><input id="lv-h_meses" data-lv="h_meses" type="number" min="0" step="1" inputmode="numeric" placeholder="ex.: 12"></div></div>
+<div class="two"><div class="f"><label for="lv-h_cdi">CDI (% a.a.)</label><input id="lv-h_cdi" data-lv="h_cdi" data-dec type="text" inputmode="decimal" autocomplete="off" placeholder="ex.: 14,9"><span class="hint" id="lv-h-cdi"></span></div><div class="f"><label for="lv-h_pct">% do CDI</label><input id="lv-h_pct" data-lv="h_pct" data-dec type="text" inputmode="decimal" autocomplete="off" placeholder="99,53"><span class="hint">padrão 99,53% do CDI · fonte: documento do fundo CAIXA Institucional Soberano RF Ref DI informado pelo gerente (sem data/link confirmados); confirmar se o fundo é acessível a pessoa física</span></div></div>
+<div class="f"><label for="lv-h_ir">Imposto de renda sobre o rendimento (%)</label><input id="lv-h_ir" data-lv="h_ir" data-dec type="text" inputmode="decimal" autocomplete="off" placeholder="ex.: 15"><span class="hint">tabela do fundo: sem fonte confirmada; digite a alíquota que vale para o prazo</span></div>
+<div id="lv-o4"></div>
+    </div>
+  </details>
+
+  <div class="avisos lv-avisos"><b>Avisos</b><ul>
+    <li>Simulação estimada · não substitui a proposta oficial da administradora · não é recomendação de investimento.</li>
+    <li>Consórcio não tem contemplação garantida; lance alvo é histórico do grupo, não previsão. Nunca conte com o ágio.</li>
+    <li>Taxas, prazos e regras sem fonte confirmada estão marcados; confirme tudo na administradora antes de decidir.</li>
+  </ul></div>
+ </div>
+</section>
 </main>
 
-<nav class="bnav"><button data-go="grupos" class="so-admin"><b>·</b>Grupos</button><button data-go="estrategia"><b>1</b>Pedido</button><button data-go="cotas"><b>2</b>Busca</button><button data-go="oferta"><b>3</b>Proposta</button></nav>
+<nav class="bnav"><button data-go="grupos" class="so-admin"><b>·</b>Grupos</button><button data-go="estrategia"><b>1</b>Pedido</button><button data-go="cotas"><b>2</b>Busca</button><button data-go="oferta"><b>3</b>Proposta</button><button data-go="alavanca"><b>↗</b>Alavanca</button></nav>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -380,11 +476,12 @@ const defaultState=()=>({
   segTaxa:0.0433, segInfo:'1 amostra da tela de composição (27/10/2026): grupo 10012, carta R$ 305.576, seguro R$ 163,41 por mês sobre saldo de R$ 377.388 sem seguro',
 });
 let S=load();
+var LINK_CARREGADO; // (toast e $ ainda não existem quando load() roda: o aviso do link sai no fim do script)
 var IMPORT_PEND; // (sem "=null": load() roda antes desta linha) pacote do botão "Atualizar Simulador" (chega no fragmento da URL, nunca vai ao servidor como link)
 function load(){
   const base=defaultState();
   try{const h=location.hash.slice(1);if(h.startsWith('importar=')){IMPORT_PEND=JSON.parse(decodeURIComponent(h.slice(9)));history.replaceState(null,'',location.pathname);}}catch(e){toast('Pacote do portal ilegível: clique de novo no botão');}
-  try{const h=location.hash.slice(1);if(h.startsWith('s=')){const d=JSON.parse(decodeURIComponent(escape(atob(h.slice(2)))));history.replaceState(null,'',location.pathname);toast('Caminhos carregados do link');return {...base,...d,perfil:{...base.perfil,...(d.perfil||{})},promo:{...base.promo,...(d.promo||{})}};}}catch(e){}
+  try{const h=location.hash.slice(1);if(h.startsWith('s=')){const d=JSON.parse(decodeURIComponent(escape(atob(h.slice(2)))));history.replaceState(null,'',location.pathname);LINK_CARREGADO=true;return {...base,...d,perfil:{...base.perfil,...(d.perfil||{})},promo:{...base.promo,...(d.promo||{})}};}}catch(e){}
   try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);return {...base,...d,perfil:{...base.perfil,...(d.perfil||{})},promo:{...base.promo,...(d.promo||{})}};}}catch(e){}
   return base;
 }
@@ -447,7 +544,24 @@ function calc(c){
   return r;
 }
 /* ===================== geração automática dos caminhos ===================== */
-function candidatos(){const t=S.estr&&S.estr.tipo?[S.estr.tipo]:tipoDoBem(S.perfil.bem);const gs=S.grupos.filter(g=>num(g.cmax)>0&&num(g.ta)!=null);const f=gs.filter(g=>t.includes(g.tipo));return f.length?f:gs;}
+/* menor valor / moto: grupos de Veículos Leves com carta possível até o teto. O teto (padrão R$ 60.000) é escolha do app, sem fonte confirmada. */
+const TETO_MENOR=60000;
+const NOTA_MOTO='Moto: o portal não tem grupo próprio de moto (sem fonte confirmada); confirmar no MO se leves aceita moto.';
+const tetoMenor=E=>num(E&&E.teto)>0?num(E.teto):TETO_MENOR;
+const menorOn=E=>!!E&&E.menor==='1'&&E.tipo==='Veículos Leves';
+// entra o grupo que tem alguma carta possível ≤ teto (cmin; sem cmin, usa cmax); a cmax fica limitada ao teto
+const gruposMenor=E=>{const t=tetoMenor(E);return S.grupos.filter(g=>g.tipo==='Veículos Leves'&&num(g.cmax)>0&&num(g.ta)!=null&&(num(g.cmin)>0?num(g.cmin):num(g.cmax))<=t+0.01).map(g=>({...g,cmax:Math.min(num(g.cmax),t)}));};
+function menorStatus(E){if(!menorOn(E))return null;const t=tetoMenor(E),v=num(E.valor)||0,gs=gruposMenor(E);
+  if(!gs.length)return {ok:false,msg:`Nenhum grupo de Veículos Leves cadastrado tem carta até ${brl(t)}. Cole mais grupos em Grupos ou suba o teto em Avançado.`};
+  if(!(v>0))return {ok:true};
+  const emb=E.emb==='1',cs=gs.map(g=>{const le=emb?Math.min(num(g.emax)||0,99):0;return {le,carta:E.modo==='bruto'?v:v/(1-le/100)};}).sort((a,b)=>a.carta-b.carta)[0];
+  if(cs.carta>t+0.5)return {ok:false,msg:`Fora da faixa de menor valor: ${brl(v)} ${E.modo==='bruto'?'bruto':'líquido'} pedem carta de ${brl(cs.carta)}${cs.le>0?' (com embutido de '+pct(cs.le)+')':''}, acima do teto de ${brl(t)}. Use "Veículo leve", suba o teto ou desligue o embutido em Avançado.`};
+  return {ok:true};}
+const avisoMenor=ms=>`<div class="al" style="margin:4px 0 8px">${esc(ms.msg)}</div><div class="no-present"><a href="#" data-go="estrategia" style="font-weight:600">Ajustar o pedido →</a></div>`;
+const notaMoto=E=>menorOn(E)?`<div class="hint no-present" style="margin-top:8px">${esc(NOTA_MOTO)}</div>`:'';
+function pintaMenor(){const el=$('#e-menor');if(!el)return;const E=S.estr;if(!menorOn(E)){el.innerHTML='';return;}const ms=menorStatus(E);
+  el.innerHTML=`<div class="hint" style="margin:-4px 0 12px">Cartas até ${brl(tetoMenor(E))} (teto do app, sem fonte confirmada; muda em Avançado). ${esc(NOTA_MOTO)}</div>${ms&&!ms.ok?`<div class="al" style="margin:-4px 0 12px">${esc(ms.msg)}</div>`:''}`;}
+function candidatos(){if(menorOn(S.estr))return gruposMenor(S.estr);const t=S.estr&&S.estr.tipo?[S.estr.tipo]:tipoDoBem(S.perfil.bem);const gs=S.grupos.filter(g=>num(g.cmax)>0&&num(g.ta)!=null);const f=gs.filter(g=>t.includes(g.tipo));return f.length?f:gs;}
 const clamp=(v,g)=>Math.min(Math.max(v,num(g.cmin)||0),num(g.cmax)||v);
 /* ===================== navegação ===================== */
 function go(id){if(id==='grupos'&&document.body.classList.contains('usuario'))id='estrategia';$$('.screen').forEach(s=>s.classList.toggle('on',s.id==='s-'+id));$$('[data-go]').forEach(b=>b.classList.toggle('on',b.dataset.go===id));try{localStorage.setItem(KEY+'.tab',id);}catch(e){}window.scrollTo({top:0});render();}
@@ -534,6 +648,7 @@ function importarLote(batch,cfg,fonte){const porTipo={};
   save();empurrarGrupos();return {porTipo,novos,mudou,atual};}
 function renderRank(){const t=$('#rank');const P={valor:S.estr.valor,bem:S.estr.tipo==='Imobiliário'?'Imóvel':S.estr.tipo?'Veículo':''},valor=num(P.valor)||0;
   if(!(valor>0)){t.innerHTML='<tr><td>Faça um pedido para ver o ranking.</td></tr>';return;}
+  const ms=menorStatus(S.estr);if(ms&&!ms.ok){t.innerHTML=`<tr><td>${esc(ms.msg)}</td></tr>`;return;}
   const gs=candidatos();if(!gs.length){t.innerHTML='<tr><td>Nenhum grupo com faixa e taxa.</td></tr>';return;}
   const rows=gs.map(g=>{const le=num(g.emax)||0;const carta=clamp(valor/(1-Math.min(le,99)/100),g);const a=num(g.lmin)>0?num(g.lmin):(num(g.lmed)>0?num(g.lmed):0);const ll=Math.min(Math.max(0,a-le),100-le);const r=calc({gid:g.id,carta,cotas:1,ll,le,n:mesC(),prazo:''});return {g,carta,r};});
   rows.sort((a,b)=>((a.r.lanceLivre??9e99)-(b.r.lanceLivre??9e99))||((a.r.indice??99)-(b.r.indice??99)));
@@ -547,8 +662,11 @@ const moneyParse=t=>{t=String(t||'').replace(/[^\d,]/g,'');if(!t)return '';const
 const moneyLive=t=>{t=String(t).replace(/[^\d,]/g,'');const k=t.indexOf(',');let a=k<0?t:t.slice(0,k);const b=k<0?null:t.slice(k+1).replace(/,/g,'').slice(0,2);a=a.replace(/^0+(?=\d)/,'');a=a?(+a).toLocaleString('pt-BR'):'';return b==null?a:(a||'0')+','+b;};
 const lerCampo=el=>el.dataset.money!=null?moneyParse(el.value):el.value;
 const mesC=()=>Math.max(1,Math.floor(num(S.estr&&S.estr.mc)||1)); // mês estimado da contemplação (parcelas pagas antes dela)
-S.estr=S.estr||{modo:'liquido',valor:'',tipo:'Imobiliário',max:3,alvo:'lmin',emb:'1',rec:'',p1:'',p2:'',nome:'',lf:''};
-const EF2=['lf'];
+S.estr=S.estr||{modo:'liquido',valor:'',tipo:'Imobiliário',max:3,alvo:'lmin',emb:'1',rec:'',p1:'',p2:'',nome:'',lf:'',menor:'',teto:''};
+const EF2=['lf','teto'];
+// alavancagem: valores de simulação (persistem em S; _auto marca o que veio da proposta). Taxas dos financiadores ficam vazias = usam o padrão (LV_PAD)
+const ALAV0={a_valor:'',a_rend:'',a_desc:'0',a_parc:'',f_bem:'',f_cred:'',f_lance:'',f_n:'',f_p1:'',f_p2:'',f_m2:'',f_prazo:'',f_tx_itau:'',f_tx_san:'',f_tx_bra:'',f_total_cx:'',g_lance:'',g_np:'',g_vp:'',g_cred:'',g_saldo:'',g_parc:'',g_prazo:'',g_fin:'bra',g_prazoFin:'',g_tx:'',g_preco:'',h_valor:'',h_meses:'',h_cdi:'',h_pct:'99,53',h_ir:'',_auto:{}};
+S.alav={...ALAV0,...(S.alav||{})};
 function cotaDe(g,carta,usaEmb,alvoK){ // números de 1 cota desse grupo com essa carta
   const le=usaEmb?(num(g.emax)||0):0;const a=num(g[alvoK])>0?num(g[alvoK]):(num(g.lmin)>0?num(g.lmin):null);
   const ll=a==null?0:Math.max(0,Math.min(a-le,100-le));
@@ -558,8 +676,9 @@ function cotaDe(g,carta,usaEmb,alvoK){ // números de 1 cota desse grupo com ess
 function montar(E,prior){ // prior: 'bolso' | 'parcela' | 'semlance'
   const alvoNeed=num(E.valor)||0;if(!(alvoNeed>0))return null;
   const usaEmb=prior==='semlance'?false:E.emb==='1';
-  let gs=S.grupos.filter(g=>num(g.cmax)>0&&num(g.ta)!=null&&num(g.pr)>0);if(E.tipo)gs=gs.filter(g=>g.tipo===E.tipo);
-  if(!gs.length)return {erro:'Nenhum grupo com faixa, taxa e prazo remanescente'+(E.tipo?' do tipo '+E.tipo:'')+'.'};
+  const ms=menorStatus(E);if(ms&&!ms.ok)return {erro:ms.msg};
+  let gs=menorOn(E)?gruposMenor(E).filter(g=>num(g.pr)>0):S.grupos.filter(g=>num(g.cmax)>0&&num(g.ta)!=null&&num(g.pr)>0);if(E.tipo&&!menorOn(E))gs=gs.filter(g=>g.tipo===E.tipo);
+  if(!gs.length)return {erro:menorOn(E)?`Nenhum grupo de Veículos Leves com carta até ${brl(tetoMenor(E))}, taxa e prazo remanescente. Cole mais grupos ou suba o teto em Avançado.`:'Nenhum grupo com faixa, taxa e prazo remanescente'+(E.tipo?' do tipo '+E.tipo:'')+'.'};
   const base=gs.map(g=>cotaDe(g,num(g.cmax),usaEmb,E.alvo)).filter(c=>c.ok);
   if(!base.length)return {erro:'Grupos sem parcela/prazo suficientes para calcular.'};
   const metr=c=>{const liq=E.modo==='liquido'?c.credLiq:c.carta;if(prior==='semlance')return c.parcIni/liq;if(prior==='parcela')return (c.parcIni+c.parcPos)/liq;if(prior==='cotas')return -c.carta;if(prior==='mais')return c.carta;if(prior==='prazo')return (num(c.g.pr)||999)*1e6+c.bolso/liq;return (c.bolso+0.02*c.parcPos)/liq;};
@@ -593,7 +712,7 @@ function montar(E,prior){ // prior: 'bolso' | 'parcela' | 'semlance'
 }
 function montarReal(E,prior){ // cotas reais coladas do sistema de vendas; null = não há cotas do tipo (cai no motor dos grupos)
   const need=num(E.valor)||0;if(!(need>0))return null;
-  const cs=cotasComModelo().filter(x=>(x.plano==='Normal'||(E.red==='1'&&x.plano==='Reduzida'&&(S.comp[compK(x)]||compDoGrupo(x.gid,'Reduzida'))))&&x.carta>0&&x.parc>0&&x.prazo>0&&(x.vagas==null||x.vagas>0)&&(!E.tipo||(E.tipo==='Imobiliário'?x.tipo==='Imobiliário':x.tipo==='Veículos')));
+  const cs=cotasComModelo().filter(x=>(x.plano==='Normal'||(E.red==='1'&&x.plano==='Reduzida'&&(S.comp[compK(x)]||compDoGrupo(x.gid,'Reduzida'))))&&x.carta>0&&x.parc>0&&x.prazo>0&&(x.vagas==null||x.vagas>0)&&(!E.tipo||(E.tipo==='Imobiliário'?x.tipo==='Imobiliário':x.tipo==='Veículos'))&&(!menorOn(E)||x.carta<=tetoMenor(E)+0.5));
   if(!cs.length)return null;
   const incSeg=E.sg!=='0',usaEmb=prior!=='semlance'&&E.emb==='1',M=mesC();
   const items=cs.map(x=>{
@@ -642,13 +761,14 @@ function montarReal(E,prior){ // cotas reais coladas do sistema de vendas; null 
 function prazosDepois(tot,linhas){const M=mesC();tot.mes=M;const pm=linhas.map(l=>l.mesesMant!=null?l.mesesMant:(l.prazo||0)-M);tot.pmMax=Math.max(...pm);tot.pmMin=Math.min(...pm); // manter o prazo: o que falta do prazo (menos, se bater no piso de 20% da parcela)
   const mr=linhas.map(l=>l.mesesRed).filter(v=>v!=null);tot.mrMax=mr.length?Math.max(...mr):null;tot.mrMin=mr.length?Math.min(...mr):null;} // reduzir o prazo: mesma parcela até quitar
 const faixaM=(a,b)=>a===b?String(a):a+' a '+b;
-const montarAuto=(E,pr)=>montarReal(E,pr)||montar(E,pr);
+const montarAuto=(E,pr)=>{const ms=menorStatus(E);if(ms&&!ms.ok)return {erro:ms.msg};return montarReal(E,pr)||montar(E,pr);};
 function instrucaoBusca(r){if(!r||r.erro)return '';const porG={};r.linhas.forEach(l=>{const k=l.g.cod;porG[k]=porG[k]||{g:l.g,n:0,min:1e18,max:0};porG[k].n+=l.n;porG[k].min=Math.min(porG[k].min,l.carta);porG[k].max=Math.max(porG[k].max,l.carta);});
   return Object.values(porG).map(x=>`${x.n} cota${x.n>1?'s':''} de ${x.min===x.max?brl(x.min):brl(x.min)+' a '+brl(x.max)} no grupo ${esc(x.g.cod)}`).join(' · ');}
-function renderEstrategia(){const E=S.estr;[...EF,...EF2].forEach(k=>{const el=$('#e-'+k);if(!el)return;const m=el.dataset.money!=null;el.value=m?moneyFmt(E[k]):(E[k]??'');if(m)el.oninput=()=>{el.value=moneyLive(el.value);};el.onchange=()=>{E[k]=lerCampo(el);save();};});
-  $$('#e-tipo-chips .chip').forEach(b=>{b.classList.toggle('on',(E.tipo||'')===b.dataset.v);b.onclick=()=>{E.tipo=b.dataset.v;$('#e-tipo').value=E.tipo;save();renderEstrategia();};});
+function renderEstrategia(){const E=S.estr;[...EF,...EF2].forEach(k=>{const el=$('#e-'+k);if(!el)return;const m=el.dataset.money!=null;el.value=m?moneyFmt(E[k]):(E[k]??'');if(m)el.oninput=()=>{el.value=moneyLive(el.value);if(k==='valor'||k==='teto'){E[k]=lerCampo(el);pintaMenor();}};el.onchange=()=>{E[k]=lerCampo(el);save();pintaMenor();};});
+  $$('#e-tipo-chips .chip').forEach(b=>{const m=b.dataset.menor==='1';b.classList.toggle('on',(E.tipo||'')===b.dataset.v&&m===menorOn(E));b.onclick=()=>{E.tipo=b.dataset.v;E.menor=m?'1':'';$('#e-tipo').value=E.tipo;save();renderEstrategia();};});
+  pintaMenor();
   $('#e-aviso').innerHTML=avisoPrimeiroUso();if(['rec','fgts','p1','p2'].some(k=>num(E[k])>0))$('#e-bolso').open=true;
-  $('#e-go').onclick=()=>{[...EF,...EF2].forEach(k=>{const el=$('#e-'+k);if(el)E[k]=lerCampo(el);});if(!(num(E.valor)>0)){toast('Informe o valor');return;}if(!ADM())E.modo='liquido';E.feito=true;E.conf={};save();renderOferta();go(E.bestReal?'oferta':'cotas');};
+  $('#e-go').onclick=()=>{[...EF,...EF2].forEach(k=>{const el=$('#e-'+k);if(el)E[k]=lerCampo(el);});if(!(num(E.valor)>0)){toast('Informe o valor');return;}if(!ADM())E.modo='liquido';const ms=menorStatus(E);if(ms&&!ms.ok){pintaMenor();toast('Fora da faixa de menor valor');return;}E.feito=true;E.conf={};lvNovoPedido();save();renderOferta();go(E.bestReal?'oferta':'cotas');};
   renderOferta();renderCotas();}
 function blocoSeguro(b,segI){const t=b&&b.r&&!b.r.erro?b.r.tot:null;const v=t?segI(t):0;
   const custo=v>0?`Cerca de ${brl2(v)} por mês; na projeção do sistema é um valor fixo. Já somado na parcela mostrada`:'Valor a confirmar no sistema';
@@ -663,6 +783,8 @@ function fonteOferta(vars){const rv=vars.find(v=>v.r&&v.r.real);
   return `<div class="al info" style="margin-bottom:12px">Estimativa pelos grupos do portal: ainda não há cotas reais coladas para este tipo (tela Cotas).</div>`;}
 function renderOferta(){const E=S.estr;const out=$('#e-out');
   if(!E.feito||!(num(E.valor)>0)){out.innerHTML=`<div class="card empty">Monte um pedido primeiro. <a href="#" data-go="estrategia">Ir para Pedido</a></div>`;return;}
+  const ms=menorStatus(E);if(ms&&!ms.ok){S.estr.bestK='';S.estr.bestReal=false;S.estr.bestN=0;S.estr.bestSum=null;S.estr.busca='';S.estr.buscaL=[];save();
+    out.innerHTML=`<div class="hero"><h1>Proposta · Veículos Leves, menor valor</h1></div><div class="concl none" style="margin:0 0 14px">${esc(ms.msg)}</div><div class="no-present" style="margin-bottom:14px"><a href="#" data-go="estrategia" style="font-weight:600">Ajustar o pedido →</a></div>${notaMoto(E)}<div class="avisos"><b>Avisos</b><ul><li>Contemplação por sorteio ou lance, sem garantia nem previsão de lance vencedor; lance alvo e tendência são histórico das colagens.</li><li>Confirme taxas, parcelas, prazos e grupos no sistema oficial. Esta ferramenta não substitui a simulação oficial.</li></ul></div>`;return;}
   const vars=[['Menor lance do bolso','bolso'],['Mais cartas','mais'],['Menor parcela','parcela'],['Sem lance (só sorteio)','semlance'],['Menos cartas','cotas'],['Menor prazo','prazo']].map(([nome,pr])=>[nome,nome,pr]).map(([k,nome,pr])=>({k,nome,r:montarAuto(E,pr)}));
   const R=E.sg!=='0'?((num(E.sgp)>0?num(E.sgp):(S.segTaxa||0))/100):0;const K=R;const segE=t=>R*(t.sdEst||0),segI=t=>segE(t)+(t.segReal||0);const P1=t=>t.p1+segE(t),P2=t=>t.p2+(t.p1>0?segE(t)*t.p2/t.p1:0);
   const depois=t=>`<table class="cmp" style="margin-top:8px;font-size:12px"><thead><tr><th>Depois de contemplar (mês ${t.mes})</th><th>Parcela</th><th>Por mais</th></tr></thead><tbody><tr><td><b>Manter o prazo</b><br><span style="font-size:11px">parcela mais leve</span></td><td class="num" style="white-space:nowrap">~ ${brl2(P2(t))}</td><td class="num" style="white-space:nowrap">${faixaM(t.pmMin,t.pmMax)} meses</td></tr>${t.mrMax!=null?`<tr><td><b>Reduzir o prazo</b><br><span style="font-size:11px">mesma parcela, quita antes</span></td><td class="num" style="white-space:nowrap">${brl2(P1(t))}</td><td class="num" style="white-space:nowrap">~ ${faixaM(t.mrMin,t.mrMax)} meses</td></tr>`:''}</tbody></table>`;
@@ -672,7 +794,7 @@ function renderOferta(){const E=S.estr;const out=$('#e-out');
   const informou=(rec!=null&&E.rec!=='')||p1>0||p2>0;const ok=vars.map(v=>v.r&&!v.r.erro&&cabe(v.r.tot).length===0);
   let best=-1;{let el=vars.map((v,i)=>({v,i})).filter(x=>x.v.r&&!x.v.r.erro&&(!informou||ok[x.i]));const comLance=el.filter(x=>x.v.r.prior!=='semlance');if(comLance.length)el=comLance; // a oferta consultiva é com lance; "só sorteio" fica como alternativa
     if(el.length){el.sort((a,b)=>(Math.round(cli(a.v.r.tot)/100)-Math.round(cli(b.v.r.tot)/100))||(b.v.r.tot.cotas-a.v.r.tot.cotas)||(a.v.r.tot.p1-b.v.r.tot.p1));best=el[0].i;}} // foco: menor lance do bolso; empate → mais bilhetes, depois menor parcela
-  S.estr.bestK=best>=0?vars[best].k:'';S.estr.bestReal=best>=0&&!!vars[best].r.real;S.estr.bestN=best>=0?vars[best].r.tot.cotas:0;S.estr.busca=best>=0?instrucaoBusca(vars[best].r):'';S.estr.buscaL=best>=0?vars[best].r.linhas.map(l=>({cod:l.g.cod,carta:l.carta,n:l.n})):[];save();
+  S.estr.bestK=best>=0?vars[best].k:'';S.estr.bestReal=best>=0&&!!vars[best].r.real;S.estr.bestN=best>=0?vars[best].r.tot.cotas:0;S.estr.bestSum=best>=0?(t=>({tipo:E.tipo||'',liq:t.liq,bolso:cli(t),p1:P1(t),p2:P2(t),mes:t.mes,pm:t.pmMax}))(vars[best].r.tot):null;S.estr.busca=best>=0?instrucaoBusca(vars[best].r):'';S.estr.buscaL=best>=0?vars[best].r.linhas.map(l=>({cod:l.g.cod,carta:l.carta,n:l.n})):[];save();
   const titulo=E.modo==='liquido'?`${brl(num(E.valor))} líquido`:`${brl(num(E.valor))} bruto`;
   const lf=num(E.lf);
   const passo=r=>{const tx=r.real?`<b>Próximo passo:</b> confirmar no sistema vagas e parcela de ${esc(instrucaoBusca(r))}.`:(()=>{const R=roteiro(E);return R?`<b>Próximo passo:</b> buscar as cotas no vendas.seguridade e colar em <a href="#" data-go="cotas" style="font-weight:600">Busca</a>. Até lá, os valores são estimativa pelos grupos do portal.`:'';})();return tx?`<div class="passo">${tx}</div>`:'';};
@@ -690,13 +812,14 @@ function renderOferta(){const E=S.estr;const out=$('#e-out');
   const C=E.conf||(E.conf={});const confIt=b?[['p1','Parcela até contemplar',P1(b.r.tot)],['p2','Parcela depois (manter prazo)',P2(b.r.tot)],['liq','Crédito líquido',b.r.tot.liq],['sd','Saldo após o lance (sem seguro)',b.r.tot.sdApos]]:[];
   const confHtml=`<details class="adv no-present" style="margin-top:14px" ${confIt.some(([k])=>num(C[k])>0)?'open':''}><summary>Conferir com a proposta oficial</summary><p class="sub" style="margin-top:6px">Digite os números da proposta do sistema para a oferta recomendada (proposta por cota: some as cotas). Diferença acima de 1% fica marcada. Confere a conta, não substitui a proposta.</p><div class="cmp-wrap"><table class="cmp" style="font-size:12px"><thead><tr><th></th><th>Simulador</th><th>Oficial</th><th>Diferença</th></tr></thead><tbody>${confIt.map(([k,n,v])=>`<tr><td>${n}</td><td class="num">${brl2(v)}</td><td><input data-conf="${k}" type="number" min="0" step="0.01" inputmode="decimal" value="${esc(C[k]??'')}" style="width:105px"></td><td class="num" id="conf-${k}">—</td></tr>`).join('')}</tbody></table></div><div id="conf-res" class="hint" style="margin-top:6px"></div></details>`;
   out.innerHTML=`<div class="hero"><h1>Proposta · ${titulo}</h1><p>${E.nome&&!document.body.classList.contains('present')?esc(E.nome)+' · ':''}${esc(E.tipo||'qualquer tipo')} · ${new Date().toLocaleDateString('pt-BR')} · valores estimativos, a confirmar no sistema oficial</p></div>
+  ${notaMoto(E)}
   ${fonteOferta(vars)}${campOferta(vars)}
   ${b?'':`<div class="concl none" style="margin:0 0 14px">Nenhuma variante fechou${informou?' dentro do bolso':''}. Cole mais grupos, aumente o máximo de cotas ou ajuste o bolso.</div>`}
   ${b?card(b,best,true):''}
   ${b?confHtml:''}
   <details class="adv no-present" style="margin-top:14px"><summary>Ver as outras ${vars.length-(b?1:0)} variantes</summary><div class="grid c3" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));margin-top:10px">${vars.map((v,i)=>i===best?'':card(v,i,false)).join('')}</div></details>
   ${E.sg!=='0'?blocoSeguro(b,segI):''}
-  <div class="avisos"><b>Avisos</b><ul><li>Contemplação por sorteio ou lance, sem garantia nem previsão de lance vencedor; lance alvo e tendência são histórico das colagens.</li><li>O lance embutido reduz o crédito recebido.</li><li>Parcelas estimadas, sem o reajuste anual do crédito e do saldo pelo INPC${K>0?'; seguro prestamista pelo detalhamento do sistema ou pela amostra de '+pct2(K*100)+' ao mês sobre o saldo, fixo na projeção':''}; "depois" supõe todas as cotas contempladas no mês ${mesC()} (estimativa: pode ser antes ou depois).</li><li>Depois do lance, o cliente escolhe reduzir o prazo ou a parcela; a parcela nova não pode ficar abaixo de 20% da atual (FAQ do portal). Prazo de "reduzir" estimado pelo saldo.</li>${fg>0?'<li>Uso do FGTS no lance depende das regras do FGTS e da administradora: confirmar antes de oferecer.</li>':''}${E.red==='1'?'<li>Plano reduzido: parte do crédito fica a cobrar (detalhamento do sistema); quando é cobrada, sem fonte confirmada.</li>':''}${vars.some(v=>v.r&&!v.r.erro&&v.r.linhas.some(l=>l.camp))?'<li>Campanha: condição promocional com validade; não vale para plano reduzido; exige débito em conta CAIXA a partir da 2ª parcela (banner da administradora).</li>':''}<li>Confirme taxas, parcelas, prazos e grupos no sistema oficial. Esta ferramenta não substitui a simulação oficial.</li></ul></div>
+  <div class="avisos"><b>Avisos</b><ul><li>Contemplação por sorteio ou lance, sem garantia nem previsão de lance vencedor; lance alvo e tendência são histórico das colagens.</li><li>O lance embutido reduz o crédito recebido.</li>${menorOn(E)?`<li>Faixa de menor valor: só cartas até ${brl(tetoMenor(E))} (teto escolhido pelo app, sem fonte confirmada).</li>`:''}<li>Parcelas estimadas, sem o reajuste anual do crédito e do saldo pelo INPC${K>0?'; seguro prestamista pelo detalhamento do sistema ou pela amostra de '+pct2(K*100)+' ao mês sobre o saldo, fixo na projeção':''}; "depois" supõe todas as cotas contempladas no mês ${mesC()} (estimativa: pode ser antes ou depois).</li><li>Depois do lance, o cliente escolhe reduzir o prazo ou a parcela; a parcela nova não pode ficar abaixo de 20% da atual (FAQ do portal). Prazo de "reduzir" estimado pelo saldo.</li>${fg>0?'<li>Uso do FGTS no lance depende das regras do FGTS e da administradora: confirmar antes de oferecer.</li>':''}${E.red==='1'?'<li>Plano reduzido: parte do crédito fica a cobrar (detalhamento do sistema); quando é cobrada, sem fonte confirmada.</li>':''}${vars.some(v=>v.r&&!v.r.erro&&v.r.linhas.some(l=>l.camp))?'<li>Campanha: condição promocional com validade; não vale para plano reduzido; exige débito em conta CAIXA a partir da 2ª parcela (banner da administradora).</li>':''}<li>Confirme taxas, parcelas, prazos e grupos no sistema oficial. Esta ferramenta não substitui a simulação oficial.</li></ul></div>
   <div class="dlg-actions no-present">${b?'<button class="btn" id="o-msg">Copiar mensagem</button>':''}<button class="btn" id="o-share">Copiar link</button><button class="btn" onclick="window.print()">PDF / Imprimir</button><button class="btn primary" id="o-present">Apresentar</button></div>`;
   $('#o-present').onclick=()=>{document.body.classList.add('present');};$('#o-share').onclick=shareLink;
   if(b){const updConf=()=>{let n=0,ok1=0;confIt.forEach(([k,,v])=>{const o=num(C[k]),cel=$('#conf-'+k);if(!(o>0)||v==null){cel.textContent='—';return;}n++;const d=v-o,p=Math.abs(d)/o;if(p<=0.01)ok1++;cel.innerHTML=`${d>=0?'+':'−'} ${brl2(Math.abs(d))} <span class="tag ${p<=0.01?'ok':'warn'}">${pct(p*100)}</span>`;});
@@ -812,19 +935,19 @@ function renderCampanhas(){const el=$('#camp-card');if(!el)return;const adm=!tem
   $('#cp-add').onclick=()=>{const v=id=>$('#'+id).value.trim(),cod=v('cp-cod');if(!cod){toast('Informe o código');return;}const desc=num(v('cp-desc')),ta=num(v('cp-ta'));if(desc==null&&ta==null){toast('Informe o desconto ou a taxa final');return;}
     S.campanhas=[...(S.campanhas||[]),{cod,nome:v('cp-nome'),tipos:[...el.querySelectorAll('[data-cpt]:checked')].map(x=>x.dataset.cpt),cmin:num(v('cp-min')),cmax:num(v('cp-max')),emb:v('cp-emb'),desc,ta,ini:v('cp-ini'),fim:v('cp-fim')}];salva();toast('Campanha adicionada');};}
 // roteiro de busca: quanto comprar, em quantas cotas e que faixa pesquisar no sistema (foco: menor lance do bolso)
-function roteiro(E){const need=num(E.valor)||0;if(!(need>0))return null;const tOk=x=>!E.tipo||(E.tipo==='Imobiliário'?x.tipo==='Imobiliário':x.tipo==='Veículos');
+function roteiro(E){const need=num(E.valor)||0;if(!(need>0))return null;const tOk=x=>(!E.tipo||(E.tipo==='Imobiliário'?x.tipo==='Imobiliário':x.tipo==='Veículos'))&&(!menorOn(E)||x.carta<=tetoMenor(E)+0.5),tMax=menorOn(E)?tetoMenor(E)+0.5:Infinity;
   const embPad=E.tipo&&E.tipo!=='Imobiliário'?30:50,conh=[]; // embutido do grupo quando o portal informa; senão o máximo usual (sem fonte confirmada)
-  S.grupos.filter(g=>(!E.tipo||g.tipo===E.tipo)&&num(g.cmax)>0).forEach(g=>{const a=num(g[E.alvo])>0?num(g[E.alvo]):(num(g.lmin)>0?num(g.lmin):num(g.lmed));if(a>0)conh.push({cod:g.cod,a,min:num(g.cmin)||0,max:num(g.cmax),emax:num(g.emax)});});
+  (menorOn(E)?gruposMenor(E):S.grupos.filter(g=>(!E.tipo||g.tipo===E.tipo)&&num(g.cmax)>0)).forEach(g=>{const a=num(g[E.alvo])>0?num(g[E.alvo]):(num(g.lmin)>0?num(g.lmin):num(g.lmed));if(a>0)conh.push({cod:g.cod,a,min:num(g.cmin)||0,max:num(g.cmax),emax:num(g.emax)});});
   const mods={};cotasComModelo().filter(x=>x.plano==='Normal'&&tOk(x)).forEach(x=>{const m=mods[x.gid]=mods[x.gid]||{cod:x.cod,a:x.lm,min:1e18,max:0,vagas:x.vagas,vagasTxt:x.vagasTxt,part:x.part,emax:null};m.min=Math.min(m.min,x.carta);m.max=Math.max(m.max,x.carta);});
   Object.values(mods).forEach(m=>{const c=conh.find(c=>codN(c.cod)===codN(m.cod));if(c)Object.assign(c,{vagas:m.vagas,vagasTxt:m.vagasTxt,part:m.part});else conh.push(m);});
   const ops=[],cap=Math.max(1,Math.floor(num(E.max)||3));
   for(let n=1;n<=8;n++){ // testa de 1 a 8 cartas: em que tamanho estão os grupos de menor lance
     const gs=conh.filter(c=>c.vagas!==0).map(c=>{const emb=E.emb==='1'?(c.emax!=null?c.emax:embPad):0,tot=E.modo==='liquido'?need/(1-emb/100):need,t=tot/n;
-      return {...c,emb,tot,t,bolso:Math.max(0,(c.a-emb)/100)*tot};}).filter(c=>c.t>=c.min*0.95&&c.t<=c.max*1.05).sort((x,y)=>x.bolso-y.bolso);
+      return {...c,emb,tot,t,bolso:Math.max(0,(c.a-emb)/100)*tot};}).filter(c=>c.t>=c.min*0.95&&c.t<=c.max*1.05&&c.t<=tMax).sort((x,y)=>x.bolso-y.bolso);
     if(!gs.length)continue;const g=gs[0];let falta=n,custo=0;const uso=[]; // respeita o máximo de cotas por grupo e as vagas: completa com o próximo de menor lance
     for(const c of gs){const k=Math.min(cap,c.vagas!=null?c.vagas:cap,falta);if(k<1)continue;custo+=c.bolso*k/n;uso.push({cod:c.cod,k,a:c.a});falta-=k;if(!falta)break;}
     if(falta)continue;
-    ops.push({n,t:g.t,tot:g.tot,emb:g.emb,a:g.a,lo:Math.floor(g.t*0.97/5000)*5000,hi:Math.ceil(g.t*1.09/5000)*5000,gs:gs.slice(0,12),bolso:custo,uso});}
+    ops.push({n,t:g.t,tot:g.tot,emb:g.emb,a:g.a,lo:Math.floor(g.t*0.97/5000)*5000,hi:Math.min(Math.ceil(g.t*1.09/5000)*5000,Math.max(tMax-0.5,0)||Infinity),gs:gs.slice(0,12),bolso:custo,uso});}
   if(!ops.length){const emb=E.emb==='1'?embPad:0,tot=E.modo==='liquido'?need/(1-emb/100):need,t=tot/2; // nada colado: ponto de partida de 2 cotas
     const o={n:2,t,tot,emb,a:null,lo:Math.floor(t*0.97/5000)*5000,hi:Math.ceil(t*1.09/5000)*5000,gs:[],bolso:null};return {need,total:tot,embP:emb,ops:[o],rec:o,melhores:[],semDados:true};}
   const mb=Math.min(...ops.map(o=>o.bolso));let rec=ops.filter(o=>o.bolso<=mb+500).sort((x,y)=>y.n-x.n)[0];
@@ -851,8 +974,8 @@ function buscaSimples(R,E,pronto){if(!R)return 'Monte um pedido primeiro: a busc
   return `<div class="busca-cab">Para ${brl(R.need)} líquido · ${brl(R.total)} em cartas${R.embP>0?` · embutido ${pct(R.embP)}`:''}</div>
     ${cabP(pA,'A')}${plano(pA,8,2)}<div class="hint">Plano A é o de menor dinheiro do bolso. Grupos em ordem de menor lance; se faltar vaga, siga para a reserva.</div>
     ${outros.length?`<div class="plano-b"><div class="hint" style="margin:10px 0 2px">Se o plano A não fechar, outra divisão:</div>${outros.map((o,k)=>`<details class="adv plano-d"><summary><span>${sumP(o,'BCD'[k])}</span></summary>${plano(o,5,5)}</details>`).join('')}</div>`:''}${fr}`;}
-function renderCotas(){const E=S.estr;
-  const R=E.feito?roteiro(E):null,tipoT=E.tipo==='Imobiliário'?'imóvel':(E.tipo||'').toLowerCase()||'o tipo do bem';
+function renderCotas(){const E=S.estr;const ms=menorStatus(E);
+  const R=E.feito&&!(ms&&!ms.ok)?roteiro(E):null,tipoT=E.tipo==='Imobiliário'?'imóvel':(E.tipo||'').toLowerCase()||'o tipo do bem';
   const pronto=E.bestReal&&E.busca;
   const velho=(statusPortal()||{}).velho;
   let det=R?`${velho?avisoPortal():''}${pronto?`<div style="font-size:15px;color:var(--ink)"><b>Pronto:</b> a proposta já fecha com o que você colou. <b>Confirme no sistema:</b> ${E.busca}. <a href="#" data-go="oferta" style="color:inherit;font-weight:600">Ver a proposta →</a></div><div class="hint">Se alguma não tiver vaga, siga o ranking abaixo ou pesquise ${brl(R.rec.lo)} a ${brl(R.rec.hi)}.</div>`:`<div style="font-size:15px;color:var(--ink)"><b>Pesquise no sistema:</b> ${esc(tipoT)} de <b>${brl(R.rec.lo)} a ${brl(R.rec.hi)}</b> e cole a 1ª página abaixo.</div>`}
@@ -860,7 +983,7 @@ function renderCotas(){const E=S.estr;
     ${R.rec.gs.length?`<div style="margin-top:6px"><b>Olhe nesta ordem (menor lance primeiro):</b><ol style="margin:4px 0 0;padding-left:20px">${R.rec.gs.map(g=>`<li>Grupo <b>${esc(g.cod)}</b>: lance ${pct(g.a)}${g.vagas!=null?' · '+g.vagas+' vaga'+(g.vagas>1?'s':''):(g.vagasTxt?' · '+esc(g.vagasTxt):'')}${g.part?' · '+g.part+' participantes':''}</li>`).join('')}</ol><div class="hint">Se o 1º não tiver cota nessa faixa, passe pro próximo. Nenhum grupo conhecido? Cole a página que o app aprende.</div></div>`:'<div class="hint">Ainda não há grupos colados desse tipo: cole a página da busca e o app monta o ranking.</div>'}
     <details class="adv" style="margin-top:6px"><summary>Comparar todas as divisões (1 a 8 cartas)</summary><table class="cmp" style="font-size:12px"><thead><tr><th>Cartas</th><th>Cada uma</th><th>Pesquise</th><th>Grupo de menor lance</th><th>Lance do bolso ~</th></tr></thead><tbody>${R.ops.map(o=>`<tr class="${o===R.rec?'best-row':''}"><td>${o.n}</td><td class="num">${brl(o.t)}</td><td class="num">${brl(o.lo)} a ${brl(o.hi)}</td><td>${o.uso?o.uso.map(u=>u.k+'× '+esc(u.cod)+' ('+pct(u.a)+')').join(' + '):'—'}</td><td class="num">${o.bolso!=null?brl(o.bolso):'—'}</td></tr>`).join('')}</tbody></table><div class="hint">Só aparecem tamanhos em que há grupo conhecido (tabela do portal em Grupos ou páginas coladas aqui). Lance pelo histórico do grupo, não é garantia. Empate no bolso: mais cartas = mais bilhetes por assembleia.</div></details>
     ${E.busca&&!pronto?`<div style="margin-top:6px"><b>Depois de colar, confirme no sistema:</b> ${E.busca}.</div>`:''}`:'';
-  const busca=buscaSimples(R,E,pronto)+(det?`<details class="adv so-admin" style="margin-top:8px"><summary>Roteiro completo (admin)</summary>${det}</details>`:'');
+  const busca=(ms&&!ms.ok&&E.feito?avisoMenor(ms):buscaSimples(R,E,pronto))+(det?`<details class="adv so-admin" style="margin-top:8px"><summary>Roteiro completo (admin)</summary>${det}</details>`:'')+notaMoto(E);
   const reais=(E.buscaL||[]).map(l=>{const cs=S.cotasL.filter(x=>x.gid===codN(l.cod));if(!cs.length)return '';const x=cs.slice().sort((a,b)=>Math.abs(a.carta-l.carta)-Math.abs(b.carta-l.carta))[0];return `<br>Grupo ${esc(l.cod)}: carta mais próxima no sistema ${brl2(x.carta)}, parcela ${brl2(x.parc)}, vagas ${x.vagas!=null?x.vagas:esc(x.vagasTxt)||'?'}${venceu(x)?' <b>(dados vencidos)</b>':''}`;}).join('');
   $('#c-busca').innerHTML=busca+reais;
   const l=$('#c-lista');const porG={};S.cotasL.forEach(x=>{(porG[x.gid]=porG[x.gid]||[]).push(x);});
@@ -887,17 +1010,151 @@ function empurrarGrupos(){if(!temServidor())return;clearTimeout(syncTimer);syncT
   if(r.status===401){location.href='/entrar';return;}if(j.ok)etag=j.etag;}catch(e){toast('Sem conexão: grupos salvos só neste aparelho');}},400);}
 if(window.SESSAO){const b=$('#btnSair');b.style.display='';if(window.SESSAO.admin)$('#lnkAdmin').style.display='';b.title='Sair ('+window.SESSAO.email+')';b.onclick=async()=>{try{await fetch('/api/sair',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});}catch(e){}location.href='/entrar';};}
 
+/* ===================== alavancagem (tela s-alavanca) ===================== */
+/*__ALAVANCAGEM__*/
+// Contas puras vêm de nucleo/alavancagem.mjs (colado aqui pelo build). Esta parte só lê campos e mostra.
+const LV_PAD={itau:'27,50',san:'24,26',bra:'22,81'}; // padrão editável: média BCB, veículos PF prefixado, coleta 26/08 a 01/09/2026, via iDinheiro
+const LV_FIN=[{k:'itau',nome:'Itaú Unibanco'},{k:'san',nome:'Santander'},{k:'bra',nome:'Bradesco'}];
+let PUB=null,PUB_TENTOU=false; // dados públicos do BCB (/api/publicos), só leitura
+const decBR=t=>{t=String(t==null?'':t).trim().replace('%','').replace(/\s/g,'');if(!t)return null;if(t.includes(','))t=t.replace(/\./g,'').replace(',','.');const n=parseFloat(t);return isFinite(n)?n:null;};
+const dtBR=iso=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso||''));return m?`${m[3]}/${m[2]}/${m[1]}`:'';};
+const okN=v=>typeof v==='number'&&isFinite(v);
+const pubTaxa=k=>{const p=PUB&&PUB[k];return p&&okN(p.aaPct)?p:null;};
+function aplicaPublicos(p){PUB=p&&!p.vazio?p:null;if($('#s-alavanca.on'))renderAlavanca();}
+async function puxarPublicos(){if(!temServidor())return;try{const r=await fetch('/api/publicos',{cache:'no-store'});if(!r.ok)return;aplicaPublicos(await r.json());}catch(e){}}
+const lvBem=()=>S.alav.f_bem||(S.estr&&S.estr.feito&&S.estr.tipo==='Imobiliário'?'imovel':'veiculo');
+const lvTaxaFin=k=>decBR(S.alav['f_tx_'+k]||LV_PAD[k]);
+const lvC=x=>x!=null&&isFinite(x)?String(Math.round(x*100)/100):'';
+const lvS=x=>x!=null&&isFinite(x)&&x>=0?String(x):'';
+// campo "puxado" da proposta: preenche se estiver vazio ou ainda for o último valor puxado; edição manual vence
+function lvPuxa(k,v){const A=S.alav;if(v==null||v===''||(typeof v==='number'&&!isFinite(v)))return;const c=A[k];if(c===''||c==null||(A._auto&&A._auto[k]===c)){A[k]=v;(A._auto=A._auto||{})[k]=v;}}
+function lvPull(){const A=S.alav,B=S.estr&&S.estr.bestSum;A._auto=A._auto||{};
+  if(B){if(B.tipo==='Imobiliário')lvPuxa('a_parc',lvC(B.p2));else if(A._auto.a_parc!=null&&A._auto.a_parc===A.a_parc){A.a_parc='';delete A._auto.a_parc;}
+    lvPuxa('f_cred',lvC(B.liq));lvPuxa('f_lance',lvC(B.bolso));lvPuxa('f_n',lvS(B.mes));lvPuxa('f_p1',lvC(B.p1));lvPuxa('f_p2',lvC(B.p2));lvPuxa('f_m2',lvS(B.pm));}
+  {const pad=lvBem()==='imovel'?'':'60';if(A.f_prazo===''||A.f_prazo==null||A._auto.f_prazo===A.f_prazo){A.f_prazo=pad;A._auto.f_prazo=pad;}}
+  const cdi=pubTaxa('cdi');if(cdi)lvPuxa('h_cdi',String(cdi.aaPct).replace('.',','));}
+// pedido novo: zera o que o gerente digitou na Alavancagem (valores de outro cliente); mantém só premissas de mercado (rendimento do aluguel, taxas dos 3 bancos, CDI e % do CDI)
+const LV_FICA=['a_rend','f_tx_itau','f_tx_san','f_tx_bra','h_cdi','h_pct'];
+function lvNovoPedido(){const A=S.alav,n={...ALAV0,_auto:{}};LV_FICA.forEach(k=>{n[k]=A[k];if(A._auto&&A._auto[k]!=null&&A._auto[k]===A[k])n._auto[k]=A._auto[k];});S.alav=n;}
+function lvSet(k,v,el){const A=S.alav;A[k]=v;if(A._auto)delete A._auto[k];if(el)el.classList.remove('lv-auto');save();lvPaint();}
+function lvFill(){const A=S.alav;$$('#s-alavanca [data-lv]').forEach(el=>{if(el===document.activeElement)return;const k=el.dataset.lv;let v=A[k];
+  if((v===''||v==null)&&k.startsWith('f_tx_')&&LV_PAD[k.slice(5)])v=LV_PAD[k.slice(5)];
+  el.value=el.dataset.money!=null?moneyFmt(v):(v==null?'':v);
+  el.classList.toggle('lv-auto',!!(A._auto&&A._auto[k]!=null&&A._auto[k]===A[k]&&A[k]!==''));});
+  $$('#s-alavanca [data-lvchip]').forEach(b=>b.classList.toggle('on',b.dataset.v===lvBem()));}
+function lvInit(){if(lvInit.ok)return;lvInit.ok=true;
+  $$('#s-alavanca [data-lv]').forEach(el=>{const k=el.dataset.lv;
+    el.addEventListener('input',()=>{if(el.dataset.money!=null)el.value=moneyLive(el.value);lvSet(k,lerCampo(el),el);});
+    el.addEventListener('change',()=>lvSet(k,lerCampo(el),el));});
+  $$('#s-alavanca [data-lvchip]').forEach(b=>b.addEventListener('click',()=>{S.alav[b.dataset.lvchip]=b.dataset.v;save();renderAlavanca();}));
+  const sel=$('#lv-g_fin');if(sel)sel.addEventListener('change',()=>lvSet('g_fin',sel.value));}
+function renderAlavanca(){if(!$('#s-alavanca.on'))return;lvInit();
+  if(!PUB_TENTOU){PUB_TENTOU=true;puxarPublicos();}
+  lvPull();lvFill();lvPaint();save();}
+/* --- pintura dos resultados --- */
+const lvAv=a=>`<div class="alerts">${[...new Set(a)].map(t=>`<div class="al${/^Entrada inválida/.test(t)?'':' info'}">${esc(t)}</div>`).join('')}</div>`;
+const lvKv=(l,v,cl)=>`<div class="kv"><span class="lab">${l}</span><b${cl?` style="color:var(--${cl})"`:''}>${v}</b></div>`;
+function lvTop(n,big,sub,cl){const b=$('#lv-b'+n);b.textContent=big;b.className='lv-big'+(cl?' '+cl:'');$('#lv-s'+n).textContent=sub||'';}
+const lvPreencha=l=>`<div class="al info">Preencha: ${esc(l.join(', '))}.</div>`;
+const lvSinal=(v,f)=>(v>=0?'+ ':'− ')+f(Math.abs(v));
+function lvP1(A){const v=num(A.a_valor),r=decBR(A.a_rend),d=decBR(A.a_desc)||0,p=num(A.a_parc),f=[];
+  if(!(v>0))f.push('valor do imóvel');if(r==null)f.push('rendimento do aluguel');if(!(p>0))f.push('parcela depois da contemplação');
+  const fixos=aluguelXParcela({valorImovel:0,rendAnualPct:0,parcelaPos:1}).avisos;
+  $('#lv-h1').textContent=A._auto&&A._auto.a_parc&&A._auto.a_parc===A.a_parc?'Campo verde: parcela da proposta atual (você pode editar).':'';
+  if(f.length){lvTop(1,'—','Preencha: '+f.join(', ')+'.');$('#lv-o1').innerHTML=lvAv(fixos);return;}
+  const x=aluguelXParcela({valorImovel:v,rendAnualPct:r,descontoPct:d,parcelaPos:p});
+  if(!okN(x.saldoMes)){lvTop(1,'—','Confira os números.');$('#lv-o1').innerHTML=lvAv(x.avisos);return;}
+  lvTop(1,lvSinal(x.saldoMes,brl)+' por mês',`Aluguel líquido de ${brl(x.aluguelLiquido)} cobre ${pct(x.cobertura*100)} da parcela de ${brl(p)}.`,x.saldoMes>=0?'pos':'neg');
+  $('#lv-o1').innerHTML=lvKv('Aluguel bruto por mês',brl(x.aluguelBruto))+lvKv(`Aluguel líquido (desconto de ${pct(d)})`,brl(x.aluguelLiquido))+lvKv('Parcela depois da contemplação',brl(p))+lvKv('Saldo do mês',lvSinal(x.saldoMes,brl),x.saldoMes>=0?'accent':'warn')+lvKv('Cobertura da parcela pelo aluguel',pct(x.cobertura*100))+lvAv(x.avisos);}
+function lvRefs(A){const bem=lvBem();
+  if(bem==='imovel')return [{k:'cx',nome:'Simulador habitacional da Caixa',total:decBR(A.f_total_cx)}]; // imóvel: total pago colado, sem Price
+  const r=LV_FIN.map(f=>({k:f.k,nome:f.nome,taxa:lvTaxaFin(f.k)})),m=pubTaxa('taxaVeiculoPF');
+  if(m)r.push({k:'mkt',nome:'Média do mercado (BCB'+(m.data?', '+dtBR(m.data):'')+')',taxa:m.aaPct});return r;}
+const LV_COLE_TOTAL='Cole o total pago do simulador habitacional da Caixa (Price subestima/superestima: sem fonte confirmada).';
+function lvP2(A){const bem=lvBem(),imo=bem==='imovel',refs=lvRefs(A),vis=new Set(refs.map(r=>r.k));
+  ['itau','san','bra','mkt','cx'].forEach(k=>{const c=$('#lv-c-'+k);if(c)c.hidden=!vis.has(k);});
+  $('#lv-w-prazo').hidden=imo;
+  const m=pubTaxa('taxaVeiculoPF');$('#lv-mkt-tx').textContent=m?pct2(m.aaPct)+' a.a.':'—';$('#lv-mkt-nota').textContent=m?(m.nota||'Média do mercado, não é a taxa do cliente.'):'';
+  $('#lv-fonte2').hidden=imo;
+  $('#lv-h2').textContent=['f_cred','f_lance','f_n','f_p1','f_p2','f_m2'].some(k=>A._auto&&A._auto[k]!=null&&A._auto[k]===A[k]&&A[k]!=='')?'Campos em verde vêm da proposta atual (você pode editar).':'';
+  const cred=num(A.f_cred),lance=num(A.f_lance)||0,n=num(A.f_n),p1=num(A.f_p1),p2=num(A.f_p2),m2=num(A.f_m2),prazo=num(A.f_prazo),f=[];
+  if(!(cred>0))f.push('crédito líquido');if(n==null)f.push('parcelas até contemplar');if(!(p1>=0)||A.f_p1==='')f.push('valor da parcela até contemplar');if(A.f_p2===''||!(p2>=0))f.push('parcela depois');if(m2==null)f.push('meses depois');if(!imo&&!(prazo>0))f.push('prazo do financiamento');
+  const fixos=consorcioXFinanciamento(imo?{totalPagoFinanc:NaN}:{}).avisos.filter(a=>!/^Entrada inválida/.test(a));
+  refs.forEach(r=>{$('#lv-fr-'+r.k).innerHTML='';});
+  if(f.length){lvTop(2,'—','Preencha: '+f.join(', ')+'.');$('#lv-o2a').innerHTML='';$('#lv-o2').innerHTML=lvAv(fixos);return;}
+  const res=refs.map(r=>{const sem=imo?r.total==null:r.taxa==null;
+    return {r,x:sem?null:consorcioXFinanciamento({creditoLiquido:cred,lanceBolso:lance,parcelasAteContemplar:{meses:n,valor:p1},parcelaPos:p2,mesesPos:m2,...(imo?{totalPagoFinanc:r.total}:{taxaAnualFinanc:r.taxa,mesesFinanc:prazo})})};});
+  const ok=res.filter(o=>o.x&&okN(o.x.diferenca)),av=[...fixos];
+  res.forEach(({r,x})=>{const el=$('#lv-fr-'+r.k);
+    if(!x){el.innerHTML=`<div class="al info">${LV_COLE_TOTAL}</div>`;return;}
+    if(!okN(x.diferenca)){el.innerHTML=lvAv(x.avisos.filter(a=>/^Entrada inválida/.test(a)));return;}
+    const bom=x.diferenca>=0;
+    el.innerHTML=(okN(x.parcelaFinanciamento)?lvKv('Parcela do financiamento',brl2(x.parcelaFinanciamento)):'')+lvKv(imo?'Total pago do financiamento (simulador)':'Custo total do financiamento',brl(x.custoFinanciamento))+lvKv(bom?'Consórcio fica abaixo em':'Consórcio fica acima em',`${brl(Math.abs(x.diferenca))} (${pct(Math.abs(x.diferencaPct))})`,bom?'accent':'warn');});
+  if(!ok.length){lvTop(2,'—',imo?LV_COLE_TOTAL:'Confira os números.');$('#lv-o2a').innerHTML='';$('#lv-o2').innerHTML=lvAv(av);return;}
+  const x0=ok[0].x;
+  $('#lv-o2a').innerHTML=lvKv('Lance do bolso',brl(lance))+lvKv(`Parcelas até contemplar (${n} × ${brl2(p1)})`,brl(n*p1))+lvKv(`Parcelas depois (${m2} × ${brl2(p2)})`,brl(p2*m2))+lvKv('Custo total do consórcio',brl(x0.custoConsorcio),'ink');
+  const bar=ok.slice().sort((a,b)=>a.x.custoFinanciamento-b.x.custoFinanciamento)[0],d=bar.x.diferenca;
+  lvTop(2,`${brl(Math.abs(d))} ${d>=0?'a menos':'a mais'} que financiar`,`Consórcio ${brl(x0.custoConsorcio)} contra ${brl(bar.x.custoFinanciamento)} ${imo?'do total pago colado do simulador habitacional da Caixa':`do financiamento mais barato da lista (${bar.r.nome} a ${pct2(bar.r.taxa)} a.a., ${prazo} meses)`}: ${pct(Math.abs(bar.x.diferencaPct))} ${d>=0?'abaixo':'acima'}.`,d>=0?'pos':'neg');
+  $('#lv-o2').innerHTML=lvAv([...av,'Financiamento sem seguro, tarifas e IOF (sem fonte confirmada); consórcio com as parcelas informadas acima. Diferença positiva = consórcio mais barato, se contemplado no mês previsto.']);}
+function lvAgioRefs(A){if(lvBem()==='imovel'){const t=decBR(A.g_tx);return t==null?[]:[{k:'imo',nome:'Taxa informada (imóvel)',taxa:t}];} // imóvel: sem taxa padrão
+  const r=LV_FIN.map(f=>({k:f.k,nome:f.nome,taxa:lvTaxaFin(f.k)})),m=pubTaxa('taxaVeiculoPF');
+  if(m)r.push({k:'mkt',nome:'Média do mercado (BCB)',taxa:m.aaPct});return r;}
+const LV_IR_TXT='IR: ganho de capital 15% · sem fonte confirmada · pode haver isenção para venda de pequeno valor; confirmar com contador';
+function lvP3(A){const imo=lvBem()==='imovel',refs=lvAgioRefs(A),sel=$('#lv-g_fin'),sig=refs.map(r=>r.k+r.taxa).join('|');
+  $('#lv-g_finwrap').hidden=imo;$('#lv-g_txwrap').hidden=!imo;
+  if(!imo){if(sel.dataset.sig!==sig){sel.innerHTML=refs.map(r=>`<option value="${r.k}">${esc(r.nome)} · ${pct2(r.taxa)} a.a.</option>`).join('');sel.dataset.sig=sig;}
+    if(!refs.some(r=>r.k===A.g_fin))A.g_fin='bra';sel.value=A.g_fin;}
+  const ref=imo?refs[0]:refs.find(r=>r.k===A.g_fin),taxa=ref&&ref.taxa;
+  const lance=num(A.g_lance)||0,np=num(A.g_np)||0,vp=num(A.g_vp)||0,cred=num(A.g_cred),saldo=num(A.g_saldo),parc=num(A.g_parc),mAss=num(A.g_prazo),prazo=num(A.g_prazoFin)>0?num(A.g_prazoFin):num(A.f_prazo),f=[];
+  const fixos=agio({lanceBolso:0,parcelasPagas:0,valorParcelaPagas:0,creditoRecebido:1,saldoAssumido:0,taxaAnualFinanc:0,mesesFinanc:1}).avisos.filter(a=>!/^Teto em valor presente não calculado/.test(a));
+  if(taxa==null){lvTop(3,imo?'Preencha a taxa':'—',imo?'Preencha a taxa. Imóvel não tem taxa padrão: digite ou cole a do simulador habitacional da Caixa (sem fonte confirmada).':'Preencha: taxa do financiamento.');$('#lv-o3').innerHTML=lvAv(fixos);return;}
+  if(!(lance>0||np*vp>0))f.push('lance do bolso ou parcelas pagas');if(!(cred>0))f.push('crédito recebido');if(saldo==null)f.push('saldo que o comprador assume');if(!(parc>0))f.push('parcela assumida');if(!(mAss>0))f.push('meses que faltam da cota');if(!(prazo>0))f.push('prazo do financiamento de referência');
+  if(f.length){lvTop(3,'—','Preencha: '+f.join(', ')+'.');$('#lv-o3').innerHTML=lvAv(fixos);return;}
+  const base={lanceBolso:lance,parcelasPagas:np,valorParcelaPagas:vp,creditoRecebido:cred,saldoAssumido:saldo,taxaAnualFinanc:taxa,mesesFinanc:prazo,parcelaAssumida:parc,mesesAssumidos:mAss};
+  const r=agio(base);
+  if(!okN(r.teto)||!okN(r.tetoVP)){lvTop(3,'—','Confira os números.');$('#lv-o3').innerHTML=lvAv(r.avisos);return;}
+  const sem=r.tetoVP<=r.piso;
+  let out=lvKv('Piso: o que a vendedora já pagou',brl(r.piso))+lvKv('Teto conservador (valor presente)',brl(r.tetoVP),'ink')
+    +`<div class="hint">Crédito recebido ${brl(cred)} − valor presente de ${mAss} parcelas de ${brl2(parc)} a ${pct2(r.taxaMensalPct)} a.m. (${pct2(taxa)} a.a., ${esc(ref.nome)}) = ${brl(r.vpParcelasAssumidas)}.</div>`
+    +(sem?'':lvKv('Faixa (teto conservador − piso)',brl(r.tetoVP-r.piso)))
+    +lvKv('Teto pela soma simples (superestima)',brl(r.teto))
+    +`<div class="hint">Soma simples = custo de financiar (${brl(r.custoFinanciar)}, ${prazo} meses) − saldo assumido (${brl(saldo)}), sem trazer a valor presente. O comprador paga o ágio à vista e as parcelas depois, por isso o teto conservador é o que vale para negociar.</div>`;
+  if(sem){lvTop(3,'Sem folga para ágio',`Teto em valor presente ${brl(r.tetoVP)} não passa do piso ${brl(r.piso)}: o comprador não tem folga para pagar ágio nesta taxa.`,'neg');}
+  else{lvTop(3,`${brl(r.piso)} a ${brl(r.tetoVP)}`,`Faixa de ${brl(r.tetoVP-r.piso)} (teto em valor presente) · taxa de ${ref.nome} a ${pct2(taxa)} a.a.`);
+    const P=lvPrecos(r.piso,r.tetoVP),prc=[['Rápido','piso + 16% (máx. ¼ da faixa) · margem escolhida pelo app, sem fonte confirmada',P.rapido],['Meio da faixa','meio entre piso e teto',P.meio],['Teto','teto conservador (valor presente)',P.teto]];
+    out+=`<table class="lv-tb"><caption>${LV_IR_TXT}</caption><thead><tr><th>Preço de venda</th><th>Lucro bruto</th><th>IR 15%</th><th>Líquido</th></tr></thead><tbody>${prc.map(([n,sm,p])=>{const y=agio({...base,precoVenda:p});return `<tr><td>${n}<small>${brl(p)}${sm?' · '+sm:''}</small></td><td>${brl(y.lucroBruto)}</td><td>${brl(y.ir)}</td><td>${brl(y.lucroLiquido)}</td></tr>`;}).join('')}</tbody></table>`;}
+  const pv=num(A.g_preco);let meu='';
+  if(A.g_preco!==''&&pv!=null){const y=agio({...base,precoVenda:pv});meu=`<div class="sec" style="margin:14px 0 6px;padding-top:12px">Seu preço: ${brl(pv)}</div>`+lvKv('Lucro bruto (preço − piso)',brl(y.lucroBruto))+lvKv('IR 15% sobre o lucro',brl(y.ir))+lvKv('Lucro líquido',brl(y.lucroLiquido),'accent')+`<div class="hint">${LV_IR_TXT}.</div>`;r.avisos.push(...y.avisos);}
+  $('#lv-o3').innerHTML=out+meu+lvAv(r.avisos);}
+// 3 preços dentro de piso–tetoVP, em reais inteiros (arredonda a R$ 100 e prende na faixa). Rápido = piso + 16%, no máximo ¼ da faixa: margem escolhida pelo app, sem fonte confirmada.
+function lvPrecos(piso,teto){const r100=x=>Math.round(x/100)*100,pr=x=>Math.round(Math.min(Math.max(x,piso),teto)),meio=(piso+teto)/2;
+  return {rapido:pr(r100(Math.min(piso*1.16,piso+(teto-piso)/4))),meio:pr(r100(meio)),teto:pr(Math.floor(teto/100)*100)};}
+function lvP4(A){const v=num(A.h_valor),mm=num(A.h_meses),cdi=decBR(A.h_cdi),pc=decBR(A.h_pct),ir=decBR(A.h_ir),f=[];
+  if(!(v>0))f.push('valor');if(!(mm>0))f.push('meses');if(cdi==null)f.push('CDI');
+  const c=pubTaxa('cdi');$('#lv-h-cdi').textContent=c&&A._auto&&A._auto.h_cdi===A.h_cdi?`CDI do Banco Central (série 4389) de ${dtBR(c.data)}; edite para outro cenário.`:'sem CDI automático agora: digite o CDI anual.';
+  const fixos=rendimentoFundo({valor:0,meses:1,cdiAnualPct:0,irPct:0}).avisos;
+  if(f.length){lvTop(4,'—','Preencha: '+f.join(', ')+'.');$('#lv-o4').innerHTML=lvAv(fixos);return;}
+  const r=rendimentoFundo({valor:v,meses:mm,cdiAnualPct:cdi,pctCdi:pc==null?99.53:pc,irPct:ir==null?0:ir});
+  if(!okN(r.valorFinalLiquido)){lvTop(4,'—','Confira os números.');$('#lv-o4').innerHTML=lvAv(r.avisos);return;}
+  const tx=cdi*(pc==null?99.53:pc)/100;
+  lvTop(4,brl(r.valorFinalLiquido),ir==null?`Valor final bruto, sem IR: informe a alíquota. Rendimento de ${brl(r.rendimentoBruto)} em ${mm} meses.`:`Valor final líquido em ${mm} meses · rendimento líquido de ${brl(r.rendimentoBruto-r.ir)}.`,'pos');
+  $('#lv-o4').innerHTML=lvKv('Taxa do fundo (CDI × % do CDI)',pct2(tx)+' a.a.')+lvKv('Valor final bruto',brl(r.valorFinalBruto))+lvKv('Rendimento bruto',brl(r.rendimentoBruto))+lvKv(ir==null?'IR (alíquota não informada)':`IR (${pct(ir)})`,brl(r.ir))+lvKv('Valor final líquido',brl(r.valorFinalLiquido),'accent')+lvAv(r.avisos);}
+function lvPaint(){const A=S.alav;lvP1(A);lvP2(A);lvP3(A);lvP4(A);}
+
 /* ===================== link ===================== */
-function shareLink(){const d={grupos:S.grupos.map(({h,...g})=>g),estr:{...S.estr,nome:''}};
+// Link leva só o que a Alavancagem puxou sozinha da proposta atual (campos "verdes"); nada digitado à mão (valor do imóvel, preço, fundo...) vai junto.
+function alavLink(){const A=S.alav,au=A._auto||{},o={},a={};Object.keys(au).forEach(k=>{if(A[k]!==''&&A[k]===au[k]){o[k]=A[k];a[k]=au[k];}});o._auto=a;return o;}
+function shareLink(){const d={grupos:S.grupos.map(({h,...g})=>g),estr:{...S.estr,nome:''},alav:alavLink()};
   const url=location.origin+location.pathname+'#s='+btoa(unescape(encodeURIComponent(JSON.stringify(d))));
   (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>toast('Link copiado (sem nome do cliente)')).catch(()=>prompt('Copie o link:',url));}
 $('#btnShare2').onclick=shareLink;
 
 /* ===================== render ===================== */
-function render(){renderGrupos();renderRank();renderCampanhas();renderEstrategia();}
+function render(){renderGrupos();renderRank();renderCampanhas();renderEstrategia();renderAlavanca();}
+if(LINK_CARREGADO)toast('Caminhos carregados do link');
 editGroup(null);
 let tab='estrategia';try{tab=localStorage.getItem(KEY+'.tab')||'estrategia';}catch(e){}
-if(!['grupos','estrategia','cotas','oferta'].includes(tab))tab='estrategia';if(location.hash)tab='oferta';
+if(!['grupos','estrategia','cotas','oferta','alavanca'].includes(tab))tab='estrategia';if(location.hash)tab='oferta';
 if(IMPORT_PEND)tab='grupos';
 go(tab);
 puxarGrupos();

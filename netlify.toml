@@ -1,6 +1,6 @@
 # Simulador de Consórcio · Netlify
 # publico/  → só o robots. A página do simulador sai pela função app, depois de conferir a sessão.
-# funcoes/  → entrar, código, sair, app, dados.
+# funcoes/  → entrar, código, sair, app, dados, publicos (+ publicos-agendada, diária 09:00 UTC).
 # nucleo/   → sessão, e-mail, páginas e o HTML do app (gerado por build.mjs). Nunca é publicado.
 [build]
   command = "node build.mjs"
