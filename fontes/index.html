@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>try{var t=localStorage.getItem("tema");if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
 <title>Simulador de Consórcio</title>
 <meta name="description" content="Estratégia de compra de consórcio a partir dos grupos e cotas colados do sistema oficial.">
 <meta name="robots" content="noindex">
@@ -19,6 +20,7 @@
   <button class="btn primary" id="btnPresent">Apresentar</button>
   <button class="btn ghost small" id="btnVer" style="display:none" title="Só muda o que você vê; as permissões continuam de admin">Ver como gerente</button>
   <a class="btn ghost small" id="lnkAdmin" href="/admin" style="display:none">Admin</a>
+  <button class="btn ghost small" id="btnTema" title="Claro / escuro" aria-label="Alternar claro e escuro">◐</button>
   <button class="btn ghost small" id="btnSair" title="Sair" style="display:none">Sair</button>
 </div></header>
 <div class="present-bar"><button class="btn small" onclick="window.print()">PDF</button><button class="btn small" id="btnShare2">Link</button><button class="btn small primary" id="btnExitPresent">Sair</button></div>

@@ -728,3 +728,4 @@ if(!['grupos','estrategia','cotas','oferta'].includes(tab))tab='estrategia';if(l
 if(IMPORT_PEND)tab='grupos';
 go(tab);
 puxarGrupos();puxarInpc();
+try{const bt=document.getElementById('btnTema');if(bt)bt.onclick=()=>{const r=document.documentElement,cur=r.dataset.tema||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'),n=cur==='dark'?'light':'dark';r.dataset.tema=n;try{localStorage.setItem('tema',n);}catch(e){}};}catch(e){}
