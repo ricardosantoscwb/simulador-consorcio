@@ -279,10 +279,25 @@ const faixaM=(a,b)=>a===b?String(a):a+' a '+b;
 const montarAuto=(E,pr)=>montarReal(E,pr)||montar(E,pr);
 function instrucaoBusca(r){if(!r||r.erro)return '';const porG={};r.linhas.forEach(l=>{const k=l.g.cod;porG[k]=porG[k]||{g:l.g,n:0,min:1e18,max:0};porG[k].n+=l.n;porG[k].min=Math.min(porG[k].min,l.carta);porG[k].max=Math.max(porG[k].max,l.carta);});
   return Object.values(porG).map(x=>`${x.n} cota${x.n>1?'s':''} de ${x.min===x.max?brl(x.min):brl(x.min)+' a '+brl(x.max)} no grupo ${esc(x.g.cod)}`).join(' · ');}
+
+/* ===== Pedido: a lista ao vivo (1 cota de X, 2 cotas de Y…) com o menor lance de cada divisão ===== */
+function listaAoVivo(){const box=$('#e-lista');if(!box)return;const E={...S.estr};
+  ['valor','tipo','max','alvo','emb','rec'].forEach(k=>{const el=$('#e-'+k);if(el)E[k]=lerCampo(el);});E.modo=ADM()?(($('#e-modo')||{}).value||E.modo):'liquido';E.bestReal=false;
+  if(!(num(E.valor)>0)){box.innerHTML='';return;}
+  const R=roteiro(E);if(!R)return;
+  if(R.semDados){box.innerHTML=`<div class="lista-vivo"><div class="busca-cab">Divisões possíveis</div><div class="hint">Ainda não há grupos do portal deste tipo: nada para listar.</div></div>`;return;}
+  const ops=(R.ops||[]).filter(o=>o.bolso!=null&&o.uso&&o.uso.length),mb=Math.min(...ops.map(o=>o.bolso)),best=ops.filter(o=>o.bolso<=mb+1e-6).sort((x,y)=>y.n-x.n)[0];
+  const milBR=v=>Math.round(v).toLocaleString('pt-BR'),rec=num(E.rec)>0?num(E.rec):null;
+  const lin=o=>{const u=o.uso[0],g=(o.gs||[]).find(x=>x.cod===u.cod),a=u.a>0?u.a:o.a,nao=rec!=null&&o.bolso>rec;
+    return `<tr class="${o===best?'best':''}"><td><b>${o.n}</b> cota${o.n>1?'s':''} de ~${brl(o.t)}<span class="sel">buscar de ${milBR(o.lo)} a ${milBR(o.hi)}</span></td><td>${esc(u.cod)}${a>0?`<span class="sel">lance ${pct(a)}</span>`:''}</td><td class="r"><b>${brl(o.bolso)}</b>${o===best?'<span class="sel" style="color:var(--accent)">menor bolso</span>':''}${nao?'<span class="sel" style="color:var(--warn)">não cabe</span>':''}</td></tr>`;};
+  box.innerHTML=`<div class="lista-vivo"><div class="busca-cab">Divisões possíveis para ${brl(R.need)} ${E.modo==='bruto'?'em cartas':'líquidos'}</div>
+    <table class="busca-t"><thead><tr><th scope="col">Quantas cotas</th><th scope="col">Grupo de menor lance</th><th scope="col" class="r">Do seu bolso</th></tr></thead><tbody>${ops.map(lin).join('')}</tbody></table>
+    <div class="hint">Lance do bolso estimado pelo histórico do grupo (não é previsão: nada garante o lance vencedor). Procure a cota no sistema e depois cole em Busca: o app compara com esta lista.</div></div>`;}
 function renderEstrategia(){const E=S.estr;[...EF,...EF2].forEach(k=>{const el=$('#e-'+k);if(!el)return;const m=el.dataset.money!=null;el.value=m?moneyFmt(E[k]):(E[k]??'');if(m)el.oninput=()=>{el.value=moneyLive(el.value);};el.onchange=()=>{E[k]=lerCampo(el);save();};});
   $$('#e-tipo-chips .chip').forEach(b=>{b.classList.toggle('on',(E.tipo||'')===b.dataset.v);b.onclick=()=>{E.tipo=b.dataset.v;$('#e-tipo').value=E.tipo;save();renderEstrategia();};});
   $('#e-aviso').innerHTML=avisoPrimeiroUso();if(['rec','fgts','p1','p2'].some(k=>num(E[k])>0))$('#e-bolso').open=true;
   $('#e-go').onclick=()=>{[...EF,...EF2].forEach(k=>{const el=$('#e-'+k);if(el)E[k]=lerCampo(el);});if(!(num(E.valor)>0)){toast('Informe o valor');return;}if(!ADM())E.modo='liquido';E.feito=true;E.conf={};save();renderOferta();go(E.bestReal?'oferta':'cotas');};
+  $$('#s-estrategia input,#s-estrategia select').forEach(el=>{if(!el._lv){el._lv=1;el.addEventListener('input',listaAoVivo);el.addEventListener('change',listaAoVivo);}});listaAoVivo();
   hintInpc();renderOferta();renderCotas();}
 /* ===== custo total, INPC e financiamento (motor em fontes/custos.mjs, colado pelo build) ===== */
 const MESES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
