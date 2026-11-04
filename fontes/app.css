@@ -41,7 +41,8 @@ a{color:inherit}
 /* topo */
 .top{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.94);backdrop-filter:saturate(1.2) blur(10px);border-bottom:1px solid var(--line)}
 .top .in{max-width:1080px;margin:0 auto;padding:8px 20px;display:flex;align-items:center;gap:16px;min-height:60px}
-@media (max-width:600px){.top .in{flex-wrap:wrap;gap:4px 6px;padding:8px 16px;min-height:56px}body.usuario .top .in{flex-wrap:nowrap}.top .brand{flex:1 1 auto;font-size:14px;min-width:0}.top .btn{min-height:40px;padding:0 12px;font-size:14px}.top .btn.ghost{padding:0 8px}.hero h1{font-size:24px}}
+@media (max-width:600px){.top .in{flex-wrap:wrap;gap:4px 6px;padding:8px 16px;min-height:56px}body.usuario .top .in{flex-wrap:nowrap}.top .brand{flex:1 1 auto;font-size:14px;min-width:0}.top .btn{min-height:40px;padding:0 12px;font-size:14px}.top .btn.ghost{padding:0 8px}.hero h1{font-size:24px}.top .btn,.top .in a.btn{flex:none;white-space:nowrap}}
+@media (max-width:520px){.top .brand>div:last-child{display:none}.top .brand{flex:1 1 0}.top .in{gap:6px}.top .btn.ghost{padding:0 6px;font-size:13px}}
 .brand{display:flex;align-items:center;gap:10px;font-weight:600;letter-spacing:-.01em;font-size:15px}
 .brand .dot{width:26px;height:26px;border-radius:7px;background:var(--ink);display:grid;place-items:center;color:#fff;font-size:12px}
 .brand small{display:none}
