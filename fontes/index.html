@@ -48,6 +48,7 @@ a{color:inherit}
 .gate.warn{border-color:#e7c7b8;background:var(--warn-soft);color:var(--warn)}
 .gate.bad{border-color:var(--warn);background:var(--warn);color:#fff}
 .btn[disabled]{opacity:.4;cursor:not-allowed}
+@media print{#e-out details.adv:not([open]){display:none}#e-out .path.best{break-inside:auto}}
 
 /* topo */
 .top{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.94);backdrop-filter:saturate(1.2) blur(10px);border-bottom:1px solid var(--line)}
@@ -712,7 +713,7 @@ function blocoDecisao(c,I){const {man,red}=c,rm=red.total<=man.total;
 function blocoFin(E,t,c,I,P1){
   const F=S.fin||(S.fin={cet:'',prazo:'',sis:''}),cet=num(String(F.cet).replace(',','.'));
   const sis=F.sis||(E.tipo==='Imobiliário'?'sac':'price'),pz=Math.floor(num(F.prazo)||0);
-  const campos=`<div class="finf"><div class="f"><label for="fin-cet">CET do financiamento, % ao ano</label><input id="fin-cet" data-fin="cet" type="text" inputmode="decimal" placeholder="ex.: 24,5" value="${esc(F.cet)}"></div><div class="f"><label for="fin-prazo">Prazo, meses <span class="hint">vazio = mesmo prazo</span></label><input id="fin-prazo" data-fin="prazo" type="number" min="1" max="480" inputmode="numeric" value="${esc(F.prazo)}"></div><div class="f"><label for="fin-sis">Sistema</label><select id="fin-sis" data-fin="sis"><option value="" ${F.sis===''?'selected':''}>Padrão do tipo (${E.tipo==='Imobiliário'?'SAC':'Price'})</option><option value="price" ${F.sis==='price'?'selected':''}>Price (parcela fixa)</option><option value="sac" ${F.sis==='sac'?'selected':''}>SAC (parcela cai)</option></select></div></div>`;
+  const campos=`<div class="finf"><div class="f"><label for="fin-cet">CET do financiamento, % ao ano</label><input id="fin-cet" data-fin="cet" type="text" inputmode="decimal" placeholder="ex.: 24,5" value="${esc(F.cet)}"></div><div class="f"><label for="fin-prazo">Prazo do financiamento, meses <span class="hint">além do mesmo prazo</span></label><input id="fin-prazo" data-fin="prazo" type="number" min="1" max="480" inputmode="numeric" value="${esc(F.prazo)}"></div><div class="f"><label for="fin-sis">Sistema</label><select id="fin-sis" data-fin="sis"><option value="" ${F.sis===''?'selected':''}>Padrão do tipo (${E.tipo==='Imobiliário'?'SAC':'Price'})</option><option value="price" ${F.sis==='price'?'selected':''}>Price (parcela fixa)</option><option value="sac" ${F.sis==='sac'?'selected':''}>SAC (parcela cai)</option></select></div></div>`;
   const fin=m=>financiar({valor:t.liq,cetAA:cet/100,meses:m,sistema:sis,inpc:I.v/100});
   let tab='';
   if(F.cet!==''&&cet!=null&&cet>=0){
@@ -721,9 +722,9 @@ function blocoFin(E,t,c,I,P1){
     const cons=(n,x)=>lin(`${n} · ${x.meses} meses`,`${brl(P1)} → ${brl(x.parcela1)}`,brl(x.total),'+ '+brl(x.custoCredito),ca(x));
     const fl=f=>lin(`Financiamento · ${sis==='sac'?'SAC':'Price'} · ${f.meses} meses`,sis==='sac'?`${brl(f.parcela1)} → ${brl(f.parcelaN)}`:brl(f.parcela1),brl(f.total),'+ '+brl(f.custo),pct(cet));
     const mais=(a,b)=>{const d=a-b;return `${brl(Math.abs(d))} ${d>0?'mais caro':'mais barato'}`;};
-    let linhas,vd;
-    if(pz>0){const f=fin(pz),melhor=c.red.total<=c.man.total?c.red:c.man;linhas=cons('Consórcio · quitar mais rápido',c.red)+cons('Consórcio · parcela mais leve',c.man)+fl(f);vd=`Em reais, o financiamento em ${pz} meses sai ${mais(f.total,melhor.total)} que o melhor consórcio. O custo ao ano pesa quando cada real é pago: no consórcio o lance sai todo no começo.`;}
-    else{const fr=fin(c.red.meses),fm=fin(c.man.meses);linhas=cons('Consórcio · quitar mais rápido',c.red)+fl(fr)+cons('Consórcio · parcela mais leve',c.man)+fl(fm);vd=`Em reais, no mesmo prazo, o financiamento sai ${mais(fr.total,c.red.total)} que "quitar mais rápido" e ${mais(fm.total,c.man.total)} que "parcela mais leve". O custo ao ano pesa quando cada real é pago: no consórcio o lance sai todo no começo.`;}
+    const fr=fin(c.red.meses),fm=fin(c.man.meses);let linhas=cons('Consórcio · quitar mais rápido',c.red)+fl(fr)+cons('Consórcio · parcela mais leve',c.man)+fl(fm);
+    let vd=`Em reais, no mesmo prazo, o financiamento sai ${mais(fr.total,c.red.total)} que "quitar mais rápido" e ${mais(fm.total,c.man.total)} que "parcela mais leve". O custo ao ano pesa quando cada real é pago: no consórcio o lance sai todo no começo.`;
+    if(pz>0&&pz!==c.red.meses&&pz!==c.man.meses){const f=fin(pz),melhor=c.red.total<=c.man.total?c.red:c.man;linhas+=fl(f).replace('Financiamento ·','Financiamento (prazo dele) ·');vd+=` No prazo informado, de ${pz} meses, sai ${mais(f.total,melhor.total)} que o melhor consórcio.`;}
     tab=`<div class="cmp-wrap"><table class="cmp" style="font-size:12px;margin-top:10px"><thead><tr><th></th><th>Parcela</th><th>Total pago</th><th>Custo do crédito</th><th>Custo ao ano</th></tr></thead><tbody>${linhas}</tbody></table></div><p class="vd">${vd}</p>`;}
   return `<details class="adv no-present" ${tab?'open':''}><summary>Comparar com financiamento</summary><p class="sub" style="margin-top:6px">Mesmo crédito líquido, ${brl(t.liq)}. O CET é o do financiamento que o cliente tem em mãos: o simulador não inventa taxa.</p>${campos}${tab}
   <div class="nota">Financiamento libera o dinheiro hoje; o consórcio, só na contemplação (mês ${mesC()}, sem garantia), e pede o lance do bolso. "Custo ao ano" do consórcio é a taxa que iguala o que o cliente paga ao que recebe, supondo contemplação no mês estimado; fica sem valor quando a espera é longa demais para existir taxa.</div></details>`;}
@@ -747,6 +748,10 @@ function prontidao(b,I){
   if(!I.fonte)avisa.push('sem INPC: totais sem reajuste');
   const html=bloq.length?`<div class="gate bad no-present"><b>NÃO ENTREGAR</b> · ${bloq.join(' · ')}</div>`:avisa.length?`<div class="gate warn no-present"><b>Revisar antes de enviar</b> · ${avisa.join(' · ')}</div>`:`<div class="gate ok no-present">✔ Pronto para o cliente</div>`;
   return {html,bloq:bloq.length>0,motivo:bloq.join(' · ')};}
+// PDF: abre o que explica o cálculo (na tela fica recolhido); depois restaura
+let _abertos=[];const _alvoPdf=()=>[...document.querySelectorAll('#e-out .best details, #e-out details.seg')].filter(d=>d.classList.contains('seg')||/^Como calculamos/.test(d.textContent.trim()));
+window.addEventListener('beforeprint',()=>{_abertos=_alvoPdf().filter(d=>d.open);_alvoPdf().forEach(d=>d.open=true);});
+window.addEventListener('afterprint',()=>{_alvoPdf().forEach(d=>d.open=_abertos.includes(d));});
 function blocoSeguro(b,segI){const t=b&&b.r&&!b.r.erro?b.r.tot:null;const v=t?segI(t):0;
   const custo=v>0?`Cerca de ${brl2(v)} por mês hoje; ele cai junto com o saldo (a projeção do sistema o mantém fixo). Já somado na parcela até contemplar`:'Valor a confirmar no sistema';
   const ic=d=>`<span class="ic"><svg viewBox="0 0 24 24">${d}</svg></span>`;
