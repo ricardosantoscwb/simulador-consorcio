@@ -227,7 +227,7 @@ function montar(E,prior){ // prior: 'bolso' | 'parcela' | 'semlance'
 }
 function montarReal(E,prior){ // cotas reais coladas do sistema de vendas; null = não há cotas do tipo (cai no motor dos grupos)
   const need=num(E.valor)||0;if(!(need>0))return null;
-  const cs=cotasComModelo().filter(x=>(x.plano==='Normal'||(E.red==='1'&&x.plano==='Reduzida'&&(S.comp[compK(x)]||compDoGrupo(x.gid,'Reduzida'))))&&x.carta>0&&x.parc>0&&x.prazo>0&&(x.vagas==null||x.vagas>0)&&(!E.tipo||(E.tipo==='Imobiliário'?x.tipo==='Imobiliário':x.tipo==='Veículos')));
+  const cs=cotasComModelo().filter(x=>(x.plano==='Normal'||(E.red==='1'&&x.plano==='Reduzida'&&(S.comp[compK(x)]||compDoGrupo(x.gid,'Reduzida'))))&&x.carta>0&&x.parc>0&&x.prazo>0&&(x.vagas==null||x.vagas>0)&&tipoCasa(x,E.tipo));
   if(!cs.length)return null;
   const incSeg=E.sg!=='0',usaEmb=prior!=='semlance'&&E.emb==='1',M=mesC();
   const items=cs.map(x=>{
@@ -579,6 +579,9 @@ function segDe(x){ // seguro, saldo sem seguro e parcela sem seguro de uma cota:
 const compDoGrupo=(gid,plano)=>{const e=Object.entries(S.comp).find(([k])=>k.startsWith(gid+'|'+plano+'|'));return e?{...e[1],carta:+e[0].split('|')[2]}:null;};
 // uma linha por grupo basta: carta = fator do grupo × valor nominal ("R$ 130 Mil"); parcela = % fixo da carta (conferido em 201 cotas reais)
 const nomDe=d=>{const m=String(d||'').match(/R\$\s*([\d.]+)\s*Mil/i);return m?+m[1].replace(/\./g,'')*1000:null;};
+// leve e pesado têm regras e taxas diferentes: a cota colada só entra no tipo do grupo dela (grupo do portal ou prefixo do código)
+function tipoCota(x){const g=S.grupos.find(g=>codN(g.cod)===x.gid);return (g&&g.tipo)||tipoDoCod(x.cod)||null;}
+function tipoCasa(x,t){if(!t)return true;const k=tipoCota(x);return k?(t==='Veículos'?/^Veículos/.test(k):k===t):(t==='Imobiliário'?x.tipo==='Imobiliário':x.tipo==='Veículos');}
 function cotasComModelo(){const out=[...S.cotasL],por={},fator={};
   S.cotasL.forEach(x=>{(por[x.gid+'|'+x.plano]=por[x.gid+'|'+x.plano]||[]).push(x);const n=nomDe(x.desc);if(n&&x.plano==='Normal')fator[x.gid]=x.carta/n;});
   Object.values(por).forEach(rs=>{const b=rs[0],f=fator[b.gid];if(!f)return;const ks=rs.map(r=>r.parc/r.carta).sort((a,c)=>a-c),k=ks[ks.length>>1];
@@ -612,7 +615,7 @@ function renderCampanhas(){const el=$('#camp-card');if(!el)return;const adm=!tem
   $('#cp-add').onclick=()=>{const v=id=>$('#'+id).value.trim(),cod=v('cp-cod');if(!cod){toast('Informe o código');return;}const desc=num(v('cp-desc')),ta=num(v('cp-ta'));if(desc==null&&ta==null){toast('Informe o desconto ou a taxa final');return;}
     S.campanhas=[...(S.campanhas||[]),{cod,nome:v('cp-nome'),tipos:[...el.querySelectorAll('[data-cpt]:checked')].map(x=>x.dataset.cpt),cmin:num(v('cp-min')),cmax:num(v('cp-max')),emb:v('cp-emb'),desc,ta,ini:v('cp-ini'),fim:v('cp-fim')}];salva();toast('Campanha adicionada');};}
 // roteiro de busca: quanto comprar, em quantas cotas e que faixa pesquisar no sistema (foco: menor lance do bolso)
-function roteiro(E){const need=num(E.valor)||0;if(!(need>0))return null;const tOk=x=>!E.tipo||(E.tipo==='Imobiliário'?x.tipo==='Imobiliário':x.tipo==='Veículos');
+function roteiro(E){const need=num(E.valor)||0;if(!(need>0))return null;const tOk=x=>tipoCasa(x,E.tipo);
   const embPad=E.tipo&&E.tipo!=='Imobiliário'?30:50,conh=[]; // embutido do grupo quando o portal informa; senão o máximo usual (sem fonte confirmada)
   const pul=new Set((E.pular||[]).map(codN));
   S.grupos.filter(g=>(!E.tipo||g.tipo===E.tipo)&&num(g.cmax)>0&&!pul.has(codN(g.cod))).forEach(g=>{const a=num(g[E.alvo])>0?num(g[E.alvo]):(num(g.lmin)>0?num(g.lmin):num(g.lmed));if(a>0)conh.push({cod:g.cod,a,med:num(g.lmed)>0?num(g.lmed):null,min:num(g.cmin)||0,max:num(g.cmax),emax:num(g.emax),pr:num(g.pr)>0?num(g.pr):(num(g.pt)>0?num(g.pt):null),ta:num(g.ta),fr:num(g.fr),cl:num(g.cl)>0?num(g.cl):null});});
