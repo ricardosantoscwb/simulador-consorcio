@@ -10,7 +10,7 @@ const defaultState=()=>({
     {id:'G3',cod:'G3',tipo:'Veículos Leves',desc:'Veículo com lance (exemplo)',ta:14.4,fr:3,cmin:124448.07,cmax:124448.07,pt:'',pr:'',parc:2435.08,emax:30,lmin:'',lmed:'',lmax:'',assem:'',data:'',fonte:EXEMPLO},
   ],
     cotasL:[], comp:{}, convenios:[],
-  segTx:{'Imobiliário':0.0433,'Veículos':0.0765}, inpcBcb:null, fin:{cet:'',prazo:'',sis:''},
+  segTx:{'Imobiliário':0.0433,'Veículos':0.0765}, inpcBcb:null, taxas:null, bancos:{}, fin:{cet:'',prazo:'',sis:'',extra:''},
   segTaxa:0.0433, segInfo:'1 amostra da tela de composição (27/10/2026): grupo 10012, carta R$ 305.576, seguro R$ 163,41 por mês sobre saldo de R$ 377.388 sem seguro',
 });
 let S=load();
@@ -353,11 +353,32 @@ function blocoDecisao(c,I){const {man,red}=c,rm=red.total<=man.total;
   const dN=Math.abs(man.total-red.total),dH=Math.abs(man.vp-red.vp);
   const frase=`${rm?'Reduzir o prazo':'Manter o prazo'} custa ${mil(dN)} a menos no total.`+((I.v>0&&dH<dN*0.9)?` Em valores de hoje a diferença é ${mil(dH)}: o resto é o INPC sobre parcelas que ficam mais tempo a pagar.`:'');
   return `<div class="opts">${opcaoHtml('red','Quitar mais rápido',red,rm)}${opcaoHtml('man','Parcela mais leve',man,!rm)}</div><p class="vd">${frase}</p>`;}
+/* ===== taxas médias de financiamento por banco (BCB; não é oferta nem CET) ===== */
+const BANCOS_PADRAO=[/CAIXA ECON/,/SANTANDER/,/ITA[UÚ]/];
+async function puxarTaxas(){if(!temServidor())return;try{const r=await fetch('/api/taxas',{cache:'no-store'});if(!r.ok)return;const j=await r.json();if(!j.ok||!j.veiculo||!j.imovel)return;S.taxas={veiculo:j.veiculo,imovel:j.imovel,velho:!!j.velho};save();renderOferta();}catch(e){}}
+function refTaxa(k,ref){if(k==='imovel'){const m=/^(\d{4})-(\d{2})$/.exec(ref||'');return m?refMes(ref):'';}const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(ref||'');return m?`semana de ${m[3]}/${m[2]}/${m[1]}`:'';}
+const nomeBanco=b=>/CAIXA ECON/.test(b)?'Caixa':/SANTANDER/.test(b)?'Santander':/ITA[UÚ]/.test(b)?'Itaú':/BRADESCO/.test(b)?'Bradesco':/DO BRASIL/.test(b)?'Banco do Brasil':b.toLowerCase().replace(/(^|\s)\S/g,c=>c.toUpperCase());
+function blocoTaxas(E,t,mel,I,sis,F){
+  const k=E.tipo==='Imobiliário'?'imovel':'veiculo',T=S.taxas&&S.taxas[k];if(!T||!T.lista||!T.lista.length||!mel)return '';
+  const tag=x=>x.m==='TR'?' <span class="hint">+ TR</span>':'';
+  const chv=x=>x.b+'|'+x.m,sel=(S.bancos||{})[k];
+  let pick;if(sel)pick=T.lista.filter(x=>sel.includes(chv(x)));else{pick=[];BANCOS_PADRAO.forEach(re=>{const x=T.lista.find(y=>re.test(y.b));if(x&&!pick.includes(x))pick.push(x);});}
+  const ex=num(String(F.extra||'').replace(',','.'))||0,aas=T.lista.map(x=>x.aa).sort((a,b)=>a-b),md=aas[Math.floor(aas.length/2)];
+  const lin=pick.map(x=>{const f=financiar({valor:t.liq,cetAA:(x.aa+ex)/100,meses:mel.meses,sistema:sis,inpc:I.v/100});if(!f)return '';const d=f.total-mel.total;
+    return `<tr><td>${esc(nomeBanco(x.b))}${tag(x)}</td><td class="num">${pct2(x.aa)}<br><small>média BCB</small></td><td class="num">${sis==='sac'?brl(f.parcela1)+' → '+brl(f.parcelaN):brl(f.parcela1)}</td><td class="num">${brl(f.total)}</td><td class="num">${brl(Math.abs(d))}<br><small>${d>=0?'mais caro':'mais barato'}</small></td><td><button type="button" class="btn-mini" data-usar="${x.aa}" title="Usar esta taxa como CET">usar</button></td></tr>`;}).join('');
+  const lista=T.lista.map(x=>`<label class="chk"><input type="checkbox" data-banco="${esc(chv(x))}" ${pick.includes(x)?'checked':''}> ${esc(nomeBanco(x.b))}${x.m==='TR'?' (+ TR)':''} · ${pct2(x.aa)}</label>`).join('');
+  return `<div class="txbc"><p class="ck">Referência de mercado · Banco Central</p>
+  <p class="sub">Mercado: de ${pct2(aas[0])} a ${pct2(aas[aas.length-1])} ao ano (mediana ${pct2(md)}), ${aas.length} instituições, ${refTaxa(k,T.ref)}${S.taxas.velho?' · dado antigo':''}.</p>
+  <div class="f" style="max-width:260px"><label for="fin-extra">Tarifas, seguros e IOF, pontos ao ano <span class="hint">opcional</span></label><input id="fin-extra" data-fin="extra" type="text" inputmode="decimal" placeholder="ex.: 2" value="${esc(F.extra||'')}"></div>
+  <div class="cmp-wrap"><table class="cmp" style="font-size:12px;margin-top:10px"><thead><tr><th></th><th>Taxa ao ano</th><th>Parcela</th><th>Total pago</th><th>Financiar vs consórcio</th><th></th></tr></thead><tbody><tr class="win"><td><b>Consórcio Caixa</b> · ${mel.meses} meses</td><td class="num">${mel.custoAno==null?'—':pct(mel.custoAno*100)}<br><small>custo ao ano</small></td><td class="num">${brl(mel.parcela1)}</td><td class="num">${brl(mel.total)}</td><td class="num">—</td><td></td></tr>${lin}</tbody></table></div>
+  <details class="adv escolher" style="margin-top:6px" ${sel?"open":""}><summary>Escolher os bancos</summary><div class="chks">${lista}</div></details>
+  <div class="nota">É a taxa média dos contratos de cada banco, não a oferta que o cliente vai receber, e não é o CET (fica de fora tarifa, seguro e IOF: some no campo acima ou peça a simulação ao banco). A tabela usa o mesmo crédito líquido e o prazo do melhor consórcio.${k==='imovel'?' Nas linhas "+ TR", a TR vem por cima da taxa.':''} Estimativa para conversar, não proposta.</div></div>`;}
 function blocoFin(E,t,c,I,P1){
-  const F=S.fin||(S.fin={cet:'',prazo:'',sis:''}),cet=num(String(F.cet).replace(',','.'));
+  const F=S.fin||(S.fin={cet:'',prazo:'',sis:'',extra:''}),cet=num(String(F.cet).replace(',','.'));
   const sis=F.sis||(E.tipo==='Imobiliário'?'sac':'price'),pz=Math.floor(num(F.prazo)||0);
   const campos=`<div class="finf"><div class="f"><label for="fin-cet">CET do financiamento, % ao ano</label><input id="fin-cet" data-fin="cet" type="text" inputmode="decimal" placeholder="ex.: 24,5" value="${esc(F.cet)}"></div><div class="f"><label for="fin-prazo">Prazo do financiamento, meses <span class="hint">além do mesmo prazo</span></label><input id="fin-prazo" data-fin="prazo" type="number" min="1" max="480" inputmode="numeric" value="${esc(F.prazo)}"></div><div class="f"><label for="fin-sis">Sistema</label><select id="fin-sis" data-fin="sis"><option value="" ${F.sis===''?'selected':''}>Padrão do tipo (${E.tipo==='Imobiliário'?'SAC':'Price'})</option><option value="price" ${F.sis==='price'?'selected':''}>Price (parcela fixa)</option><option value="sac" ${F.sis==='sac'?'selected':''}>SAC (parcela cai)</option></select></div></div>`;
   const fin=m=>financiar({valor:t.liq,cetAA:cet/100,meses:m,sistema:sis,inpc:I.v/100});
+  const bx=blocoTaxas(E,t,c.red.total<=c.man.total?c.red:c.man,I,sis,F);
   let tab='';
   if(F.cet!==''&&cet!=null&&cet>=0){
     const ca=x=>x.custoAno==null?'—':pct(x.custoAno*100);
@@ -369,7 +390,7 @@ function blocoFin(E,t,c,I,P1){
     let vd=`Em reais, no mesmo prazo, o financiamento sai ${mais(fr.total,c.red.total)} que "quitar mais rápido" e ${mais(fm.total,c.man.total)} que "parcela mais leve". O custo ao ano pesa quando cada real é pago: no consórcio o lance sai todo no começo.`;
     if(pz>0&&pz!==c.red.meses&&pz!==c.man.meses){const f=fin(pz),melhor=c.red.total<=c.man.total?c.red:c.man;linhas+=fl(f).replace('Financiamento ·','Financiamento (prazo dele) ·');vd+=` No prazo informado, de ${pz} meses, sai ${mais(f.total,melhor.total)} que o melhor consórcio.`;}
     tab=`<div class="cmp-wrap"><table class="cmp" style="font-size:12px;margin-top:10px"><thead><tr><th></th><th>Parcela</th><th>Total pago</th><th>Custo do crédito</th><th>Custo ao ano</th></tr></thead><tbody>${linhas}</tbody></table></div><p class="vd">${vd}</p>`;}
-  return `<details class="adv no-present" ${tab?'open':''}><summary>Comparar com financiamento</summary><p class="sub" style="margin-top:6px">Mesmo crédito líquido, ${brl(t.liq)}. O CET é o do financiamento que o cliente tem em mãos: o simulador não inventa taxa.</p>${campos}${tab}
+  return `<details class="adv no-present" ${tab||bx?'open':''}><summary>Comparar com financiamento</summary><p class="sub" style="margin-top:6px">Mesmo crédito líquido, ${brl(t.liq)}. O CET é o do financiamento que o cliente tem em mãos: o simulador não inventa taxa.</p>${bx}${campos}${tab}
   <div class="nota">Financiamento libera o dinheiro hoje; o consórcio, só na contemplação (mês ${mesC()}, sem garantia), e pede o lance do bolso. "Custo ao ano" do consórcio é a taxa que iguala o que o cliente paga ao que recebe, supondo contemplação no mês estimado; fica sem valor quando a espera é longa demais para existir taxa.</div></details>`;}
 function blocoEspera(r,E,R,I){
   const M0=mesC(),ms=[...new Set([1,3,6,12,M0])].sort((a,b)=>a-b);
@@ -519,6 +540,8 @@ function renderOferta(){const E=S.estr;const out=$('#e-out');
   <div class="dlg-actions no-present">${b?`<button class="btn" id="o-msg" ${PR.bloq?'disabled':''}>Copiar mensagem</button>`:''}<button class="btn" id="o-share" ${PR.bloq?'disabled':''}>Copiar link</button><button class="btn" id="o-print" ${PR.bloq?'disabled':''}>PDF / Imprimir</button><button class="btn primary" id="o-present" ${PR.bloq?'disabled':''}>Apresentar</button></div></div>${b&&!PR.bloq?`<div class="resp no-present"><span>Como terminou com o cliente?</span><button class="chip" data-res="fechou">Fechou</button><button class="chip" data-res="negociando">Negociando</button><button class="chip" data-res="nao_fechou">Não fechou</button><small>Registro anônimo, só faixas: sem nome, CPF nem valor exato.</small></div>`:''}`;
   $('#o-present').onclick=()=>{if(!PR.bloq){logar('usou',{acao:'apresentar'});abrirCine();}};$('#o-share').onclick=()=>{if(!PR.bloq){logar('usou',{acao:'link'});shareLink();}};$('#o-print').onclick=()=>{if(!PR.bloq){logar('usou',{acao:'pdf'});window.print();}};
   $$('[data-res]').forEach(el=>el.onclick=()=>{logar('resultado',{res:el.dataset.res});$$('[data-res]').forEach(x=>x.classList.toggle('on',x===el));toast('Registrado, obrigado.');});
+  $$('[data-banco]').forEach(el=>el.onchange=()=>{const k=E.tipo==='Imobiliário'?'imovel':'veiculo';const marc=$$('[data-banco]').filter(x=>x.checked).map(x=>x.dataset.banco);(S.bancos||(S.bancos={}))[k]=marc;save();renderOferta();});
+  $$('[data-usar]').forEach(el=>el.onclick=()=>{const F=S.fin||(S.fin={});const ex=num(String(F.extra||'').replace(',','.'))||0;F.cet=String(Math.round((Number(el.dataset.usar)+ex)*100)/100).replace('.',',');save();renderOferta();});
   $$('[data-fin]').forEach(el=>el.onchange=()=>{(S.fin||(S.fin={}))[el.dataset.fin]=el.value;save();renderOferta();});
   proposta();
   _cine=null;if(b&&!PR.bloq){const t=b.r.tot,c=custoVar(b.r,mesC(),E.sg!=='0',R,I.v/100);if(c){const F=S.fin||{},cet=num(String(F.cet||'').replace(',','.')),rm=c.red.total<=c.man.total,mel=rm?c.red:c.man,sis=F.sis||(E.tipo==='Imobiliário'?'sac':'price');
@@ -786,5 +809,5 @@ let tab='estrategia';try{tab=localStorage.getItem(KEY+'.tab')||'estrategia';}cat
 if(!['grupos','estrategia','cotas','oferta'].includes(tab))tab='estrategia';if(location.hash)tab='oferta';
 if(IMPORT_PEND)tab='grupos';
 go(tab);
-puxarGrupos();puxarInpc();
+puxarGrupos();puxarInpc();puxarTaxas();
 try{const bt=document.getElementById('btnTema');if(bt)bt.onclick=()=>{const r=document.documentElement,cur=r.dataset.tema||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'),n=cur==='dark'?'light':'dark';r.dataset.tema=n;try{localStorage.setItem('tema',n);}catch(e){}};}catch(e){}
