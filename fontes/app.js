@@ -180,6 +180,26 @@ const moneyFmt=v=>{const n=num(v);if(n==null||v==='')return '';const [i,d]=n.toF
 const moneyParse=t=>{t=String(t||'').replace(/[^\d,]/g,'');if(!t)return '';const k=t.indexOf(',');const a=(k<0?t:t.slice(0,k))||'0',b=k<0?'':t.slice(k+1).replace(/,/g,'').slice(0,2);return b?a+'.'+b:String(+a);};
 const moneyLive=t=>{t=String(t).replace(/[^\d,]/g,'');const k=t.indexOf(',');let a=k<0?t:t.slice(0,k);const b=k<0?null:t.slice(k+1).replace(/,/g,'').slice(0,2);a=a.replace(/^0+(?=\d)/,'');a=a?(+a).toLocaleString('pt-BR'):'';return b==null?a:(a||'0')+','+b;};
 const lerCampo=el=>el.dataset.money!=null?moneyParse(el.value):el.value;
+
+/* ===== Glossário em 1 toque: o "?" ao lado dos termos abre uma explicação curta (sem inventar regra da Caixa) ===== */
+const GLOS={
+  liquido:['Valor líquido','O que o cliente recebe para usar no bem, depois de tirar o lance embutido da carta.'],
+  embutido:['Lance embutido','Parte do próprio crédito da carta usada como lance. Não sai do bolso, mas reduz o crédito que o cliente recebe. No app: 50% em imóvel e 30% em veículo, como o Ricardo informou (confirme no contrato).'],
+  bolso:['Lance do bolso','O dinheiro que o cliente coloca de sua conta no lance, além do embutido. Lance total = embutido + bolso. Sem garantia de contemplação.'],
+  ref:['Bolso de referência','Estimativa pelo histórico do menor lance dos grupos nessa faixa de carta. Não é previsão nem garantia do lance vencedor.'],
+  media3:['Lance médio (últimas 3)','Média dos lances contemplados nas últimas 3 assembleias do grupo. Menor e maior lance são da última assembleia. É histórico, não previsão; por isso a média pode ficar fora do intervalo menor-maior.'],
+  concorrem:['Cotas que concorrem','Cotas do mesmo cliente no mesmo grupo disputam entre si: se todas ofertarem o menor lance, normalmente só uma passa. Regra do app, sem fonte confirmada da Caixa.'],
+  ano:['Custo ao ano','Taxa anual que iguala o que o cliente paga ao que recebe, supondo contemplação no mês informado. Serve para comparar com o CET de um financiamento. É estimativa.'],
+  credito:['Custo do crédito','Quanto o cliente paga a mais do que o crédito que recebe, em reais e em % do crédito recebido. Inclui taxa de administração, fundo de reserva, seguro e reajuste pelo INPC, tudo estimado.'],
+  mes:['Mês da contemplação','Palpite do mês em que a cota seria contemplada. Muda quanto o cliente paga antes de ter o crédito. Sem garantia de contemplação.']
+};
+const gl=k=>GLOS[k]?`<button type="button" class="gl" data-gl="${k}" aria-label="O que é: ${GLOS[k][0]}">?</button>`:'';
+function abrirGlos(k){const t=GLOS[k];if(!t)return;fecharGlos();const d=document.createElement('div');d.id='glos';d.setAttribute('role','dialog');d.setAttribute('aria-modal','true');d.setAttribute('aria-label',t[0]);
+  d.innerHTML=`<div class="glos-fundo"></div><div class="glos-card"><b>${esc(t[0])}</b><p>${esc(t[1])}</p><button type="button" class="btn primary small" id="glos-ok">Entendi</button></div>`;
+  document.body.appendChild(d);const ok=d.querySelector('#glos-ok');ok.focus();ok.onclick=fecharGlos;d.querySelector('.glos-fundo').onclick=fecharGlos;}
+function fecharGlos(){const d=document.getElementById('glos');if(d)d.remove();}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-gl]');if(b){e.preventDefault();abrirGlos(b.dataset.gl);}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')fecharGlos();});
 const mesC=()=>Math.max(1,Math.floor(num(S.estr&&S.estr.mc)||1)); // mês estimado da contemplação (parcelas pagas antes dela)
 S.estr=S.estr||{modo:'liquido',valor:'',tipo:'Imobiliário',max:3,alvo:'lmin',emb:'1',rec:'',p1:'',p2:'',nome:'',lf:''};
 const EF2=['lf'];
@@ -292,7 +312,7 @@ function listaAoVivo(){const box=$('#e-lista');if(!box)return;const E={...S.estr
   const lin=o=>{const nao=rec!=null&&o.bolso>rec;
     return `<tr class="${o===best?'best':''}"><td><b>${o.n}</b> cota${o.n>1?'s':''} de ~${brl(o.t)}</td><td class="r"><b>${milBR(o.lo)} a ${milBR(o.hi)}</b>${o===best?'<span class="sel" style="color:var(--accent)">comece por aqui</span>':''}</td><td class="r">~${brl(o.bolso)}${nao?'<span class="sel" style="color:var(--warn)">não cabe</span>':''}</td></tr>`;};
   box.innerHTML=`<div class="lista-vivo"><div class="busca-cab">Faixas de carta para ${brl(R.need)} ${E.modo==='bruto'?'em cartas':'líquidos'}</div>
-    <table class="busca-t"><thead><tr><th scope="col">Quantas cotas</th><th scope="col" class="r">Pesquise no sistema (R$)</th><th scope="col" class="r">Bolso de referência</th></tr></thead><tbody>${ops.map(lin).join('')}</tbody></table>
+    <table class="busca-t"><thead><tr><th scope="col">Quantas cotas</th><th scope="col" class="r">Pesquise no sistema (R$)</th><th scope="col" class="r">Bolso de referência ${gl('ref')}</th></tr></thead><tbody>${ops.map(lin).join('')}</tbody></table>
     <div class="hint">Você pesquisa a faixa no vendas.seguridade e traz o que achou: grupo, vaga e parcela vêm de lá. O bolso de referência usa o histórico de lance dos grupos nessa faixa (não é previsão: nada garante o lance vencedor).</div></div>`;}
 function renderEstrategia(){const E=S.estr;if(!E.tipo)E.tipo='Imobiliário';[...EF,...EF2].forEach(k=>{const el=$('#e-'+k);if(!el)return;const m=el.dataset.money!=null;el.value=m?moneyFmt(E[k]):(E[k]??'');if(m)el.oninput=()=>{el.value=moneyLive(el.value);};el.onchange=()=>{E[k]=lerCampo(el);save();};});
   $$('#e-tipo-chips .chip').forEach(b=>{b.classList.toggle('on',(E.tipo||'')===b.dataset.v);b.onclick=()=>{E.tipo=b.dataset.v;$('#e-tipo').value=E.tipo;save();renderEstrategia();};});
@@ -327,7 +347,7 @@ function custoVar(r,M,sgOn,R,inpc,segFixo){ // custo total das cotas da variante
 const mil=v=>v==null||!isFinite(v)?'—':brl(v);
 function opcaoHtml(k,nome,x,melhor){const cc=x.custoCredito;
   return `<div class="opt${melhor?' win':''}"><div class="oh"><b>${nome}</b>${melhor?'<span class="tag ok">menor custo</span>':''}</div><div class="ot">${mil(x.total)}<small>você paga no total</small></div>
-  <div class="kv"><span>Parcela depois de contemplar</span><b>${brl2(x.parcela1)}</b></div><div class="kv"><span>Quita em</span><b>${x.meses} meses</b></div><div class="kv"><span>Custo do crédito</span><b>${cc>=0?'+ ':'− '}${mil(Math.abs(cc))} · ${pct(x.porReal!=null?(x.porReal-1)*100:null)} do crédito recebido</b></div><div class="kv"><span>Custo ao ano</span><b>${x.custoAno==null?'sem taxa (espera longa)':pct(x.custoAno*100)}</b></div></div>`;}
+  <div class="kv"><span>Parcela depois de contemplar</span><b>${brl2(x.parcela1)}</b></div><div class="kv"><span>Quita em</span><b>${x.meses} meses</b></div><div class="kv"><span>Custo do crédito ${gl('credito')}</span><b>${cc>=0?'+ ':'− '}${mil(Math.abs(cc))} · ${pct(x.porReal!=null?(x.porReal-1)*100:null)} do crédito recebido</b></div><div class="kv"><span>Custo ao ano ${gl('ano')}</span><b>${x.custoAno==null?'sem taxa (espera longa)':pct(x.custoAno*100)}</b></div></div>`;}
 function blocoMini(c){const rm=c.red.total<=c.man.total;return `<div class="mini"><div class="kv"><span>Quitar mais rápido · ${c.red.meses} meses · total pago</span><b>${mil(c.red.total)}${rm?' ★':''}</b></div><div class="kv"><span>Parcela mais leve · ${c.man.meses} meses · total pago</span><b>${mil(c.man.total)}${rm?'':' ★'}</b></div><div class="kv"><span>Totais com INPC e seguro estimados</span><b></b></div></div>`;}
 function blocoDecisao(c,I){const {man,red}=c,rm=red.total<=man.total;
   const dN=Math.abs(man.total-red.total),dH=Math.abs(man.vp-red.vp);
@@ -476,7 +496,7 @@ function renderOferta(){const E=S.estr;const out=$('#e-out');
   const card=(v,i,principal)=>{const r=v.r;if(!r||r.erro)return `<div class="card path"><h3>${esc(v.nome)}</h3><div class="al" style="margin-top:8px">${esc(r?r.erro:'Informe o valor')}</div></div>`;const t=r.tot;const probs=cabe(t);
     const bilhetes=t.temHist?`<div class="dist" style="margin-top:8px"><b style="color:var(--ink)">Bilhetes por assembleia (histórico):</b> ${t.cotas} cota${t.cotas>1?'s':''} = ${t.cotas} bilhete${t.cotas>1?'s':''} no sorteio (≈ ${(t.sorteio*100).toLocaleString('pt-BR',{maximumFractionDigits:1})}% de chance de pelo menos uma contemplação por sorteio, pelo histórico de 1 sorteado por assembleia)${lf>0?` · lance fixo: cerca de ${Math.round(t.cotas*lf/100*10)/10} cota(s) participando (regra de bolso ${pct(lf)})`:''} · na última assembleia desses grupos, ${t.lanceUlt} contemplaram por lance. Cada contemplação traz ${t.menorCota===t.maiorCota?brl(t.menorCota):'entre '+brl(t.menorCota)+' e '+brl(t.maiorCota)}.</div>`:'';
     return `<div class="card path ${principal?'best':''}">${principal?'<div class="best-badge">Recomendada</div>':''}<h3>${esc(v.nome)}</h3><div class="gname">${(n=>`${t.cotas} cota${t.cotas>1?'s':''} em ${n} grupo${n>1?'s':''}`)(new Set(r.linhas.map(l=>l.g.cod)).size)} · ${brl(t.bruto)} em cartas · recebe ${brl(t.liq)}</div>
-    <div class="bignum${principal?' lance':''}">${brl(cli(t))}<small>de lance do bolso${fgU(t)>0?' · + '+brl(fgU(t))+' do FGTS':''}${t.emb>0?' · + '+brl(t.emb)+' embutido':''}</small></div>
+    <div class="bignum${principal?' lance':''}">${brl(cli(t))}<small>de lance do bolso ${gl('bolso')}${fgU(t)>0?' · + '+brl(fgU(t))+' do FGTS':''}${t.emb>0?' · + '+brl(t.emb)+' embutido ':''}${t.emb>0?gl('embutido'):''}</small></div>
     <div class="bignum p2">${brl2(P1(t))}<small>por mês até contemplar${E.sg!=='0'&&K>0?' (com seguro)':''}</small></div>
     ${depois(t,r,principal)}
     ${bilhetes}
@@ -657,9 +677,9 @@ function estrategiaLance(R,E){ // só com cotas reais coladas: os grupos vêm do
     return `<tr><td><b>${esc(g.cod)}</b><span class="sel">${o.k} cota${o.k>1?'s':''}${cl>0?` · ${cl} contemplados por lance na última`:''}</span></td><td class="r">${p(num(g.lmin))}</td><td class="r">${p(num(g.lmed))}</td><td class="r">${p(num(g.lmax))}</td><td class="r" style="font-size:12px;color:var(--muted)">${h.length>1?`${h.length} meses: ${pct(mn)} a ${pct(mx)}`:'histórico começando'}${tr?`<br><span style="color:${tr.sobe?'var(--warn)':'var(--muted)'}">${esc(tr.txt)}</span>`:''}</td></tr>`;}).join('');
   const c=cenariosLance(itens),f=v=>v==null?'—':brl(v),cards=[['Se pedirem o menor lance',c.ousado,'menor da última assembleia'],['Se pedirem a média',c.central,'média das últimas 3'],['Se pedirem o maior',c.conservador,'maior da última assembleia']].filter(x=>x[1]!=null).sort((x,y)=>x[1]-y[1]);
   const conc=gs.filter(o=>o.k>=2),emb=embs[0]||0;
-  const concT=conc.length?`<div class="hint" style="color:var(--warn)">${conc.map(o=>`${o.k} cotas no grupo ${esc(o.g.cod)}`).join(' e ')} concorrem entre si no lance: ao menor lance tende a passar uma. Para passarem todas, mire da média para cima (regra do app, sem fonte confirmada da Caixa).</div>`:'';
+  const concT=conc.length?`<div class="hint" style="color:var(--warn)">${conc.map(o=>`${o.k} cotas no grupo ${esc(o.g.cod)}`).join(' e ')} concorrem entre si no lance ${gl('concorrem')}: ao menor lance tende a passar uma. Para passarem todas, mire da média para cima (regra do app, sem fonte confirmada da Caixa).</div>`:'';
   return `<div class="lance-est"><div class="busca-cab">Estratégia de lance das cotas que você trouxe <span class="sel">lances em % da carta</span></div>
-    <table class="busca-t"><thead><tr><th scope="col">Grupo</th><th scope="col" class="r">Menor</th><th scope="col" class="r">Média 3</th><th scope="col" class="r">Maior</th><th scope="col" class="r">Série</th></tr></thead><tbody>${lin}</tbody></table>
+    <table class="busca-t"><thead><tr><th scope="col">Grupo</th><th scope="col" class="r">Menor</th><th scope="col" class="r">Média 3 ${gl('media3')}</th><th scope="col" class="r">Maior</th><th scope="col" class="r">Série</th></tr></thead><tbody>${lin}</tbody></table>
     ${cards.length?`<div class="opts" style="margin-top:6px">${cards.map(x=>`<div class="opt${x[0].includes('média')?' win':''}"><div class="oh"><b>${x[0]}</b></div><div class="ot">${f(x[1])}<small>do bolso · ${x[2]}</small></div></div>`).join('')}</div>`:''}${concT}
     <div class="hint">Menor e maior lance: da última assembleia de cada grupo (% da carta${emb>0?`, com embutido de ${pct(emb)}`:''}). A média é a das últimas 3. Histórico do grupo, não previsão: nada garante o lance vencedor da próxima.</div></div>`;}
 function buscaSimples(R,E,pronto){if(!R)return 'Monte um pedido primeiro: a busca aparece aqui.';
