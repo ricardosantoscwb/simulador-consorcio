@@ -1,6 +1,6 @@
 // Fluxo inteiro com store em memória e e-mail capturado. Roda: npm test
 import assert from "node:assert/strict";
-import { usarStore, usarMailer, COOKIE, COOKIE_PEND } from "../nucleo/base.mjs";
+import { usarStore, usarMailer, usarRelogio, COOKIE, COOKIE_PEND } from "../nucleo/base.mjs";
 process.env.MINIMO_MS = "0";
 process.env.USUARIOS = "ricardo@exemplo.com, janaina@exemplo.com";
 process.env.ADMIN_EMAILS = "ricardo@exemplo.com";
@@ -72,6 +72,21 @@ r = await dados(get("/api/dados")); j = await r.json(); assert.deepEqual(j.campa
 const etagDados = () => dados(get("/api/dados")).then((x) => x.json());
 // sem sessão: 401
 r = await dados(new Request(O + "/api/dados")); assert.equal(r.status, 401);
+
+// 7b. INPC do BCB: só com sessão; guarda por 12 h; se o BCB cair, devolve o último valor (velho)
+{
+  const inpc = (await import("../funcoes/inpc.mjs")).default;
+  const serie = ["0.03","0.03","0.21","0.39","0.56","0.91","0.81","0.65","0.14","-0.01","-0.32","0.82"].map((v, i) => ({ data: `01/${String(((9 + i) % 12) + 1).padStart(2, "0")}/${2025 + Math.floor((9 + i) / 12)}`, valor: v }));
+  const redeReal = globalThis.fetch; let chamadas = 0, cai = false;
+  globalThis.fetch = async () => { chamadas++; if (cai) throw new Error("rede"); return new Response(JSON.stringify(serie), { status: 200 }); };
+  try {
+    assert.equal((await inpc(new Request(O + "/api/inpc", { headers: { Cookie: "" } }))).status, 401);
+    let q = await (await inpc(get("/api/inpc"))).json(); assert.equal(q.ok, true); assert.equal(q.ref, "2026-09"); assert.ok(Math.abs(q.acum12 - 4.29) < 0.02);
+    await inpc(get("/api/inpc")); assert.equal(chamadas, 1, "segunda leitura vem do cache");
+    usarRelogio(() => new Date(Date.now() + 13 * 3600 * 1000)); cai = true;
+    q = await (await inpc(get("/api/inpc"))).json(); assert.equal(q.ok, true); assert.equal(q.velho, true, "BCB caiu: devolve o último valor, marcado como velho");
+  } finally { globalThis.fetch = redeReal; usarRelogio(null); }
+}
 
 // 8. limite de tentativas: 3 erros matam o código
 r = await codigo(post("/api/codigo", { email: "ricardo@exemplo.com" }), ctx); guarda(r); const cod2 = caixa[1].assunto.match(/(\d{8})/)[1];
