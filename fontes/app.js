@@ -282,21 +282,21 @@ function instrucaoBusca(r){if(!r||r.erro)return '';const porG={};r.linhas.forEac
 
 /* ===== Pedido: a lista ao vivo (1 cota de X, 2 cotas de Y…) com o menor lance de cada divisão ===== */
 function listaAoVivo(){const box=$('#e-lista');if(!box)return;const E={...S.estr};
-  ['valor','tipo','max','alvo','emb','rec'].forEach(k=>{const el=$('#e-'+k);if(el)E[k]=lerCampo(el);});E.modo=ADM()?(($('#e-modo')||{}).value||E.modo):'liquido';E.bestReal=false;
+  ['valor','tipo','max','alvo','emb','rec','p1'].forEach(k=>{const el=$('#e-'+k);if(el)E[k]=lerCampo(el);});E.modo=ADM()?(($('#e-modo')||{}).value||E.modo):'liquido';E.bestReal=false;
   if(!(num(E.valor)>0)){box.innerHTML='';return;}
   const R=roteiro(E);if(!R)return;
   if(R.semDados){const f=R.foraFaixa;box.innerHTML=`<div class="lista-vivo"><div class="busca-cab">Divisões possíveis</div><div class="hint">${f?`Com ${brl(R.need)} nenhuma carta dos ${f.n} grupos do portal cabe em 1 a 8 cotas. A menor carta é ${brl(f.cmin)} (≈ ${brl(f.liqMin)} líquidos). Aumente o valor.`:'Ainda não há grupos do portal deste tipo: nada para listar.'}</div></div>`;return;}
   const ops=(R.ops||[]).filter(o=>o.bolso!=null&&o.uso&&o.uso.length),mb=Math.min(...ops.map(o=>o.bolso));
   const emp=ops.filter(o=>o.bolso<=mb+1e-6),best=mb<1?emp.sort((x,y)=>x.n-y.n)[0]:emp.sort((x,y)=>y.n-x.n)[0];
   const milBR=v=>Math.round(v).toLocaleString('pt-BR'),rec=num(E.rec)>0?num(E.rec):null,mes=v=>`${Math.round(v)} meses`;
-  const lin=o=>{const nao=rec!=null&&o.bolso>rec,conc=o.uso.filter(u=>u.k>=2);
+  const lin=o=>{const p1=num(E.p1)>0?num(E.p1):null,naoP=p1!=null&&o.parc!=null&&o.parc>p1,nao=rec!=null&&o.bolso>rec,conc=o.uso.filter(u=>u.k>=2);
     const gr=o.uso.map(u=>`<div><b>${esc(u.cod)}</b> · ${u.k} cota${u.k>1?'s':''}<span class="sel">lance ${pct(u.a)}${u.med>0?` a ${pct(u.med)}`:''}${u.pr>0?` · ${mes(u.pr)}`:''}</span></div>`).join('');
     const faixa=o.bolso<1?`<b>R$ 0</b><span class="sel">o embutido cobre o menor lance${o.bolsoMed>0?`; na média: ${brl(o.bolsoMed)}`:''}</span>`:`<b>${brl(o.bolso)}</b>${o.bolsoMed>o.bolso+1?`<span class="sel">até ${brl(o.bolsoMed)} se pedirem a média</span>`:''}`;
     const aviso=conc.length?`<span class="sel" style="color:var(--warn)">${conc.map(u=>u.k).join('+')} cotas no mesmo grupo concorrem entre si${o.dif?` · em grupos diferentes: ${brl(o.dif.bolso)}`:''}</span>`:'';
-    return `<tr class="${o===best?'best':''}"><td><b>${o.n}</b> cota${o.n>1?'s':''} de ~${brl(o.t)}<span class="sel">buscar de ${milBR(o.lo)} a ${milBR(o.hi)}</span></td><td>${gr}</td><td class="r">${faixa}${o.parc!=null?`<span class="sel">parcela ~${brl(o.parc)}/mês até contemplar</span>`:''}${o===best?'<span class="sel" style="color:var(--accent)">menor bolso</span>':''}${nao?'<span class="sel" style="color:var(--warn)">não cabe</span>':''}${aviso}</td></tr>`;};
+    return `<tr class="${o===best?'best':''}"><td><b>${o.n}</b> cota${o.n>1?'s':''} de ~${brl(o.t)}<span class="sel">buscar de ${milBR(o.lo)} a ${milBR(o.hi)}</span></td><td>${gr}</td><td class="r">${faixa}${o.parc!=null?`<span class="sel">parcela ~${brl(o.parc)}/mês até contemplar</span>`:''}${o===best?'<span class="sel" style="color:var(--accent)">menor bolso</span>':''}${nao?'<span class="sel" style="color:var(--warn)">bolso não cabe</span>':''}${naoP?'<span class="sel" style="color:var(--warn)">parcela acima do que cabe</span>':''}${aviso}</td></tr>`;};
   box.innerHTML=`<div class="lista-vivo"><div class="busca-cab">Divisões possíveis para ${brl(R.need)} ${E.modo==='bruto'?'em cartas':'líquidos'}</div>
     <table class="busca-t"><thead><tr><th scope="col">Quantas cotas</th><th scope="col">Grupos (lance menor a média)</th><th scope="col" class="r">Do seu bolso</th></tr></thead><tbody>${ops.map(lin).join('')}</tbody></table>
-    <div class="hint">Lance do bolso estimado pelo histórico do grupo: menor lance da última assembleia; "média" é a média das últimas 3. Não é previsão: nada garante o lance vencedor. Cotas do mesmo cliente no mesmo grupo concorrem no lance (aviso do app, sem fonte confirmada da Caixa). Parcela sem seguro.${R.prazoMin?` Veículos: só grupos com ${R.prazoMin} meses ou mais restantes (critério do app).`:''}</div></div>`;}
+    <div class="hint">Lance do bolso estimado pelo histórico do grupo: menor lance da última assembleia; "média" é a média das últimas 3. Não é previsão: nada garante o lance vencedor. Cotas do mesmo cliente no mesmo grupo concorrem no lance (aviso do app, sem fonte confirmada da Caixa). Parcela sem seguro.</div></div>`;}
 function renderEstrategia(){const E=S.estr;if(!E.tipo)E.tipo='Imobiliário';[...EF,...EF2].forEach(k=>{const el=$('#e-'+k);if(!el)return;const m=el.dataset.money!=null;el.value=m?moneyFmt(E[k]):(E[k]??'');if(m)el.oninput=()=>{el.value=moneyLive(el.value);};el.onchange=()=>{E[k]=lerCampo(el);save();};});
   $$('#e-tipo-chips .chip').forEach(b=>{b.classList.toggle('on',(E.tipo||'')===b.dataset.v);b.onclick=()=>{E.tipo=b.dataset.v;$('#e-tipo').value=E.tipo;save();renderEstrategia();};});
   $('#e-aviso').innerHTML=avisoPrimeiroUso();if(['rec','fgts','p1','p2'].some(k=>num(E[k])>0))$('#e-bolso').open=true;
@@ -615,7 +615,6 @@ function renderCampanhas(){const el=$('#camp-card');if(!el)return;const adm=!tem
   $('#cp-add').onclick=()=>{const v=id=>$('#'+id).value.trim(),cod=v('cp-cod');if(!cod){toast('Informe o código');return;}const desc=num(v('cp-desc')),ta=num(v('cp-ta'));if(desc==null&&ta==null){toast('Informe o desconto ou a taxa final');return;}
     S.campanhas=[...(S.campanhas||[]),{cod,nome:v('cp-nome'),tipos:[...el.querySelectorAll('[data-cpt]:checked')].map(x=>x.dataset.cpt),cmin:num(v('cp-min')),cmax:num(v('cp-max')),emb:v('cp-emb'),desc,ta,ini:v('cp-ini'),fim:v('cp-fim')}];salva();toast('Campanha adicionada');};}
 // roteiro de busca: quanto comprar, em quantas cotas e que faixa pesquisar no sistema (foco: menor lance do bolso)
-const PRAZO_MIN_VEIC=48; // meses restantes mínimos para veículo na lista (critério do app, sem fonte da Caixa)
 function roteiro(E){const need=num(E.valor)||0;if(!(need>0))return null;const tOk=x=>!E.tipo||(E.tipo==='Imobiliário'?x.tipo==='Imobiliário':x.tipo==='Veículos');
   const embPad=E.tipo&&E.tipo!=='Imobiliário'?30:50,conh=[]; // embutido do grupo quando o portal informa; senão o máximo usual (sem fonte confirmada)
   const pul=new Set((E.pular||[]).map(codN));
@@ -623,7 +622,7 @@ function roteiro(E){const need=num(E.valor)||0;if(!(need>0))return null;const tO
   const mods={};cotasComModelo().filter(x=>x.plano==='Normal'&&tOk(x)).forEach(x=>{const m=mods[x.gid]=mods[x.gid]||{cod:x.cod,a:x.lm,min:1e18,max:0,vagas:x.vagas,vagasTxt:x.vagasTxt,part:x.part,emax:null};m.min=Math.min(m.min,x.carta);m.max=Math.max(m.max,x.carta);});
   Object.values(mods).filter(m=>!pul.has(codN(m.cod))).forEach(m=>{const c=conh.find(c=>codN(c.cod)===codN(m.cod));if(c)Object.assign(c,{vagas:m.vagas,vagasTxt:m.vagasTxt,part:m.part});else conh.push(m);});
   const ops=[],cap=Math.max(1,Math.floor(num(E.max)||3));
-  const prMin=E.tipo&&E.tipo!=='Imobiliário'?PRAZO_MIN_VEIC:0,prOk=c=>!prMin||c.pr==null||c.pr>=prMin,conhF=conh.filter(prOk),usaF=prMin>0&&conhF.length>0&&conhF.length<conh.length,base=usaF?conhF:conh; // critério do app (não é regra da Caixa): grupo de veículo com poucos meses restantes tem lance baixo só porque o saldo é pequeno
+  const base=conh; // sem filtro de prazo: grupo curto entra, e a parcela mostra o preço dele (quem decide é o cliente)
   for(let n=1;n<=8;n++){ // testa de 1 a 8 cartas: em que tamanho estão os grupos de menor lance
     const gs=base.filter(c=>c.vagas!==0).map(c=>{const emb=E.emb==='1'?(c.emax!=null?c.emax:embPad):0,tot=E.modo==='liquido'?need/(1-emb/100):need,t=tot/n;
       return {...c,emb,tot,t,bolso:Math.max(0,(c.a-emb)/100)*tot,bolsoMed:c.med>0?Math.max(0,(c.med-emb)/100)*tot:null};}).filter(c=>c.t>=c.min*0.95&&c.t<=c.max*1.05).sort((x,y)=>x.bolso-y.bolso||(y.pr||0)-(x.pr||0));
@@ -642,7 +641,7 @@ function roteiro(E){const need=num(E.valor)||0;if(!(need>0))return null;const tO
   const mb=Math.min(...ops.map(o=>o.bolso));const emp=ops.filter(o=>o.bolso<=mb+500);let rec=mb<1?emp.sort((x,y)=>x.n-y.n)[0]:emp.sort((x,y)=>y.n-x.n)[0]; // bolso zero (embutido cobre o lance): menos contratos, não mais
   if(E.bestReal&&E.bestN>=1)rec=ops.find(o=>o.n===E.bestN)||rec; // oferta já fechou: o roteiro acompanha o tamanho de cota dela
   const melhores=ops.slice().sort((x,y)=>x.bolso-y.bolso||y.n-x.n).slice(0,2);
-  return {need,total:rec.tot,embP:rec.emb,ops,rec,melhores,um:ops.find(o=>o.n===1),prazoMin:usaF?prMin:0};}
+  return {need,total:rec.tot,embP:rec.emb,ops,rec,melhores,um:ops.find(o=>o.n===1)};}
 const ADM=()=>!document.body.classList.contains('usuario'); // visão de admin (o admin pode ver como gerente pelo botão)
 
 /* ===== Estratégia de lance: o que cada grupo do plano costuma exigir (histórico das colagens, não previsão) ===== */
