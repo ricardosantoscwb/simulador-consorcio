@@ -501,7 +501,7 @@ function renderOferta(){const E=S.estr;const out=$('#e-out');
   _cine=null;if(b&&!PR.bloq){const t=b.r.tot,c=custoVar(b.r,mesC(),E.sg!=='0',R,I.v/100);if(c){const F=S.fin||{},cet=num(String(F.cet||'').replace(',','.')),rm=c.red.total<=c.man.total,mel=rm?c.red:c.man,sis=F.sis||(E.tipo==='Imobiliário'?'sac':'price');
     const fn=F.cet!==''&&F.cet!=null&&cet>=0?financiar({valor:t.liq,cetAA:cet/100,meses:mel.meses,sistema:sis,inpc:I.v/100}):null;
     _cine={liq:t.liq,bruto:t.bruto,cotas:t.cotas,nG:new Set(b.r.linhas.map(l=>l.g.cod)).size,lance:cli(t),fgts:fgU(t),emb:t.emb,p1:P1(t),seg:E.sg!=='0'&&K>0,c,rm,mel,fn,cet,sis,mes:mesC(),tipo:E.tipo||'',ger:E.ger||'',titulo,I:I.fonte?I.v:null};}}
-  if(b&&!PR.bloq){const k=[E.valor,E.tipo,E.max,E.mc,E.modo].join('|'),prim=_ult!==k;_ult=k;if(prim&&_cine)logar('proposta',{tipo:E.tipo,liq:_cine.liq,lancePct:_cine.liq>0?_cine.lance/_cine.liq*100:null,cotas:_cine.cotas,grupos:_cine.nG,mes:_cine.mes,inpc:I.v,rm:_cine.rm,fin:!!_cine.fn,real:b.r.linhas.some(l=>l.real)});}
+  if(b&&!PR.bloq){const k=[E.valor,E.tipo,E.max,E.mc,E.modo].join('|'),prim=_ult!==k;_ult=k;if(prim&&_cine)logar('proposta',{tipo:E.tipo,liq:Math.floor(_cine.liq/5000)*5000,lancePct:_cine.liq>0?_cine.lance/_cine.liq*100:null,cotas:_cine.cotas,grupos:_cine.nG,mes:_cine.mes,inpc:I.v,rm:_cine.rm,fin:!!_cine.fn,real:b.r.linhas.some(l=>l.real)});}
   if(b){const updConf=()=>{let n=0,ok1=0;confIt.forEach(([k,,v])=>{const o=num(C[k]),cel=$('#conf-'+k);if(!(o>0)||v==null){cel.textContent='—';return;}n++;const d=v-o,p=Math.abs(d)/o;if(p<=0.01)ok1++;cel.innerHTML=`${d>=0?'+':'−'} ${brl2(Math.abs(d))} <span class="tag ${p<=0.01?'ok':'warn'}">${pct(p*100)}</span>`;});
       $('#conf-res').textContent=n<confIt.length?`Pendente: ${n} de ${confIt.length} valores oficiais.`:ok1===n?`✔ Os ${n} valores batem dentro de 1%.`:`⚠ ${n-ok1} valor(es) com diferença acima de 1%: confira grupo, carta, lance, seguro e mês da contemplação.`;};
     $$('[data-conf]').forEach(el=>el.oninput=()=>{C[el.dataset.conf]=el.value;save();updConf();});updConf();}
@@ -699,7 +699,7 @@ function empurrarGrupos(){if(!temServidor())return;clearTimeout(syncTimer);syncT
 if(window.SESSAO){const b=$('#btnSair');b.style.display='';if(window.SESSAO.admin)$('#lnkAdmin').style.display='';b.title='Sair ('+window.SESSAO.email+')';b.onclick=async()=>{try{await fetch('/api/sair',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});}catch(e){}location.href='/entrar';};}
 
 /* ===================== link ===================== */
-function shareLink(){const d={grupos:S.grupos.map(({h,...g})=>g),estr:{...S.estr,nome:''}};
+function shareLink(){const d={grupos:S.grupos.map(({h,...g})=>g),estr:{...S.estr,nome:'',rec:'',p1:'',p2:'',fgts:'',conf:{},ger:S.estr.ger}};
   const url=location.origin+location.pathname+'#s='+btoa(unescape(encodeURIComponent(JSON.stringify(d))));
   (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>toast('Link copiado (sem nome do cliente)')).catch(()=>prompt('Copie o link:',url));}
 $('#btnShare2').onclick=shareLink;
