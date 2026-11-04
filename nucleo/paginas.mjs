@@ -1,4 +1,4 @@
-import { esc, EMAIL_CASA } from "./base.mjs";
+import { esc, EMAIL_CASA, REMETENTE } from "./base.mjs";
 
 const CSS = `:root{--on-ink:#fff;--bg:#fff;--card:#fff;--surface:#f6f6f5;--ink:#121212;--ink-2:#4a4a48;--muted:#6b6b68;--line:#e6e6e3;--line-2:#cfcfcb;--accent:#0b6b52;--accent-soft:#eaf3ef;--warn:#a2401a;--warn-soft:#fbf1ec;--ok:#0b6b52;--font:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
 @media (prefers-color-scheme:dark){:root:not([data-tema="light"]){--bg:#18181a;--card:#1f1f22;--surface:#27272a;--ink:#ececea;--ink-2:#c9c9c5;--muted:#9b9b97;--line:#34343a;--line-2:#45454b;--accent:#5fc9a4;--accent-ink:#8fe0c2;--accent-soft:#1d2f28;--warn:#f0a07a;--warn-soft:#35231a;--ok:#5fc9a4;--ok-soft:#1d2f28;--input:#1f1f22;--input-line:#6b6b70;--best:#27272a;--info:#27272a;--on-ink:#18181a;--bar:rgba(24,24,26,.94);color-scheme:dark}}
@@ -38,7 +38,7 @@ export function paginaEntrar() {
 <button class="btn t" type="button" id="b-outro">Pedir outro código</button>
 <button class="btn t" type="button" id="volta">Trocar o e-mail</button></form>
 <p class="msg" id="msg" role="status" aria-live="polite"></p>
-<div class="why">Não chegou? Olhe no spam e na aba Promoções. Quem envia é ${esc(EMAIL_CASA)}. O código vale 10 minutos e só neste aparelho.</div>
+<div class="why">Não chegou? Olhe no spam e na aba Promoções. Quem envia é ${esc((REMETENTE.match(/<(.+)>/) || [0, EMAIL_CASA])[1])}. O código vale 10 minutos e só neste aparelho.</div>
 </div>
 <script>
 (function(){
