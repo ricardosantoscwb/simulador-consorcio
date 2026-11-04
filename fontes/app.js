@@ -84,7 +84,7 @@ function calc(c){
 function candidatos(){const t=S.estr&&S.estr.tipo?[S.estr.tipo]:tipoDoBem(S.perfil.bem);const gs=S.grupos.filter(g=>num(g.cmax)>0&&num(g.ta)!=null);const f=gs.filter(g=>t.includes(g.tipo));return f.length?f:gs;}
 const clamp=(v,g)=>Math.min(Math.max(v,num(g.cmin)||0),num(g.cmax)||v);
 /* ===================== navegação ===================== */
-function go(id){if(id==='grupos'&&document.body.classList.contains('usuario'))id='estrategia';$$('.screen').forEach(s=>s.classList.toggle('on',s.id==='s-'+id));$$('[data-go]').forEach(b=>b.classList.toggle('on',b.dataset.go===id));try{localStorage.setItem(KEY+'.tab',id);}catch(e){}window.scrollTo({top:0});render();}
+function go(id){if(id==='oferta')_rolar=true;if(id==='grupos'&&document.body.classList.contains('usuario'))id='estrategia';$$('.screen').forEach(s=>s.classList.toggle('on',s.id==='s-'+id));$$('[data-go]').forEach(b=>b.classList.toggle('on',b.dataset.go===id));try{localStorage.setItem(KEY+'.tab',id);}catch(e){}window.scrollTo({top:0});render();}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b){e.preventDefault();go(b.dataset.go);}});
 function present(on){document.body.classList.toggle('present',on);if(on)go('oferta');}
 $('#btnPresent').onclick=()=>present(true);$('#btnExitPresent').onclick=()=>present(false);
@@ -370,6 +370,43 @@ function blocoSeguro(b,segI){const t=b&&b.r&&!b.r.erro?b.r.tot:null;const v=t?se
 function fonteOferta(vars){const rv=vars.find(v=>v.r&&v.r.real);
   if(rv){const d=rv.r.desde?new Date(rv.r.desde).toLocaleDateString('pt-BR'):'';return `<div class="al ${vars.some(v=>v.r&&v.r.venc)?'':'info'}" style="margin-bottom:12px">${vars.some(v=>v.r&&v.r.venc)?'<b>Dados vencidos:</b> cole a lista de novo. ':''}Cotas reais do sistema de vendas${d?' (colagem de '+d+')':''}: carta e parcela do sistema. Confirme vagas e parcela antes de vender.</div>`;}
   return `<div class="al info" style="margin-bottom:12px">Estimativa pelos grupos do portal: ainda não há cotas reais coladas para este tipo (tela Busca).</div>`;}
+
+/* ===== Proposta: layout em duas colunas, número que rola, controle segmentado e gavetas ===== */
+let GAV=null,_rolar=false;
+const _reduz=()=>window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+function rolar(el){const m=el.textContent.match(/^R\$\s?[\d.]+(?:,\d+)?/);if(!m||_reduz())return;const fim=num(m[0].replace(/[^\d,]/g,'').replace(',','.')),casas=/,/.test(m[0])?2:0,k0=el.innerHTML.indexOf('<small'),rest=k0>=0?el.innerHTML.slice(k0):'',txt=el.textContent.slice(0,m[0].length);
+  const ini=performance.now(),dur=700,fmt=v=>'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:casas,maximumFractionDigits:casas});
+  const passo=t=>{const k=Math.min(1,(t-ini)/dur),e=1-Math.pow(1-k,3);el.innerHTML=fmt(fim*e)+rest;if(k<1)requestAnimationFrame(passo);else el.innerHTML=txt+rest;};requestAnimationFrame(passo);}
+function fecharGaveta(){const p=document.getElementById('gaveta');if(!p)return;const g=p.querySelector('.gbody');if(g&&g._casa){g.hidden=true;g._casa.appendChild(g);}p.remove();document.body.classList.remove('gav-on');GAV=null;}
+function abrirGaveta(i){const card=document.querySelector('#e-out .path.best');if(!card)return;const g=card.querySelector(`.gbody[data-g="${i}"]`);if(!g)return;fecharGaveta();GAV=i;
+  const p=document.createElement('div');p.id='gaveta';p.setAttribute('role','dialog');p.setAttribute('aria-modal','true');p.setAttribute('aria-label',g.dataset.t);
+  p.innerHTML=`<div class="g-bg" data-gx></div><div class="g-panel"><div class="g-head"><b>${esc(g.dataset.t)}</b><button class="g-x" data-gx aria-label="Fechar">×</button></div></div>`;
+  g._casa=g.parentNode;g.hidden=false;p.querySelector('.g-panel').appendChild(g);document.body.appendChild(p);document.body.classList.add('gav-on');
+  p.querySelectorAll('[data-gx]').forEach(x=>x.onclick=fecharGaveta);requestAnimationFrame(()=>p.classList.add('in'));p.querySelector('.g-x').focus();}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&GAV!=null)fecharGaveta();});
+function proposta(){const card=$('#e-out .path.best');if(!card){GAV=null;return;}
+  const abre=GAV;GAV=null;if(document.getElementById('gaveta'))document.getElementById('gaveta').remove();document.body.classList.remove('gav-on');
+  // duas colunas: números e próximo passo à esquerda; decisão à direita
+  const kids=[...card.children],cab=kids.filter(k=>/best-badge|gname/.test(k.className)||k.tagName==='H3'),fim=kids.filter(k=>k.classList.contains('alerts'));
+  const esq=kids.filter(k=>k.classList.contains('bignum')||k.classList.contains('passo'));
+  const dir=kids.filter(k=>![...cab,...fim,...esq].includes(k));
+  // gavetas: detalhes secundários viram chips (o "Como calculamos" fica no lugar: entra no PDF)
+  const det=dir.filter(k=>k.tagName==='DETAILS'&&k.classList.contains('adv')&&!/^Como calculamos/.test(k.textContent.trim()));
+  const chips=document.createElement('div');chips.className='chips no-present';
+  det.forEach((d,i)=>{const t=d.querySelector('summary').textContent.trim(),g=document.createElement('div');g.className='gbody';g.dataset.g=i;g.dataset.t=t;g.hidden=true;
+    [...d.childNodes].forEach(n=>{if(n.tagName!=='SUMMARY')g.appendChild(n);});
+    const b=document.createElement('button');b.className='chip';b.type='button';b.textContent=t;b.onclick=()=>abrirGaveta(i);chips.appendChild(b);d.replaceWith(g);});
+  const L=document.createElement('div'),R=document.createElement('div');L.className='pl';R.className='pr';
+  esq.forEach(k=>L.appendChild(k));[...card.querySelectorAll(':scope>.gbody')].forEach(g=>R.appendChild(g));
+  dir.filter(k=>k.parentNode===card).forEach(k=>R.appendChild(k));R.appendChild(chips);
+  const body=document.createElement('div');body.className='pcols';body.append(L,R);
+  (fim[0]||null)?card.insertBefore(body,fim[0]):card.appendChild(body);
+  // controle segmentado (celular): uma forma de pagar por vez
+  const opts=card.querySelector('.opts');if(opts){const os=[...opts.querySelectorAll('.opt')];if(os.length===2){const seg=document.createElement('div');seg.className='segc';seg.setAttribute('role','tablist');
+    os.forEach((o,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('role','tab');b.textContent=o.querySelector('b').textContent;const on=o.classList.contains('win')||(i===0&&!os.some(x=>x.classList.contains('win')));b.className=on?'on':'';if(!on)o.classList.add('off');
+      b.onclick=()=>{os.forEach((x,j)=>x.classList.toggle('off',j!==i));[...seg.children].forEach((c,j)=>c.classList.toggle('on',j===i));};seg.appendChild(b);});opts.before(seg);}}
+  if(_rolar){_rolar=false;card.querySelectorAll('.bignum').forEach(rolar);}
+  if(abre!=null)abrirGaveta(abre);}
 function renderOferta(){const E=S.estr;const out=$('#e-out');
   if(!E.feito||!(num(E.valor)>0)){out.innerHTML=`<div class="card empty">Monte um pedido primeiro. <a href="#" data-go="estrategia">Ir para Pedido</a></div>`;return;}
   const vars=[['Menor lance do bolso','bolso'],['Mais cartas','mais'],['Menor parcela','parcela'],['Sem lance (só sorteio)','semlance'],['Menos cartas','cotas'],['Menor prazo','prazo']].map(([nome,pr])=>[nome,nome,pr]).map(([k,nome,pr])=>({k,nome,r:montarAuto(E,pr)}));
@@ -412,6 +449,7 @@ function renderOferta(){const E=S.estr;const out=$('#e-out');
   <div class="dlg-actions no-present">${b?`<button class="btn" id="o-msg" ${PR.bloq?'disabled':''}>Copiar mensagem</button>`:''}<button class="btn" id="o-share" ${PR.bloq?'disabled':''}>Copiar link</button><button class="btn" id="o-print" ${PR.bloq?'disabled':''}>PDF / Imprimir</button><button class="btn primary" id="o-present" ${PR.bloq?'disabled':''}>Apresentar</button></div>`;
   $('#o-present').onclick=()=>{if(!PR.bloq)document.body.classList.add('present');};$('#o-share').onclick=()=>{if(!PR.bloq)shareLink();};$('#o-print').onclick=()=>{if(!PR.bloq)window.print();};
   $$('[data-fin]').forEach(el=>el.onchange=()=>{(S.fin||(S.fin={}))[el.dataset.fin]=el.value;save();renderOferta();});
+  proposta();
   if(b){const updConf=()=>{let n=0,ok1=0;confIt.forEach(([k,,v])=>{const o=num(C[k]),cel=$('#conf-'+k);if(!(o>0)||v==null){cel.textContent='—';return;}n++;const d=v-o,p=Math.abs(d)/o;if(p<=0.01)ok1++;cel.innerHTML=`${d>=0?'+':'−'} ${brl2(Math.abs(d))} <span class="tag ${p<=0.01?'ok':'warn'}">${pct(p*100)}</span>`;});
       $('#conf-res').textContent=n<confIt.length?`Pendente: ${n} de ${confIt.length} valores oficiais.`:ok1===n?`✔ Os ${n} valores batem dentro de 1%.`:`⚠ ${n-ok1} valor(es) com diferença acima de 1%: confira grupo, carta, lance, seguro e mês da contemplação.`;};
     $$('[data-conf]').forEach(el=>el.oninput=()=>{C[el.dataset.conf]=el.value;save();updConf();});updConf();}
