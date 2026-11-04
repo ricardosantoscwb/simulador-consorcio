@@ -4,5 +4,5 @@
   "type": "module",
   "description": "Simulador de Consórcio · Netlify Functions + Blobs",
   "dependencies": { "@netlify/blobs": "^11.1.1" },
-  "scripts": { "build": "node build.mjs", "test": "node build.mjs && node testes/custos.mjs && node testes/inpc.mjs && node testes/taxas.mjs && node testes/teste.mjs" }
+  "scripts": { "build": "node build.mjs", "test": "node build.mjs && node testes/custos.mjs && node testes/inpc.mjs && node testes/taxas.mjs && node testes/cenarios.mjs && node testes/teste.mjs" }
 }
