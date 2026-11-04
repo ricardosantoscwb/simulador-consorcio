@@ -86,9 +86,9 @@ const clamp=(v,g)=>Math.min(Math.max(v,num(g.cmin)||0),num(g.cmax)||v);
 /* ===================== navegação ===================== */
 function go(id){if(id==='oferta')_rolar=true;if(id==='grupos'&&document.body.classList.contains('usuario'))id='estrategia';$$('.screen').forEach(s=>s.classList.toggle('on',s.id==='s-'+id));$$('[data-go]').forEach(b=>b.classList.toggle('on',b.dataset.go===id));try{localStorage.setItem(KEY+'.tab',id);}catch(e){}window.scrollTo({top:0});render();}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b){e.preventDefault();go(b.dataset.go);}});
-function present(on){document.body.classList.toggle('present',on);if(on)go('oferta');}
+function present(on){if(on){go('oferta');abrirCine();}else fecharCine();}
 $('#btnPresent').onclick=()=>present(true);$('#btnExitPresent').onclick=()=>present(false);
-document.addEventListener('keydown',e=>{if(e.key==='Escape')present(false);});
+
 
 /* ===================== aviso ===================== */
 function avisoPrimeiroUso(){return soExemplo()?`<div class="al info" style="margin-bottom:12px">${ADM()?'Primeiro uso: os grupos cadastrados são só exemplo. Atualize pelo botão do portal (ou cole em <a href="#" data-go="grupos" style="color:inherit;font-weight:600">Grupos</a>) antes de montar uma oferta real.':'Os grupos do portal ainda não chegaram: avise o admin para atualizar antes de montar uma proposta real.'}</div>`:'';}
@@ -407,6 +407,33 @@ function proposta(){const card=$('#e-out .path.best');if(!card){GAV=null;return;
       b.onclick=()=>{os.forEach((x,j)=>x.classList.toggle('off',j!==i));[...seg.children].forEach((c,j)=>c.classList.toggle('on',j===i));};seg.appendChild(b);});opts.before(seg);}}
   if(_rolar){_rolar=false;card.querySelectorAll('.bignum').forEach(rolar);}
   if(abre!=null)abrirGaveta(abre);}
+
+/* ===== Modo Apresentar cinematográfico: uma ideia por tela, fundo escuro, avisos sempre no rodapé ===== */
+let _cine=null,_cineI=0,_cineT=null;
+function fecharCine(){const o=document.getElementById('cine');if(!o)return;o.remove();document.body.classList.remove('cine-on');document.removeEventListener('keydown',_cineKey);}
+function _cineKey(e){if(e.key==='Escape'){fecharCine();}else if(['ArrowRight','ArrowDown','PageDown',' ','Enter'].includes(e.key)){e.preventDefault();irCine(_cineI+1);}else if(['ArrowLeft','ArrowUp','PageUp','Backspace'].includes(e.key)){e.preventDefault();irCine(_cineI-1);}}
+function cenasCine(d){const m=(v,c)=>`<span class="cn" data-v="${v}" data-c="${c||0}">${brl(v)}</span>`;const cn=[];
+  cn.push(`<p class="ck">${esc(d.tipo||'Consórcio')} · proposta de ${new Date().toLocaleDateString('pt-BR')}</p><p class="cl">Você recebe</p><h2 class="cb">${m(d.liq)}</h2><p class="cs">${d.cotas} cota${d.cotas>1?'s':''} em ${d.nG} grupo${d.nG>1?'s':''} · ${brl(d.bruto)} em cartas</p>`);
+  cn.push(`<p class="ck">Para começar</p><p class="cl">Do seu bolso, de lance</p><h2 class="cb">${m(d.lance)}</h2><p class="cs">${d.fgts>0?'+ '+brl(d.fgts)+' do FGTS · ':''}${d.emb>0?'+ '+brl(d.emb)+' de lance embutido (sai do próprio crédito) · ':''}depois, ${m(d.p1,2)} por mês até contemplar${d.seg?' (com seguro)':''}</p>`);
+  const op=(n,x,w)=>`<div class="co${w?' win':''}"><p class="cl">${n}</p><h3 class="cb2">${m(x.total)}</h3><p class="cs">total pago</p><p class="cs">parcela depois: <b>${brl2(x.parcela1)}</b><br>quita em <b>${x.meses} meses</b></p></div>`;
+  const dN=Math.abs(d.c.man.total-d.c.red.total);
+  cn.push(`<p class="ck">Depois de contemplar, você escolhe</p><div class="cd">${op('Quitar mais rápido',d.c.red,d.rm)}${op('Parcela mais leve',d.c.man,!d.rm)}</div><p class="cs">${d.rm?'Quitar mais rápido':'Parcela mais leve'} custa ${brl(dN)} a menos no total.</p>`);
+  if(d.fn){const fd=d.fn.total-d.mel.total;cn.push(`<p class="ck">Para comparar</p><p class="cl">No mesmo prazo (${d.mel.meses} meses), com o CET que você informou (${pct(d.cet)} ao ano)</p><div class="cd"><div class="co win"><p class="cl">Consórcio</p><h3 class="cb2">${m(d.mel.total)}</h3><p class="cs">total pago</p></div><div class="co"><p class="cl">Financiamento</p><h3 class="cb2">${m(d.fn.total)}</h3><p class="cs">total pago</p></div></div><p class="cs">Em reais, o financiamento sai ${brl(Math.abs(fd))} ${fd>0?'mais caro':'mais barato'}. Financiamento libera o dinheiro hoje; o consórcio só na contemplação, sem garantia de quando.</p>`);}
+  cn.push(`<p class="ck">O que você precisa saber</p><ul class="cw">${(document.querySelector('#e-out .avisos ul')||{innerHTML:''}).innerHTML}</ul>`);
+  return cn;}
+function irCine(i){const o=document.getElementById('cine');if(!o)return;const ss=[...o.querySelectorAll('.cena')];_cineI=Math.max(0,Math.min(ss.length-1,i));
+  ss.forEach((c,j)=>{c.classList.toggle('on',j===_cineI);c.setAttribute('aria-hidden',j!==_cineI);});
+  o.querySelectorAll('.cdots i').forEach((x,j)=>x.classList.toggle('on',j===_cineI));
+  o.querySelector('.cprev').disabled=_cineI===0;o.querySelector('.cnext').disabled=_cineI===ss.length-1;
+  o.querySelectorAll('.cena.on .cn').forEach(el=>{const v=+el.dataset.v,c=+el.dataset.c;if(_reduz()){return;}const ini=performance.now(),dur=900,f=x=>c?brl2(x):brl(x);const pas=t=>{const k=Math.min(1,(t-ini)/dur);el.textContent=f(v*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(pas);else el.textContent=f(v);};requestAnimationFrame(pas);});}
+function abrirCine(){if(!_cine){toast('Nada para apresentar ainda: monte o pedido e confira a proposta.');return;}fecharCine();const d=_cine,cs=cenasCine(d);
+  const o=document.createElement('div');o.id='cine';o.setAttribute('role','dialog');o.setAttribute('aria-modal','true');o.setAttribute('aria-label','Apresentação da proposta');
+  o.innerHTML=`<button class="cx" aria-label="Sair da apresentação">Sair</button><div class="cstage">${cs.map((h,i)=>`<section class="cena" aria-hidden="true">${h}</section>`).join('')}</div>
+  <footer class="cfoot"><div class="cnav"><button class="cprev" aria-label="Anterior">‹</button><div class="cdots">${cs.map(()=>'<i></i>').join('')}</div><button class="cnext" aria-label="Próxima">›</button></div><p class="caviso">Simulação informativa, estimada${d.I!=null?' (INPC '+pct2(d.I)+' ao ano)':''}. Sem garantia nem previsão de contemplação: lance alvo é histórico do grupo. Não é proposta nem contrato; confirme tudo no sistema oficial.${d.ger?' Gerente: '+esc(d.ger)+'.':''}</p></footer>`;
+  document.body.appendChild(o);document.body.classList.add('cine-on');
+  o.querySelector('.cx').onclick=fecharCine;o.querySelector('.cprev').onclick=()=>irCine(_cineI-1);o.querySelector('.cnext').onclick=()=>irCine(_cineI+1);
+  let x0=null;o.addEventListener('touchstart',e=>{x0=e.touches[0].clientX;},{passive:true});o.addEventListener('touchend',e=>{if(x0==null)return;const dx=e.changedTouches[0].clientX-x0;x0=null;if(Math.abs(dx)>50)irCine(_cineI+(dx<0?1:-1));});
+  document.addEventListener('keydown',_cineKey);irCine(0);o.querySelector('.cnext').focus();}
 function renderOferta(){const E=S.estr;const out=$('#e-out');
   if(!E.feito||!(num(E.valor)>0)){out.innerHTML=`<div class="card empty">Monte um pedido primeiro. <a href="#" data-go="estrategia">Ir para Pedido</a></div>`;return;}
   const vars=[['Menor lance do bolso','bolso'],['Mais cartas','mais'],['Menor parcela','parcela'],['Sem lance (só sorteio)','semlance'],['Menos cartas','cotas'],['Menor prazo','prazo']].map(([nome,pr])=>[nome,nome,pr]).map(([k,nome,pr])=>({k,nome,r:montarAuto(E,pr)}));
@@ -447,9 +474,12 @@ function renderOferta(){const E=S.estr;const out=$('#e-out');
   ${E.sg!=='0'?blocoSeguro(b,segI):''}
   <div class="avisos"><b>Avisos</b><ul><li>Contemplação por sorteio ou lance, sem garantia nem previsão de lance vencedor; lance alvo e tendência são histórico das colagens.</li><li>O lance embutido reduz o crédito recebido.</li><li>Parcelas e totais estimados: ${I.fonte?'reajuste anual pelo INPC ('+pct2(I.v)+' ao ano, '+I.fonte+'; o índice futuro não é conhecido)':'sem reajuste (INPC não informado)'}${K>0||E.sg!=='0'?'; seguro prestamista proporcional ao saldo':''}; "depois" supõe todas as cotas contempladas no mês ${mesC()} (estimativa: pode ser antes ou depois).</li><li>Simulação informativa, válida só com o gerente que a gerou; não é proposta nem contrato.</li><li>Depois do lance, o cliente escolhe reduzir o prazo ou a parcela; a parcela nova não pode ficar abaixo de 20% da atual (FAQ do portal). Prazo de "reduzir" estimado pelo saldo.</li>${fg>0?'<li>Uso do FGTS no lance depende das regras do FGTS e da administradora: confirmar antes de oferecer.</li>':''}${E.red==='1'?'<li>Plano reduzido: parte do crédito fica a cobrar (detalhamento do sistema); quando é cobrada, sem fonte confirmada.</li>':''}${vars.some(v=>v.r&&!v.r.erro&&v.r.linhas.some(l=>l.camp))?'<li>Campanha: condição promocional com validade; não vale para plano reduzido; exige débito em conta CAIXA a partir da 2ª parcela (banner da administradora).</li>':''}<li>Confirme taxas, parcelas, prazos e grupos no sistema oficial. Esta ferramenta não substitui a simulação oficial.</li></ul></div>
   <div class="dlg-actions no-present">${b?`<button class="btn" id="o-msg" ${PR.bloq?'disabled':''}>Copiar mensagem</button>`:''}<button class="btn" id="o-share" ${PR.bloq?'disabled':''}>Copiar link</button><button class="btn" id="o-print" ${PR.bloq?'disabled':''}>PDF / Imprimir</button><button class="btn primary" id="o-present" ${PR.bloq?'disabled':''}>Apresentar</button></div>`;
-  $('#o-present').onclick=()=>{if(!PR.bloq)document.body.classList.add('present');};$('#o-share').onclick=()=>{if(!PR.bloq)shareLink();};$('#o-print').onclick=()=>{if(!PR.bloq)window.print();};
+  $('#o-present').onclick=()=>{if(!PR.bloq)abrirCine();};$('#o-share').onclick=()=>{if(!PR.bloq)shareLink();};$('#o-print').onclick=()=>{if(!PR.bloq)window.print();};
   $$('[data-fin]').forEach(el=>el.onchange=()=>{(S.fin||(S.fin={}))[el.dataset.fin]=el.value;save();renderOferta();});
   proposta();
+  _cine=null;if(b&&!PR.bloq){const t=b.r.tot,c=custoVar(b.r,mesC(),E.sg!=='0',R,I.v/100);if(c){const F=S.fin||{},cet=num(String(F.cet||'').replace(',','.')),rm=c.red.total<=c.man.total,mel=rm?c.red:c.man,sis=F.sis||(E.tipo==='Imobiliário'?'sac':'price');
+    const fn=F.cet!==''&&F.cet!=null&&cet>=0?financiar({valor:t.liq,cetAA:cet/100,meses:mel.meses,sistema:sis,inpc:I.v/100}):null;
+    _cine={liq:t.liq,bruto:t.bruto,cotas:t.cotas,nG:new Set(b.r.linhas.map(l=>l.g.cod)).size,lance:cli(t),fgts:fgU(t),emb:t.emb,p1:P1(t),seg:E.sg!=='0'&&K>0,c,rm,mel,fn,cet,sis,mes:mesC(),tipo:E.tipo||'',ger:E.ger||'',titulo,I:I.fonte?I.v:null};}}
   if(b){const updConf=()=>{let n=0,ok1=0;confIt.forEach(([k,,v])=>{const o=num(C[k]),cel=$('#conf-'+k);if(!(o>0)||v==null){cel.textContent='—';return;}n++;const d=v-o,p=Math.abs(d)/o;if(p<=0.01)ok1++;cel.innerHTML=`${d>=0?'+':'−'} ${brl2(Math.abs(d))} <span class="tag ${p<=0.01?'ok':'warn'}">${pct(p*100)}</span>`;});
       $('#conf-res').textContent=n<confIt.length?`Pendente: ${n} de ${confIt.length} valores oficiais.`:ok1===n?`✔ Os ${n} valores batem dentro de 1%.`:`⚠ ${n-ok1} valor(es) com diferença acima de 1%: confira grupo, carta, lance, seguro e mês da contemplação.`;};
     $$('[data-conf]').forEach(el=>el.oninput=()=>{C[el.dataset.conf]=el.value;save();updConf();});updConf();}
