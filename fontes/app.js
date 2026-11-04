@@ -289,14 +289,11 @@ function listaAoVivo(){const box=$('#e-lista');if(!box)return;const E={...S.estr
   const ops=(R.ops||[]).filter(o=>o.bolso!=null&&o.uso&&o.uso.length),mb=Math.min(...ops.map(o=>o.bolso));
   const emp=ops.filter(o=>o.bolso<=mb+1e-6),best=mb<1?emp.sort((x,y)=>x.n-y.n)[0]:emp.sort((x,y)=>y.n-x.n)[0];
   const milBR=v=>Math.round(v).toLocaleString('pt-BR'),rec=num(E.rec)>0?num(E.rec):null,mes=v=>`${Math.round(v)} meses`;
-  const lin=o=>{const p1=num(E.p1)>0?num(E.p1):null,naoP=p1!=null&&o.parc!=null&&o.parc>p1,nao=rec!=null&&o.bolso>rec,conc=o.uso.filter(u=>u.k>=2);
-    const gr=o.uso.map(u=>`<div><b>${esc(u.cod)}</b> · ${u.k} cota${u.k>1?'s':''}<span class="sel">lance ${pct(u.a)}${u.med>0?` a ${pct(u.med)}`:''}${u.pr>0?` · ${mes(u.pr)}`:''}</span></div>`).join('');
-    const faixa=o.bolso<1?`<b>R$ 0</b><span class="sel">o embutido cobre o menor lance${o.bolsoMed>0?`; na média: ${brl(o.bolsoMed)}`:''}</span>`:`<b>${brl(o.bolso)}</b>${o.bolsoMed>o.bolso+1?`<span class="sel">até ${brl(o.bolsoMed)} se pedirem a média</span>`:''}`;
-    const aviso=conc.length?`<span class="sel" style="color:var(--warn)">${conc.map(u=>u.k).join('+')} cotas no mesmo grupo concorrem entre si${o.dif?` · em grupos diferentes: ${brl(o.dif.bolso)}`:''}</span>`:'';
-    return `<tr class="${o===best?'best':''}"><td><b>${o.n}</b> cota${o.n>1?'s':''} de ~${brl(o.t)}<span class="sel">buscar de ${milBR(o.lo)} a ${milBR(o.hi)}</span></td><td>${gr}</td><td class="r">${faixa}${o.parc!=null?`<span class="sel">parcela ~${brl(o.parc)}/mês até contemplar</span>`:''}${o===best?'<span class="sel" style="color:var(--accent)">menor bolso</span>':''}${nao?'<span class="sel" style="color:var(--warn)">bolso não cabe</span>':''}${naoP?'<span class="sel" style="color:var(--warn)">parcela acima do que cabe</span>':''}${aviso}</td></tr>`;};
-  box.innerHTML=`<div class="lista-vivo"><div class="busca-cab">Divisões possíveis para ${brl(R.need)} ${E.modo==='bruto'?'em cartas':'líquidos'}</div>
-    <table class="busca-t"><thead><tr><th scope="col">Quantas cotas</th><th scope="col">Grupos (lance menor a média)</th><th scope="col" class="r">Do seu bolso</th></tr></thead><tbody>${ops.map(lin).join('')}</tbody></table>
-    <div class="hint">Lance do bolso estimado pelo histórico do grupo: menor lance da última assembleia; "média" é a média das últimas 3. Não é previsão: nada garante o lance vencedor. Cotas do mesmo cliente no mesmo grupo concorrem no lance (aviso do app, sem fonte confirmada da Caixa). Parcela sem seguro.</div></div>`;}
+  const lin=o=>{const nao=rec!=null&&o.bolso>rec;
+    return `<tr class="${o===best?'best':''}"><td><b>${o.n}</b> cota${o.n>1?'s':''} de ~${brl(o.t)}</td><td class="r"><b>${milBR(o.lo)} a ${milBR(o.hi)}</b>${o===best?'<span class="sel" style="color:var(--accent)">comece por aqui</span>':''}</td><td class="r">~${brl(o.bolso)}${nao?'<span class="sel" style="color:var(--warn)">não cabe</span>':''}</td></tr>`;};
+  box.innerHTML=`<div class="lista-vivo"><div class="busca-cab">Faixas de carta para ${brl(R.need)} ${E.modo==='bruto'?'em cartas':'líquidos'}</div>
+    <table class="busca-t"><thead><tr><th scope="col">Quantas cotas</th><th scope="col" class="r">Pesquise no sistema (R$)</th><th scope="col" class="r">Bolso de referência</th></tr></thead><tbody>${ops.map(lin).join('')}</tbody></table>
+    <div class="hint">Você pesquisa a faixa no vendas.seguridade e traz o que achou: grupo, vaga e parcela vêm de lá. O bolso de referência usa o histórico de lance dos grupos nessa faixa (não é previsão: nada garante o lance vencedor).</div></div>`;}
 function renderEstrategia(){const E=S.estr;if(!E.tipo)E.tipo='Imobiliário';[...EF,...EF2].forEach(k=>{const el=$('#e-'+k);if(!el)return;const m=el.dataset.money!=null;el.value=m?moneyFmt(E[k]):(E[k]??'');if(m)el.oninput=()=>{el.value=moneyLive(el.value);};el.onchange=()=>{E[k]=lerCampo(el);save();};});
   $$('#e-tipo-chips .chip').forEach(b=>{b.classList.toggle('on',(E.tipo||'')===b.dataset.v);b.onclick=()=>{E.tipo=b.dataset.v;$('#e-tipo').value=E.tipo;save();renderEstrategia();};});
   $('#e-aviso').innerHTML=avisoPrimeiroUso();if(['rec','fgts','p1','p2'].some(k=>num(E[k])>0))$('#e-bolso').open=true;
@@ -645,20 +642,22 @@ function roteiro(E){const need=num(E.valor)||0;if(!(need>0))return null;const tO
 const ADM=()=>!document.body.classList.contains('usuario'); // visão de admin (o admin pode ver como gerente pelo botão)
 
 /* ===== Estratégia de lance: o que cada grupo do plano costuma exigir (histórico das colagens, não previsão) ===== */
-function estrategiaLance(R,E){if(!R||R.semDados)return '';
-  const pl=(R.ops||[]).filter(o=>o.uso&&o.uso.length).sort((x,y)=>((x.bolso??9e99)-(y.bolso??9e99))||(y.n-x.n)),o=pl[0];if(!o)return '';
-  const itens=[],lin=o.uso.map(u=>{const g=S.grupos.find(x=>codN(x.cod)===codN(u.cod));if(!g)return '';
-    const it={k:u.k,carta:o.t,emb:o.emb,lmin:num(g.lmin),lmed:num(g.lmed),lmax:num(g.lmax)};itens.push(it);
-    const h=(g.h||[]).filter(x=>x.n!=null),mn=h.length?Math.min(...h.map(x=>x.n)):null,mx=h.length?Math.max(...h.map(x=>x.n)):null,tr=tendencia(g);
-    const p=v=>v>0?pct(v):'—';
-    return `<tr><td><b>${esc(u.cod)}</b><span class="sel">${u.k} cota${u.k>1?'s':''}</span></td><td class="r">${p(it.lmin)}</td><td class="r">${p(it.lmed)}</td><td class="r">${p(it.lmax)}</td><td class="r" style="font-size:12px;color:var(--muted)">${h.length>1?`${h.length} meses: ${pct(mn)} a ${pct(mx)}`:'histórico começando'}${tr?`<br><span style="color:${tr.sobe?'var(--warn)':'var(--muted)'}">${esc(tr.txt)}</span>`:''}</td></tr>`;}).join('');
+function estrategiaLance(R,E){ // só com cotas reais coladas: os grupos vêm do que o gerente achou no sistema, nunca de palpite
+  if(!R||!E.bestReal||!(E.buscaL||[]).length)return '';
+  const porG={};E.buscaL.forEach(l=>{const k=codN(l.cod),g=S.grupos.find(x=>codN(x.cod)===k);if(!g)return;const o=porG[k]=porG[k]||{g,k:0,soma:0};o.k+=l.n;o.soma+=l.carta*l.n;});
+  const gs=Object.values(porG);if(!gs.length)return '';
+  const itens=[],p=v=>v>0?pct(v):'—',embs=[];
+  const lin=gs.map(o=>{const g=o.g,emb=E.emb==='1'?(num(g.emax)||0):0,carta=o.soma/o.k;embs.push(emb);
+    itens.push({k:o.k,carta,emb,lmin:num(g.lmin),lmed:num(g.lmed),lmax:num(g.lmax)});
+    const h=(g.h||[]).filter(x=>x.n!=null),mn=h.length?Math.min(...h.map(x=>x.n)):null,mx=h.length?Math.max(...h.map(x=>x.n)):null,tr=tendencia(g),cl=num(g.cl);
+    return `<tr><td><b>${esc(g.cod)}</b><span class="sel">${o.k} cota${o.k>1?'s':''}${cl>0?` · ${cl} contemplados por lance na última`:''}</span></td><td class="r">${p(num(g.lmin))}</td><td class="r">${p(num(g.lmed))}</td><td class="r">${p(num(g.lmax))}</td><td class="r" style="font-size:12px;color:var(--muted)">${h.length>1?`${h.length} meses: ${pct(mn)} a ${pct(mx)}`:'histórico começando'}${tr?`<br><span style="color:${tr.sobe?'var(--warn)':'var(--muted)'}">${esc(tr.txt)}</span>`:''}</td></tr>`;}).join('');
   const c=cenariosLance(itens),f=v=>v==null?'—':brl(v),cards=[['Se pedirem o menor lance',c.ousado,'menor da última assembleia'],['Se pedirem a média',c.central,'média das últimas 3'],['Se pedirem o maior',c.conservador,'maior da última assembleia']].filter(x=>x[1]!=null).sort((x,y)=>x[1]-y[1]);
-  if(!cards.length&&!lin)return '';
-  const conc=o.uso.filter(u=>u.k>=2).length?`<div class="hint" style="color:var(--warn)">Cotas do mesmo cliente no mesmo grupo concorrem entre si: ao menor lance, tende a passar uma. Para passarem todas, mire da média para cima (regra do app, sem fonte confirmada da Caixa).</div>`:'';
-  return `<div class="lance-est"><div class="busca-cab">Estratégia de lance do plano A</div>
+  const conc=gs.filter(o=>o.k>=2),emb=embs[0]||0;
+  const concT=conc.length?`<div class="hint" style="color:var(--warn)">${conc.map(o=>`${o.k} cotas no grupo ${esc(o.g.cod)}`).join(' e ')} concorrem entre si no lance: ao menor lance tende a passar uma. Para passarem todas, mire da média para cima (regra do app, sem fonte confirmada da Caixa).</div>`:'';
+  return `<div class="lance-est"><div class="busca-cab">Estratégia de lance das cotas que você trouxe</div>
     <table class="busca-t"><thead><tr><th scope="col">Grupo</th><th scope="col" class="r">Menor</th><th scope="col" class="r">Média 3</th><th scope="col" class="r">Maior</th><th scope="col" class="r">Série</th></tr></thead><tbody>${lin}</tbody></table>
-    ${cards.length?`<div class="opts" style="margin-top:6px">${cards.map((x,i)=>`<div class="opt${x[0].includes('média')?' win':''}"><div class="oh"><b>${x[0]}</b></div><div class="ot">${f(x[1])}<small>do bolso · ${x[2]}</small></div></div>`).join('')}</div>`:''}${conc}
-    <div class="hint">Menor e maior lance: da última assembleia de cada grupo (% da carta, com embutido de ${pct(o.emb)}). A média é a das últimas 3. Histórico do grupo, não previsão: nada garante o lance vencedor da próxima.</div></div>`;}
+    ${cards.length?`<div class="opts" style="margin-top:6px">${cards.map(x=>`<div class="opt${x[0].includes('média')?' win':''}"><div class="oh"><b>${x[0]}</b></div><div class="ot">${f(x[1])}<small>do bolso · ${x[2]}</small></div></div>`).join('')}</div>`:''}${concT}
+    <div class="hint">Menor e maior lance: da última assembleia de cada grupo (% da carta${emb>0?`, com embutido de ${pct(emb)}`:''}). A média é a das últimas 3. Histórico do grupo, não previsão: nada garante o lance vencedor da próxima.</div></div>`;}
 function buscaSimples(R,E,pronto){if(!R)return 'Monte um pedido primeiro: a busca aparece aqui.';
   const st=statusPortal(),fr=st?`<div class="hint" style="margin-top:8px">Grupos do portal de ${fmtD(st.ult)}${st.velho?` · <b style="color:var(--warn)">teve assembleia em ${fmtD(st.assemPassada)}: lances podem ter mudado${ADM()?' (atualize pelo botão do portal)':' (avise o admin)'}</b>`:''}.</div>`:'';
   if(pronto)return `<div style="font-size:15px;color:var(--ink)"><b>Pronto:</b> a proposta já fecha com o que você colou. Confirme no sistema: ${E.busca}. <a href="#" data-go="oferta" style="color:inherit;font-weight:600">Ver a proposta →</a></div>${fr}`;
@@ -668,16 +667,13 @@ function buscaSimples(R,E,pronto){if(!R)return 'Monte um pedido primeiro: a busc
   const tab=linhas=>`<table class="busca-t"><thead><tr><th scope="col">Grupo</th><th scope="col" class="r">Cotas</th><th scope="col" class="r">De (R$)</th><th scope="col" class="r">Até (R$)</th></tr></thead><tbody>${linhas}</tbody></table>`;
   const cabP=(o,letra)=>`<div class="plano-cab"><b>Plano ${letra}</b> · ${o.n} carta${o.n>1?'s':''} de ~${brl(o.t)}${o.bolso!=null?` · lance do bolso ~${brl(o.bolso)}`:''}</div>`;
   if(R.semDados||!rc.uso||!rc.uso.length)return `<div class="busca-cab">Para ${brl(R.need)} líquido · ${brl(R.total)} em cartas${R.embP>0?` · embutido ${pct(R.embP)}`:''}</div>${cabP(rc,'A')}${tab(`<tr><td>${esc(tipoT)}<span class="sel">qualquer grupo</span></td><td class="r"><b>${rc.n}</b></td><td class="r"><b>${milBR(rc.lo)}</b></td><td class="r"><b>${milBR(rc.hi)}</b></td></tr>`)}<div class="hint">Ainda não há grupos do portal deste tipo.</div>${fr}`;
-  const lin=(o,g,cod,k,cls)=>{const [lo,hi]=faixa(o,g);return `<tr class="${cls}"><td><b>${esc(cod)}</b>${g&&g.a?`<span class="sel">lance ${pct(g.a)}</span>`:''}<button type="button" class="btn ghost small" data-pular="${esc(cod)}" style="margin-top:4px">Sem vaga</button></td><td class="r">${k?`<b>${k}</b>`:'reserva'}</td><td class="r">${milBR(lo)}</td><td class="r">${milBR(hi)}</td></tr>`;};
-  const plano=(o,max,vis)=>{const us=new Set(o.uso.map(u=>u.cod)),res=(o.gs||[]).filter(g=>!us.has(g.cod)).slice(0,Math.max(0,max-o.uso.length)),a=res.slice(0,vis),b=res.slice(vis);
-    return tab(o.uso.map(u=>lin(o,(o.gs||[]).find(g=>g.cod===u.cod),u.cod,u.k,'')).join('')+a.map(g=>lin(o,g,g.cod,0,'res')).join(''))
-      +(b.length?`<details class="adv mais"><summary>Mais ${b.length} reserva${b.length>1?'s':''}</summary><table class="busca-t" style="margin-top:0"><tbody>${b.map(g=>lin(o,g,g.cod,0,'res')).join('')}</tbody></table></details>`:'');};
-  const sumP=(o,letra)=>`<b>Plano ${letra}</b> · ${o.n} carta${o.n>1?'s':''} de ~${brl(o.t)}${o.bolso!=null?` · bolso ~${brl(o.bolso)}`:''}`;
   const pl=(R.ops||[]).filter(o=>o.uso&&o.uso.length).sort((x,y)=>((x.bolso??9e99)-(y.bolso??9e99))||(y.n-x.n)); // menor dinheiro do bolso sempre em cima
   const pA=pl[0]||rc,outros=pl.slice(1,4);
+  const linha=(o,i)=>`<tr class="${i===0?'best':''}"><td><b>${o.n}</b> cota${o.n>1?'s':''} de ~${brl(o.t)}${i===0?'<span class="sel" style="color:var(--accent)">comece por aqui</span>':''}</td><td class="r">${milBR(o.lo)}</td><td class="r">${milBR(o.hi)}</td></tr>`;
+  const lista=[pA,...outros].filter(Boolean);
   return `<div class="busca-cab">Para ${brl(R.need)} líquido · ${brl(R.total)} em cartas${R.embP>0?` · embutido ${pct(R.embP)}`:''}</div>
-    ${cabP(pA,'A')}${plano(pA,8,2)}<div class="hint">Plano A é o de menor dinheiro do bolso. Grupos em ordem de menor lance; sem vaga no sistema, toque em "Sem vaga" e o app troca pelo próximo.${(E.pular||[]).length?` <a href="#" data-voltar="1" style="color:inherit;font-weight:600">Voltar os ${E.pular.length} grupo${E.pular.length>1?'s':''} pulado${E.pular.length>1?'s':''}</a>`:''}</div>
-    ${outros.length?`<div class="plano-b"><div class="hint" style="margin:10px 0 2px">Se o plano A não fechar, outra divisão:</div>${outros.map((o,k)=>`<details class="adv plano-d"><summary><span>${sumP(o,'BCD'[k])}</span></summary>${plano(o,5,5)}</details>`).join('')}</div>`:''}${fr}`;}
+    <table class="busca-t"><thead><tr><th scope="col">Quantas cotas</th><th scope="col" class="r">De (R$)</th><th scope="col" class="r">Até (R$)</th></tr></thead><tbody>${lista.map(linha).join('')}</tbody></table>
+    <div class="hint">Pesquise cada faixa no vendas.seguridade, começando pela primeira, e cole o que achou: o app confere vagas, parcela e lance com as cotas reais. A primeira linha é a de menor bolso pelo histórico dos grupos. Mais cotas é outra divisão, não garantia.</div>${fr}`;}
 function renderCotas(){const E=S.estr;
   const R=E.feito?roteiro(E):null,tipoT=E.tipo==='Imobiliário'?'imóvel':(E.tipo||'').toLowerCase()||'o tipo do bem';
   const pronto=E.bestReal&&E.busca;
@@ -692,8 +688,6 @@ function renderCotas(){const E=S.estr;
       const cmp=[fora?`<span style="color:var(--warn)">carta fora da faixa buscada (${brl(R.rec.lo)} a ${brl(R.rec.hi)})</span>`:'',df==null?'':Math.abs(df)>1?`<span style="color:var(--warn)">parcela ${df>0?'acima':'abaixo'} do previsto (${brl2(prev)}) em ${pct(Math.abs(df))}</span>`:'<span style="color:var(--accent)">parcela confere com o previsto</span>'].filter(Boolean).join(' · ');
       return `<br>Grupo ${esc(l.cod)}: carta mais próxima no sistema ${brl2(x.carta)}, parcela ${brl2(x.parc)}, vagas ${x.vagas!=null?x.vagas:esc(x.vagasTxt)||'?'}${venceu(x)?' <b>(dados vencidos)</b>':''}${cmp?`<br><span class="sel">${cmp}</span>`:''}`;}).join('');
   $('#c-busca').innerHTML=busca+reais;const lb=$('#c-lance');if(lb)lb.innerHTML=estrategiaLance(R,E);
-  $$('#c-busca [data-pular]').forEach(b=>b.onclick=()=>{const E2=S.estr;E2.pular=[...new Set([...(E2.pular||[]),codN(b.dataset.pular)])];save();renderOferta();renderCotas();toast('Grupo pulado: o app mostra a próxima opção');});
-  $$('#c-busca [data-voltar]').forEach(b=>b.onclick=ev=>{ev.preventDefault();S.estr.pular=[];save();renderOferta();renderCotas();});
   const l=$('#c-lista');const porG={};S.cotasL.forEach(x=>{(porG[x.gid]=porG[x.gid]||[]).push(x);});
   const ids=Object.keys(porG).sort((a,b)=>(+a)-(+b));
   l.className=ids.length?'':'empty';
