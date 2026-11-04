@@ -337,3 +337,18 @@ body.cine-on{overflow:hidden}
 @media print{:root,:root:not([data-tema="light"]),:root[data-tema="dark"]{--c-pre:#7f93ab;--c-lance:#e0a52e;--c-pos:#4f7fb0;--c-novo:#2f9e6e;--c-fin:#c8553d}.cenarios{display:none}.bar,.sg,.sw,.tl>div{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 .cens>.cen{min-width:0}.cens{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media(max-width:520px){.cm{flex-direction:column;gap:2px}.cm input{width:100%;max-width:72px}.cen>button{font-size:14px;padding:0}}
+
+/* painel de ações no alto e cenários como botões */
+.three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media(max-width:480px){.three{gap:8px}}
+.acoes{display:flex;flex-direction:column;gap:10px;margin:0 0 14px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.ac-res{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
+.ac-res:empty{display:none}
+.ac-btns{display:flex;flex-wrap:wrap;gap:8px}
+.ac-btns .btn{flex:1 1 auto}
+#s-oferta .cens{margin:0 0 14px}
+#s-oferta .cens .cenb{min-height:56px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:inherit;font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px}
+#s-oferta .cens .cenb small{color:var(--muted);font-size:12px}
+#s-oferta .cens .cenb.on{border-color:var(--ink);background:var(--surface);box-shadow:inset 0 0 0 1px var(--ink)}
+.eco span small b{font-weight:700}
+@media print{.acoes{display:none}}

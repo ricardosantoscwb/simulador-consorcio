@@ -64,6 +64,30 @@
         <div class="f"><label for="e-inpc">INPC estimado, % ao ano <span class="hint" id="e-inpc-hint">vazio = BCB</span></label><input id="e-inpc" type="number" min="0" max="30" step="0.01" inputmode="decimal" placeholder="BCB"></div>
         <div class="f"><label for="e-ger">Gerente na proposta <span class="hint">nome · matrícula</span></label><input id="e-ger" autocomplete="off" placeholder="Nome · matrícula"></div>
       </div>
+      <p class="ck" style="margin-top:14px">Cenários de contemplação, em meses <button type="button" class="gl" data-gl="mes" aria-label="O que é: mês da contemplação">?</button></p>
+      <div class="three">
+        <div class="f"><label for="c-oti">Otimista</label><input id="c-oti" data-cmf="oti" type="number" min="1" max="240" step="1" inputmode="numeric"></div>
+        <div class="f"><label for="c-fac">Factível</label><input id="c-fac" data-cmf="fac" type="number" min="1" max="240" step="1" inputmode="numeric"></div>
+        <div class="f"><label for="c-con">Conservador</label><input id="c-con" data-cmf="con" type="number" min="1" max="240" step="1" inputmode="numeric"></div>
+      </div>
+      <p class="sub" id="c-pad">Vazio = padrão pelo número de cotas.</p>
+      <p class="ck" style="margin-top:14px">Comparar com financiamento <span class="hint">opcional</span></p>
+      <div class="two">
+        <div class="f"><label for="f-cet">CET do financiamento, % ao ano</label><input id="f-cet" data-ff="cet" type="text" inputmode="decimal" placeholder="ex.: 24,5"></div>
+        <div class="f"><label for="f-prazo">Prazo do financiamento, meses</label><input id="f-prazo" data-ff="prazo" type="number" min="1" max="480" inputmode="numeric"></div>
+      </div>
+      <div class="two">
+        <div class="f"><label for="f-sis">Sistema</label><select id="f-sis" data-ff="sis"><option value="">Padrão do tipo (imóvel SAC, veículo Price)</option><option value="price">Price (parcela fixa)</option><option value="sac">SAC (parcela cai)</option></select></div>
+        <div class="f"><label for="f-extra">Tarifas, seguros e IOF, pontos ao ano</label><input id="f-extra" data-ff="extra" type="text" inputmode="decimal" placeholder="ex.: 2"></div>
+      </div>
+      <p class="ck" style="margin-top:10px">Já tem financiamento? <span class="hint">manter × quitar com a carta</span></p>
+      <div class="three">
+        <div class="f"><label for="f-saldo">Saldo devedor, R$</label><input id="f-saldo" data-ff="saldo" type="text" inputmode="decimal" placeholder="ex.: 120000"></div>
+        <div class="f"><label for="f-parc">Parcela atual, R$</label><input id="f-parc" data-ff="parc" type="text" inputmode="decimal" placeholder="ex.: 2800"></div>
+        <div class="f"><label for="f-rest">Meses que faltam</label><input id="f-rest" data-ff="rest" type="number" min="1" max="480" inputmode="numeric"></div>
+      </div>
+      <p class="ck" style="margin-top:10px">Bancos de referência (taxa média do Banco Central)</p>
+      <div id="f-bancos" class="chks"></div>
       <div class="f"><label for="e-nome">Nome do cliente <span class="hint">fica só neste aparelho, não vai no link</span></label><input id="e-nome" autocomplete="off"></div>
     </details>
     <div class="wiz-actions"><span></span><button class="btn primary" id="e-go">Ver onde buscar →</button></div>
