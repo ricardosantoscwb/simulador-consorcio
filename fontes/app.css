@@ -276,3 +276,4 @@ body.cine-on{overflow:hidden}
 #s-estrategia #e-tipo-chips{justify-content:center}
 #s-estrategia #l-tipo,#s-estrategia label[for=e-modo]{display:block;text-align:center}#s-estrategia .money-wrap.big{margin:8px 0 12px}
 .resp{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:20px;font-size:14px;color:var(--ink-2)}.resp small{flex-basis:100%;color:var(--muted);font-size:12px}
+.lance-est{margin-bottom:22px}.lance-est .hint{margin-top:8px}

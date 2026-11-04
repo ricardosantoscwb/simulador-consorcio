@@ -1,6 +1,6 @@
 // Motor de custo: gabarito da planilha do Ricardo (03/11/2026, grupo 30066, veículo, 3 cotas) + propriedades.
 import assert from "node:assert/strict";
-import { agoDe, fatorAGO, projetar, somar, custoEfetivoAno, financiar } from "../fontes/custos.mjs";
+import { agoDe, fatorAGO, projetar, somar, custoEfetivoAno, financiar, cenariosLance } from "../fontes/custos.mjs";
 
 const perto = (a, b, tol, msg) => assert.ok(Math.abs(a - b) <= tol, `${msg}: ${a} ≠ ${b} (tol ${tol})`);
 
@@ -64,4 +64,10 @@ perto(financiar({ valor: 1200, cetAA: 0, meses: 12 }).total, 1200, 1e-9, "taxa z
 // consórcio de uma cota: M=1 dá custo ao ano finito; contemplar mais tarde custa mais ao ano
 const c1 = projetar({ ...cota, M: 1, N: 62 }).custoAno, c6 = projetar({ ...cota, M: 6, N: 62 }).custoAno, c12 = projetar({ ...cota, M: 12, N: 62 }).custoAno;
 if (c1 != null && c6 != null && c12 != null) assert.ok(c1 < c6 && c6 < c12, `custo ao ano cresce com a espera: ${c1} ${c6} ${c12}`);
+// cenários de lance: grupo 30066, 3 cotas, embutido 30%: o menor lance dá o bolso da planilha (R$ 55.695)
+const cz = cenariosLance([{ k: 3, carta: 62652.48, emb: 30, lmin: 59.6315, lmed: 61, lmax: 65 }]);
+perto(cz.ousado, 55694.6, 1, "bolso no lance mínimo (planilha: ~55.695)");
+assert.ok(cz.ousado < cz.central && cz.central < cz.conservador, "mais lance exigido, mais bolso");
+assert.equal(cenariosLance([{ k: 3, carta: 1000, emb: 30, lmin: 50, lmed: null, lmax: 60 }]).central, null, "sem dado, sem cenário");
+assert.equal(cenariosLance([{ k: 1, carta: 1000, emb: 40, lmin: 30, lmed: 30, lmax: 30 }]).ousado, 0, "embutido cobre tudo: bolso zero");
 console.log("custos.mjs: ok", { reduzirTotal: +red.total.toFixed(2), manterTotal: +man.total.toFixed(2), difNominal: +difNominal.toFixed(2), difHoje: +difHoje.toFixed(2), custoAnoReduzir: red.custoAno, custoAnoManter: man.custoAno, c1, c6, c12 });
