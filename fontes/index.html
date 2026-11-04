@@ -31,7 +31,7 @@
   <div class="wiz"><div class="card inputs no-present">
     <h1 class="q">Quanto o cliente precisa?<small>Digite o valor líquido, o que ele recebe. O app mostra as faixas de carta para pesquisar no vendas.seguridade.</small></h1>
     <div id="e-aviso"></div>
-    <div class="f"><label for="e-valor">Valor líquido</label><div class="money-wrap big"><input id="e-valor" class="bigin" type="text" inputmode="numeric" autocomplete="off" data-money></div></div>
+    <div class="f"><label for="e-valor">Valor líquido <button type="button" class="gl" data-gl="liquido" aria-label="O que é: valor líquido">?</button></label><div class="money-wrap big"><input id="e-valor" class="bigin" type="text" inputmode="numeric" autocomplete="off" data-money></div></div>
     <div class="f so-admin"><label for="e-modo">Esse valor é</label><select id="e-modo"><option value="liquido">Líquido (o que ele recebe)</option><option value="bruto">Bruto (total das cartas)</option></select></div>
     <div class="f" role="group" aria-labelledby="l-tipo"><span class="f-l" id="l-tipo" style="font-size:13px;color:var(--ink-2);font-weight:500">Tipo do bem</span><div class="chips" id="e-tipo-chips"><button type="button" class="chip" data-v="Imobiliário">Imóvel</button><button type="button" class="chip" data-v="Veículos Leves">Veículo leve</button><button type="button" class="chip" data-v="Veículos Pesados">Pesado</button></div><select id="e-tipo" hidden><option>Imobiliário</option><option>Veículos Leves</option><option>Veículos Pesados</option></select></div>
     <details class="adv" id="e-bolso"><summary><span>Cabe no bolso? <span class="hint">opcional · o app marca o que não cabe</span></span></summary>
@@ -54,7 +54,7 @@
         <div class="f"><label for="e-red">Plano reduzido</label><select id="e-red"><option value="">Não usar</option><option value="1">Usar, se o detalhamento foi colado</option></select></div>
       </div>
       <div class="two">
-        <div class="f"><label for="e-mc">Contemplação estimada no mês <span class="hint">preencha: sem ele a proposta não fica pronta</span></label><input id="e-mc" type="number" min="1" max="240" step="1" inputmode="numeric" placeholder="1"></div>
+        <div class="f"><label for="e-mc">Contemplação estimada no mês <button type="button" class="gl" data-gl="mes" aria-label="O que é: mês da contemplação">?</button> <span class="hint">preencha: sem ele a proposta não fica pronta</span></label><input id="e-mc" type="number" min="1" max="240" step="1" inputmode="numeric" placeholder="1"></div>
         <div class="f"><label for="e-sg">Seguro prestamista</label><select id="e-sg"><option value="">Incluir (como no sistema)</option><option value="0">Não incluir</option></select></div>
       </div>
       <div class="two">
