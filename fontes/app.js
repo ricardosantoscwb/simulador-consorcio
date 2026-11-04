@@ -392,10 +392,10 @@ function proposta(){const card=$('#e-out .path.best');if(!card){GAV=null;return;
   const dir=kids.filter(k=>![...cab,...fim,...esq].includes(k));
   // gavetas: detalhes secundários viram chips (o "Como calculamos" fica no lugar: entra no PDF)
   const det=dir.filter(k=>k.tagName==='DETAILS'&&k.classList.contains('adv')&&!/^Como calculamos/.test(k.textContent.trim()));
-  const chips=document.createElement('div');chips.className='chips no-present';
+  const chips=document.createElement('div');chips.className='gchips no-present';
   det.forEach((d,i)=>{const t=d.querySelector('summary').textContent.trim(),g=document.createElement('div');g.className='gbody';g.dataset.g=i;g.dataset.t=t;g.hidden=true;
     [...d.childNodes].forEach(n=>{if(n.tagName!=='SUMMARY')g.appendChild(n);});
-    const b=document.createElement('button');b.className='chip';b.type='button';b.textContent=t;b.onclick=()=>abrirGaveta(i);chips.appendChild(b);d.replaceWith(g);});
+    const b=document.createElement('button');b.className='gchip';b.type='button';b.textContent=t;b.onclick=()=>abrirGaveta(i);chips.appendChild(b);d.replaceWith(g);});
   const L=document.createElement('div'),R=document.createElement('div');L.className='pl';R.className='pr';
   esq.forEach(k=>L.appendChild(k));[...card.querySelectorAll(':scope>.gbody')].forEach(g=>R.appendChild(g));
   dir.filter(k=>k.parentNode===card).forEach(k=>R.appendChild(k));R.appendChild(chips);

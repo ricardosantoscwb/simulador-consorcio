@@ -219,9 +219,9 @@ body.present .present-bar{display:flex;gap:6px}
 .seg .nota{margin-top:16px;font-size:12px;color:var(--muted)}
 
 /* Proposta: colunas, chips, gaveta, controle segmentado */
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
-.chip{min-height:44px;padding:0 16px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--ink);font:inherit;font-size:14px;cursor:pointer;transition:border-color .15s,transform .15s}
-.chip:hover{border-color:var(--ink)}.chip:focus-visible,.segc button:focus-visible,.g-x:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.gchips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.gchip{min-height:44px;padding:0 16px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--ink);font:inherit;font-size:14px;cursor:pointer;transition:border-color .15s,transform .15s}
+.gchip:hover{border-color:var(--ink)}.gchip:focus-visible,.segc button:focus-visible,.g-x:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .pcols{display:block}.pr .opts{margin-top:0}
 @media(min-width:1000px){.path.best{padding:28px 32px}.pcols{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);column-gap:48px;align-items:start;margin-top:8px}.pl .bignum.lance{margin-top:0}.pr .opts{grid-template-columns:1fr 1fr}}
 .segc{display:none}
@@ -234,8 +234,8 @@ body.present .present-bar{display:flex;gap:6px}
 .g-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;font-size:16px}
 .g-x{width:44px;height:44px;border:0;background:transparent;font-size:28px;line-height:1;cursor:pointer;color:var(--muted)}
 body.gav-on{overflow:hidden}
-@media(prefers-reduced-motion:reduce){#gaveta .g-bg,#gaveta .g-panel,.chip{transition:none}}
-@media print{.chips,.segc,#gaveta{display:none!important}.opt.off{display:block!important}.pcols{display:block!important}.gbody[hidden]{display:none}}
+@media(prefers-reduced-motion:reduce){#gaveta .g-bg,#gaveta .g-panel,.gchip{transition:none}}
+@media print{.gchips,.segc,#gaveta{display:none!important}.opt.off{display:block!important}.pcols{display:block!important}.gbody[hidden]{display:none}}
 @media(min-width:1000px){#e-out{max-width:1040px}.path.best .bignum.lance{font-size:clamp(46px,5vw,64px)}.pl .bignum.lance{white-space:nowrap}}
 .g-panel .gbody{font-size:14px;line-height:1.5;overflow-x:auto}.g-panel .gbody p{font-size:14px}
 
@@ -263,3 +263,15 @@ body.cine-on{overflow:hidden}
 @media(prefers-reduced-motion:reduce){#cine .cena{transition:none;transform:none}}
 @media(max-width:600px){#cine .cena{padding-top:64px}#cine .cb{font-size:clamp(44px,15vw,72px)}}
 @media print{#cine{display:none!important}}
+
+/* Pedido como calculadora: o valor é o herói da tela */
+#s-estrategia .wiz{max-width:720px}
+#s-estrategia .inputs h1.q{font-size:clamp(26px,4vw,38px);letter-spacing:-.03em;text-align:center;margin-bottom:6px}
+#s-estrategia .inputs h1.q small{display:block;font-size:15px;font-weight:400;letter-spacing:0;margin-top:8px}
+#s-estrategia .money-wrap.big input.bigin{font-size:clamp(44px,9vw,76px)!important;min-height:112px!important;text-align:center;letter-spacing:-.04em;border-width:0 0 2px 0;border-radius:0;background:transparent;padding-left:54px!important;padding-right:20px!important}
+#s-estrategia .money-wrap.big input.bigin:focus{outline:none;border-color:var(--accent)}
+#s-estrategia .money-wrap.big::before{font-size:clamp(20px,3vw,28px);left:6px}
+@media(max-width:480px){#s-estrategia .money-wrap.big::before{left:14px}#s-estrategia .money-wrap.big input.bigin{text-align:left}}
+#s-estrategia label[for=e-valor]{text-align:center;display:block}
+#s-estrategia #e-tipo-chips{justify-content:center}
+#s-estrategia #l-tipo,#s-estrategia label[for=e-modo]{display:block;text-align:center}#s-estrategia .money-wrap.big{margin:8px 0 12px}
