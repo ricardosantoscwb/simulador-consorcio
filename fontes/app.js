@@ -678,7 +678,45 @@ function buscaSimples(R,E,pronto){if(!R)return 'Monte um pedido primeiro: a busc
   return `<div class="busca-cab">Para ${brl(R.need)} líquido · ${brl(R.total)} em cartas${R.embP>0?` · embutido ${pct(R.embP)}`:''}</div>
     <table class="busca-t"><thead><tr><th scope="col">Quantas cotas</th><th scope="col" class="r">De (R$)</th><th scope="col" class="r">Até (R$)</th></tr></thead><tbody>${lista.map(linha).join('')}</tbody></table>
     <div class="hint">Pesquise cada faixa no vendas.seguridade, começando pela primeira, e cole o que achou: o app confere vagas, parcela e lance com as cotas reais. A primeira linha é a de menor bolso pelo histórico dos grupos. Mais cotas é outra divisão, não garantia.</div>${fr}`;}
-function renderCotas(){const E=S.estr;
+/* ===== Cota digitada: o gerente digita na ordem do sistema e o app confere com o banco de grupos ===== */
+function cfLer(){const v=id=>($('#'+id)||{}).value||'',m=id=>{const el=$('#'+id);return el?moneyParse(el.value):null;};
+  const cod=v('cf-cod').replace(/\D/g,''),g=cod?S.grupos.find(x=>codN(x.cod)===codN(cod)):null;
+  return {tipo:CF.tipo||(S.estr&&S.estr.tipo)||'',cod,g,carta:m('cf-carta'),parc:m('cf-parc'),pr:num(v('cf-pr')),vagas:v('cf-vagas')===''?null:num(v('cf-vagas')),ass:v('cf-ass')};}
+const CF={tipo:''};
+function cfConferir(){const box=$('#cf-conf');if(!box)return;const d=cfLer(),g=d.g,L=[];
+  const ln=(ok,t)=>L.push(`<li class="${ok===true?'ok':ok===false?'dif':''}"><b>${ok===true?'Confere':ok===false?'Difere':'Info'}</b> · ${t}</li>`);
+  if(!d.cod){box.innerHTML='';return;}
+  if(!g){box.innerHTML=`<ul><li class="dif"><b>Grupo fora do banco</b> · o grupo ${esc(d.cod)} não está nos grupos do simulador: a conta usa só o que você digitou (prazo e parcela obrigatórios). Atualize os grupos pelo botão do portal.</li></ul>`;return;}
+  const emb=num(g.emax)||0,pr=num(g.pr)>0?num(g.pr):null,ta=num(g.ta),fr=num(g.fr)||0;
+  ln(null,`Grupo ${esc(g.cod)} · ${esc(g.tipo)}${num(g.pt)>0?` · prazo total ${num(g.pt)}`:''} · embutido ${pct(emb)} · lance ${num(g.lmin)>0?pct(num(g.lmin)):'—'} (menor) a ${num(g.lmax)>0?pct(num(g.lmax)):'—'} (maior), média das 3 últimas ${num(g.lmed)>0?pct(num(g.lmed)):'—'}${g.assem?` · assembleia ${fmtD(g.assem)}`:''}`);
+  if(d.tipo&&d.tipo!==g.tipo)ln(false,`o grupo é ${esc(g.tipo)} e você marcou ${esc(d.tipo)}: leve e pesado têm regras diferentes`);
+  if(d.carta>0&&num(g.cmin)>0&&num(g.cmax)>0){const dentro=d.carta>=num(g.cmin)*0.999&&d.carta<=num(g.cmax)*1.001;ln(dentro,dentro?`carta dentro da faixa do grupo (${brl(num(g.cmin))} a ${brl(num(g.cmax))})`:`carta fora da faixa do grupo (${brl(num(g.cmin))} a ${brl(num(g.cmax))})`);}
+  if(d.pr&&pr)ln(d.pr===pr,d.pr===pr?`prazo restante igual ao do portal (${pr} meses)`:`você digitou ${d.pr} meses e o portal diz ${pr}${g.data?` (dados de ${fmtD(g.data)})`:''}: confira no sistema`);
+  const prev=d.carta>0&&ta!=null&&(d.pr||pr)?d.carta*(1+(ta+fr)/100)/(d.pr||pr):null;
+  if(prev&&d.parc>0){const df=(d.parc/prev-1)*100;ln(Math.abs(df)<=1,Math.abs(df)<=1?`parcela confere com o previsto (${brl2(prev)})`:`parcela ${df>0?'acima':'abaixo'} do previsto em ${pct(Math.abs(df))} (previsto ${brl2(prev)}, sem seguro): pode ser seguro, reajuste ou outro plano`);}
+  else if(prev&&!(d.parc>0))ln(null,`sem a parcela, o app usa a prevista: ${brl2(prev)} por mês (sem seguro)`);
+  const sp=statusPortal();if(sp&&sp.velho)ln(false,`teve assembleia em ${fmtD(sp.assemPassada)} depois dos dados do portal: lances podem ter mudado`);
+  box.innerHTML=`<ul>${L.join('')}</ul>`;}
+function renderCotaForm(){const box=$('#cota-form');if(!box)return;
+  if(!CF.tipo)CF.tipo=(S.estr&&S.estr.tipo)||'Imobiliário';
+  $$('#cf-tipo-chips .chip').forEach(b=>{b.classList.toggle('on',CF.tipo===b.dataset.v);b.onclick=()=>{CF.tipo=b.dataset.v;renderCotaForm();cfConferir();};});
+  if(box._cf)return;box._cf=1;
+  ['cf-carta','cf-parc'].forEach(id=>{const el=$('#'+id);el.addEventListener('input',()=>{el.value=moneyLive(el.value);});});
+  ['cf-cod','cf-carta','cf-parc','cf-pr','cf-ass','cf-vagas'].forEach(id=>{const el=$('#'+id);el.addEventListener('input',()=>{cfConferir();if(id==='cf-cod')cfPlace();});el.addEventListener('change',cfConferir);});
+  $('#cf-go').onclick=cfMontar;}
+function cfPlace(){const d=cfLer(),g=d.g;if(!g)return;const pr=$('#cf-pr'),as=$('#cf-ass');if(pr&&num(g.pr)>0)pr.placeholder='portal: '+num(g.pr);if(as&&g.assem)as.title='portal: '+g.assem;if(g.tipo&&CF.tipo!==g.tipo){CF.tipo=g.tipo;renderCotaForm();}}
+function cfMontar(){const E=S.estr,d=cfLer(),g=d.g,msg=$('#cf-msg');const say=t=>{if(msg)msg.textContent=t;toast(t);};
+  if(!E.feito||!(num(E.valor)>0)){say('Informe o valor no Pedido primeiro');return;}
+  if(!d.cod){say('Digite o grupo');return;}if(!(d.carta>0)){say('Digite a carta de crédito');return;}
+  const pr=d.pr||(g&&num(g.pr)>0?num(g.pr):null);if(!(pr>0)){say('Digite o prazo restante');return;}
+  const ta=g?num(g.ta):null,fr=g?(num(g.fr)||0):0,prev=ta!=null?d.carta*(1+(ta+fr)/100)/pr:null,parc=d.parc>0?d.parc:prev;
+  if(!(parc>0)){say('Digite a parcela (o grupo não está no banco)');return;}
+  const tipoG=g?g.tipo:CF.tipo,cod=String(d.cod).padStart(6,'0');
+  const r={cod,gid:codN(cod),desc:(g?g.tipo:CF.tipo)+' · digitada',plano:'Normal',tipo:tipoG==='Imobiliário'?'Imobiliário':'Veículos',carta:d.carta,ass:d.ass||(g&&g.assem)||'',prazo:pr,vagas:d.vagas,vagasTxt:'',part:g&&num(g.np)>0?num(g.np):'',parc,lm:g&&num(g.lmed)>0?num(g.lmed):'',em:new Date().toISOString()};
+  const i=S.cotasL.findIndex(x=>compK(x)===compK(r));if(i>=0)S.cotasL[i]={...S.cotasL[i],...r};else S.cotasL.push(r);
+  save();renderOferta();renderCotas();
+  if(E.bestReal){go('oferta');toast('Proposta montada com a cota digitada');}else say('Cota guardada. Ela sozinha não fecha o valor do pedido: digite outra cota ou veja as faixas.');}
+function renderCotas(){const E=S.estr;renderCotaForm();cfConferir();
   const R=E.feito?roteiro(E):null,tipoT=E.tipo==='Imobiliário'?'imóvel':(E.tipo||'').toLowerCase()||'o tipo do bem';
   const pronto=E.bestReal&&E.busca;
   const velho=(statusPortal()||{}).velho;

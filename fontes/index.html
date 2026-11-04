@@ -76,11 +76,32 @@
   <div class="wiz" style="max-width:760px">
     <div class="card">
       <h1 class="q" style="margin-bottom:6px">Busque no vendas.seguridade</h1>
-      <p class="agora">Agora: pesquise cada faixa no sistema e cole o resultado mais abaixo.</p>
+      <p class="agora">Agora: pesquise cada faixa no sistema e digite a cota que achou (ou cole a lista).</p>
       <div id="c-busca" class="why">Monte um pedido primeiro: a busca aparece aqui.</div>
-      <div class="sec" style="margin-top:8px">Cole o que veio</div>
+      <div class="sec" style="margin-top:8px">A cota que você achou</div>
+      <p class="sub" style="margin:0 0 10px">Digite do jeito que está no sistema. O app confere com o banco de grupos.</p>
+      <div id="cota-form">
+        <div class="f" role="group" aria-labelledby="l-cf-tipo"><span class="f-l" id="l-cf-tipo" style="font-size:13px;color:var(--ink-2);font-weight:500">Modalidade</span><div class="chips" id="cf-tipo-chips"><button type="button" class="chip" data-v="Imobiliário">Imóvel</button><button type="button" class="chip" data-v="Veículos Leves">Veículo leve</button><button type="button" class="chip" data-v="Veículos Pesados">Pesado</button></div></div>
+        <div class="two">
+          <div class="f"><label for="cf-cod">Grupo</label><input id="cf-cod" inputmode="numeric" autocomplete="off" placeholder="ex.: 010018"></div>
+          <div class="f"><label for="cf-vagas">Cotas vagas <span class="hint">opcional</span></label><input id="cf-vagas" type="number" min="0" step="1" inputmode="numeric" placeholder="vazio = não sei"></div>
+        </div>
+        <div class="two">
+          <div class="f"><label for="cf-carta">Carta de crédito</label><div class="money-wrap"><input id="cf-carta" type="text" inputmode="numeric" autocomplete="off" data-money></div></div>
+          <div class="f"><label for="cf-parc">Parcela <span class="hint">da lista, sem seguro</span></label><div class="money-wrap"><input id="cf-parc" type="text" inputmode="numeric" autocomplete="off" data-money></div></div>
+        </div>
+        <div class="two">
+          <div class="f"><label for="cf-pr">Prazo restante, meses</label><input id="cf-pr" type="number" min="1" step="1" inputmode="numeric"></div>
+          <div class="f"><label for="cf-ass">Próxima assembleia <span class="hint">opcional</span></label><input id="cf-ass" type="date"></div>
+        </div>
+        <div id="cf-conf" class="cf-conf" role="status"></div>
+        <div class="wiz-actions" style="margin-top:8px"><span></span><button class="btn primary" id="cf-go" type="button">Montar a proposta com esta cota</button></div>
+        <div class="hint" id="cf-msg" role="status"></div>
+      </div>
+      <details class="adv" style="margin-top:14px"><summary>Ou cole a lista e o detalhamento (vários grupos de uma vez)</summary>
       <div class="f"><label for="c-paste">Lista e detalhamento juntos <span class="hint">do jeito que vieram · sem nome nem CPF do cliente</span></label><textarea id="c-paste" rows="6" placeholder="Cole aqui a lista Grupos Disponíveis e o detalhamento das cotas."></textarea><div class="hint" id="c-msg" role="status"></div></div>
       <div class="wiz-actions" style="margin-top:4px"><button class="btn ghost small" id="c-clear">Limpar o que foi lido</button><button class="btn primary" id="c-save">Ler e montar a proposta</button></div>
+      </details>
     </div>
     <div id="c-lance" style="margin-top:18px"></div>
     <details class="adv" style="margin-top:18px"><summary id="c-lista-t">O que foi lido</summary>
