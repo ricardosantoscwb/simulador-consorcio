@@ -117,6 +117,39 @@ export function financiar({ valor, cetAA, meses, sistema = "price", inpc = 0 }) 
 }
 
 /**
+ * Financiamento do MESMO bem com a MESMA entrada que o consórcio exige (lance do bolso + FGTS).
+ * total = entrada + parcelas. Se a entrada cobre o bem, não há o que financiar.
+ */
+export function finComEntrada({ liq, entrada = 0, cetAA, meses, sistema = "price", inpc = 0 }) {
+  if (!(liq > 0)) return null;
+  const e = Math.min(Math.max(entrada || 0, 0), liq), v = liq - e;
+  if (v <= 0.005) return { entrada: e, valor: 0, parcela1: 0, parcelaN: 0, total: e, custo: 0, vp: e, custoHoje: 0, meses, sistema, semFin: true };
+  const f = financiar({ valor: v, cetAA, meses, sistema, inpc });
+  return f ? { ...f, entrada: e, valor: v, total: e + f.total, vp: e + f.vp } : null;
+}
+
+/** Taxa ao ano de financiamento (mesma entrada, mesmo prazo) que iguala o total pago do consórcio; null se o consórcio sai abaixo até de juro zero ou acima de 300% ao ano. */
+export function taxaEquivalente({ liq, entrada = 0, meses, totalCons, sistema = "price", inpc = 0 }) {
+  const f = (aa) => { const x = finComEntrada({ liq, entrada, cetAA: aa, meses, sistema, inpc }); return x ? x.total : null; };
+  const f0 = f(0), f3 = f(3);
+  if (f0 == null || f3 == null || totalCons <= f0 || totalCons > f3) return null;
+  let lo = 0, hi = 3;
+  for (let i = 0; i < 80; i++) { const m = (lo + hi) / 2; (f(m) < totalCons ? (lo = m) : (hi = m)); }
+  return (lo + hi) / 2;
+}
+
+/**
+ * Ponto de virada (estimativa): entrada máxima, em fração do crédito líquido, até a qual o consórcio ainda custa menos que financiar.
+ * O custo do consórcio (taxas, seguro, INPC) quase não muda com a entrada; o juro do financiamento cai com ela.
+ * Devolve 0 se o consórcio já custa mais mesmo sem entrada, 1 se custa menos mesmo com a entrada toda, null sem dado.
+ */
+export function pontoVirada({ liq, custoCons, meses, cetAA, sistema = "price" }) {
+  const f = financiar({ valor: 1e5, cetAA, meses, sistema });
+  if (!f || !(liq > 0) || !(f.custo > 0)) return null;
+  return Math.min(1, Math.max(0, 1 - custoCons / ((f.custo / 1e5) * liq)));
+}
+
+/**
  * Cenários de lance de um plano: quanto sai do bolso se cada grupo exigir o menor, a média ou o maior lance
  * contemplado na última assembleia (histórico do grupo, não previsão). itens: [{k cotas, carta, emb %, lmin, lmed, lmax %}].
  * Devolve null no nível em que algum grupo não tem o dado.

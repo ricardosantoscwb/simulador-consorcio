@@ -190,7 +190,7 @@ const GLOS={
   media3:['Lance médio (últimas 3)','Média dos lances contemplados nas últimas 3 assembleias do grupo. Menor e maior lance são da última assembleia. É histórico, não previsão; por isso a média pode ficar fora do intervalo menor-maior.'],
   concorrem:['Cotas que concorrem','Cotas do mesmo cliente no mesmo grupo disputam entre si: se todas ofertarem o menor lance, normalmente só uma passa. Regra do app, sem fonte confirmada da Caixa.'],
   ano:['Custo ao ano','Taxa anual que iguala o que o cliente paga ao que recebe, supondo contemplação no mês informado. Serve para comparar com o CET de um financiamento. É estimativa.'],
-  credito:['Custo do crédito','Quanto o cliente paga a mais do que o crédito que recebe, em reais e em % do crédito recebido. Inclui taxa de administração, fundo de reserva, seguro e reajuste pelo INPC, tudo estimado.'],
+  credito:['Custo do crédito','Quanto o cliente paga a mais do que o crédito que recebe, em reais e em % da carta cheia (a taxa de administração e o fundo de reserva incidem sobre a carta inteira, inclusive a parte do lance embutido, que não chega na mão). Inclui seguro e reajuste pelo INPC, tudo estimado.'],
   mes:['Mês da contemplação','Em quantos meses todas as cotas serão contempladas. Escolha o cenário (otimista, factível ou conservador) ou mude o mês de cada um. Muda quanto o cliente paga antes de ter o crédito. É palpite do app, sem garantia de contemplação.']
 };
 const gl=k=>GLOS[k]?`<button type="button" class="gl" data-gl="${k}" aria-label="O que é: ${GLOS[k][0]}">?</button>`:'';
@@ -361,44 +361,70 @@ function custoVar(r,M,sgOn,R,inpc,segFixo){ // custo total das cotas da variante
     man.push([projetar({...c,N:e.Nman}),l.n]);red.push([projetar({...c,N:e.Nred}),l.n]);}
   return {man:somar(man),red:somar(red),ago:agoDe(num(r.linhas[0].g&&r.linhas[0].g.pt),r.linhas[0].prazo)};}
 const mil=v=>v==null||!isFinite(v)?'—':brl(v);
-function opcaoHtml(k,nome,x,melhor){const cc=x.custoCredito;
-  return `<div class="opt${melhor?' win':''}"><div class="oh"><b>${nome}</b>${melhor?'<span class="tag ok">menor custo</span>':''}</div><div class="ot">${mil(x.total)}<small>você paga no total</small></div>
-  <div class="kv"><span>Parcela depois de contemplar</span><b>${brl2(x.parcela1)}</b></div><div class="kv"><span>Quita em</span><b>${x.meses} meses</b></div><div class="kv"><span>Custo do crédito ${gl('credito')}</span><b>${cc>=0?'+ ':'− '}${mil(Math.abs(cc))} · ${pct(x.porReal!=null?(x.porReal-1)*100:null)} do crédito recebido</b></div><div class="kv"><span>Custo ao ano ${gl('ano')}</span><b>${x.custoAno==null?'sem taxa (espera longa)':pct(x.custoAno*100)}</b></div></div>`;}
+function opcaoHtml(k,nome,x,melhor,carta){const cc=x.custoCredito,tg=k==='red'?'paga menos no total':'menor parcela';
+  return `<div class="opt${melhor?' win':''}"><div class="oh"><b>${nome}</b><span class="tag${melhor?' ok':''}">${tg}</span></div><div class="ot">${mil(x.total)}<small>você paga no total</small></div>
+  <div class="kv"><span>Parcela depois de contemplar</span><b>${brl2(x.parcela1)}</b></div><div class="kv"><span>Quita em</span><b>${x.meses} meses</b></div><div class="kv"><span>Custo do crédito ${gl('credito')}</span><b>${cc>=0?'+ ':'− '}${mil(Math.abs(cc))}${carta>0?' · '+pct(cc/carta*100)+' da carta de '+brl(carta):''}</b></div></div>`;}
 function blocoMini(c){const rm=c.red.total<=c.man.total;return `<div class="mini"><div class="kv"><span>Quitar mais rápido · ${c.red.meses} meses · total pago</span><b>${mil(c.red.total)}${rm?' ★':''}</b></div><div class="kv"><span>Parcela mais leve · ${c.man.meses} meses · total pago</span><b>${mil(c.man.total)}${rm?'':' ★'}</b></div><div class="kv"><span>Totais com INPC e seguro estimados</span><b></b></div></div>`;}
-function blocoDecisao(c,I){const {man,red}=c,rm=red.total<=man.total;
+function blocoDecisao(c,I,t){const {man,red}=c,rm=red.total<=man.total;
   const dN=Math.abs(man.total-red.total),dH=Math.abs(man.vp-red.vp);
   const frase=`${rm?'Reduzir o prazo':'Manter o prazo'} custa ${mil(dN)} a menos no total.`+((I.v>0&&dH<dN*0.9)?` Em valores de hoje a diferença é ${mil(dH)}: o resto é o INPC sobre parcelas que ficam mais tempo a pagar.`:'');
-  return `<div class="opts">${opcaoHtml('red','Quitar mais rápido',red,rm)}${opcaoHtml('man','Parcela mais leve',man,!rm)}</div><p class="vd">${frase}</p>`;}
+  return `<div class="opts">${opcaoHtml('red','Quitar mais rápido',red,rm,t&&t.bruto)}${opcaoHtml('man','Parcela mais leve',man,!rm,t&&t.bruto)}</div><p class="vd">${frase}</p>`;}
 /* ===== taxas médias de financiamento por banco (BCB; não é oferta nem CET) ===== */
 const BANCOS_PADRAO=[/SANTANDER/,/BRADESCO S/,/VOTORANTIM/,/ITA[UÚ]/]; // bancos que operam dentro das lojas; Itaú só completa quando falta um (imóvel não tem BV)
 async function puxarTaxas(){if(!temServidor())return;try{const r=await fetch('/api/taxas',{cache:'no-store'});if(!r.ok)return;const j=await r.json();if(!j.ok||!j.veiculo||!j.imovel)return;S.taxas={veiculo:j.veiculo,imovel:j.imovel,velho:!!j.velho};save();renderOferta();renderFinForm();}catch(e){}}
 function refTaxa(k,ref){if(k==='imovel'){const m=/^(\d{4})-(\d{2})$/.exec(ref||'');return m?refMes(ref):'';}const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(ref||'');return m?`semana de ${m[3]}/${m[2]}/${m[1]}`:'';}
 const nomeBanco=b=>/CAIXA ECON/.test(b)?'Caixa':/SANTANDER/.test(b)?'Santander':/ITA[UÚ]/.test(b)?'Itaú':/BRADESCO/.test(b)?'Bradesco':/VOTORANTIM/.test(b)?'BV':/DO BRASIL/.test(b)?'Banco do Brasil':b.toLowerCase().replace(/(^|\s)\S/g,c=>c.toUpperCase());
 function pickBancos(k,T){const sel=(S.bancos||{})[k],chv=x=>x.b+'|'+x.m;if(sel)return T.lista.filter(x=>sel.includes(chv(x)));const pick=[];BANCOS_PADRAO.forEach(re=>{const x=T.lista.find(y=>re.test(y.b));if(x&&!pick.includes(x)&&pick.length<3)pick.push(x);});return pick;}
-function blocoTaxas(E,t,mel,I,sis,F){
-  const k=E.tipo==='Imobiliário'?'imovel':'veiculo',T=S.taxas&&S.taxas[k];if(!T||!T.lista||!T.lista.length||!mel)return '';
+function blocoTaxas(E,t,c,I,sis,F){
+  const k=E.tipo==='Imobiliário'?'imovel':'veiculo',T=S.taxas&&S.taxas[k];if(!T||!T.lista||!T.lista.length||!c)return '';
   const tag=x=>x.m==='TR'?' <span class="hint">+ TR</span>':'';
-  const chv=x=>x.b+'|'+x.m,sel=(S.bancos||{})[k];
-  const pick=pickBancos(k,T);
+  const pick=pickBancos(k,T),inpc=I.v/100;
   const ex=num(String(F.extra||'').replace(',','.'))||0,aas=T.lista.map(x=>x.aa).sort((a,b)=>a-b),md=aas[Math.floor(aas.length/2)];
-  const lin=pick.map(x=>{const f=financiar({valor:t.liq,cetAA:(x.aa+ex)/100,meses:mel.meses,sistema:sis,inpc:I.v/100});if(!f)return '';const d=f.total-mel.total;
-    return `<tr><td>${esc(nomeBanco(x.b))}${tag(x)}</td><td class="num">${pct2(x.aa)}<br><small>média BCB</small></td><td class="num">${sis==='sac'?brl(f.parcela1)+' → '+brl(f.parcelaN):brl(f.parcela1)}</td><td class="num">${brl(f.total)}</td><td class="num">${brl(Math.abs(d))}<br><small>${d>=0?'mais caro':'mais barato'}</small></td></tr>`;}).join('');
+  const grupo=(nome,m)=>{const eq=taxaEquivalente({liq:t.liq,entrada:m.lance,meses:m.meses,totalCons:m.total,sistema:sis,inpc});
+    const lin=pick.map(x=>{const f=finComEntrada({liq:t.liq,entrada:m.lance,cetAA:(x.aa+ex)/100,meses:m.meses,sistema:sis,inpc});if(!f)return '';const d=f.total-m.total;
+      return `<tr><td>${esc(nomeBanco(x.b))}${tag(x)}</td><td class="num">${pct2(x.aa)}<br><small>média BCB</small></td><td class="num">${f.semFin?'—':sis==='sac'?brl(f.parcela1)+' → '+brl(f.parcelaN):brl(f.parcela1)}</td><td class="num">${brl(f.total)}</td><td class="num">${brl(Math.abs(d))}<br><small>${d>=0?'mais caro':'mais barato'}</small></td></tr>`;}).join('');
+    return `<tr><th colspan="5" style="text-align:left">${nome} · ${m.meses} meses · entrada de ${brl(m.lance)} nos dois lados</th></tr><tr class="win"><td><b>Consórcio Caixa</b></td><td class="num">${eq==null?'—':pct(eq*100)}<br><small>equivale a</small></td><td class="num">${brl(m.parcela1)}</td><td class="num">${brl(m.total)}</td><td class="num">—</td></tr>${lin}`;};
   return `<div class="txbc"><p class="ck">Referência de mercado · Banco Central</p>
   <p class="sub">Mercado: de ${pct2(aas[0])} a ${pct2(aas[aas.length-1])} ao ano (mediana ${pct2(md)}), ${aas.length} instituições, ${refTaxa(k,T.ref)}${S.taxas.velho?' · dado antigo':''}.</p>
-  <div class="cmp-wrap"><table class="cmp" style="font-size:12px;margin-top:10px"><thead><tr><th></th><th>Taxa ao ano</th><th>Parcela</th><th>Total pago</th><th>Financiar vs consórcio</th></tr></thead><tbody><tr class="win"><td><b>Consórcio Caixa</b> · ${mel.meses} meses</td><td class="num">${mel.custoAno==null?'—':pct(mel.custoAno*100)}<br><small>custo ao ano</small></td><td class="num">${brl(mel.parcela1)}</td><td class="num">${brl(mel.total)}</td><td class="num">—</td></tr>${lin}</tbody></table></div>
-  <div class="nota">É a taxa média dos contratos de cada banco, não a oferta que o cliente vai receber, e não é o CET (fica de fora tarifa, seguro e IOF: some em Pedido > Avançado ou peça a simulação ao banco). A tabela usa o mesmo crédito líquido e o prazo do melhor consórcio.${k==='imovel'?' Nas linhas "+ TR", a TR vem por cima da taxa.':''} Estimativa para conversar, não proposta.</div></div>`;}
+  <div class="cmp-wrap"><table class="cmp" style="font-size:12px;margin-top:10px"><thead><tr><th></th><th>Taxa ao ano</th><th>Parcela</th><th>Total pago</th><th>Financiar vs consórcio</th></tr></thead><tbody>${grupo('Quitar mais rápido',c.red)}${c.man.meses!==c.red.meses?grupo('Parcela mais leve',c.man):''}</tbody></table></div>
+  <div class="nota">É a taxa média dos contratos de cada banco, não a oferta que o cliente vai receber, e não é o CET (fica de fora tarifa, seguro e IOF: some em Pedido > Avançado ou peça a simulação ao banco). Mesma entrada e mesmo prazo nos dois lados: a entrada do consórcio sai no mês ${mesC()} e a do financiamento, hoje. "Equivale a" é a taxa de financiamento que custaria o mesmo total.${k==='imovel'?' Nas linhas "+ TR", a TR vem por cima da taxa.':''} Estimativa para conversar, não proposta.</div></div>`;}
 /* ===== cenários, caminho do dinheiro e economia (visual pedagógico) ===== */
 function blocoCenarios(E){const k=cenAtual(),pd=mesesPadrao(E.bestN),cm=E.cm||{};
   const bt=CEN.map(([c,nome])=>{const v=Math.floor(num(cm[c]))>=1?Math.floor(num(cm[c])):pd[c];return `<button type="button" class="cenb${c===k?' on':''}" data-cen="${c}" aria-pressed="${c===k}"><b>${nome}</b><small>mês ${v}</small></button>`;}).join('');
   return `<div class="cens" role="group" aria-label="Cenário de contemplação">${bt}</div>`;}
-function dadosCam(E,b,I,R,cli,fgU){const t=b.r.tot,M=mesC(),c=custoVar(b.r,M,E.sg!=='0',R,I.v/100);if(!c)return null;
-  const F=S.fin||{},sis=F.sis||(E.tipo==='Imobiliário'?'sac':'price'),rm=c.red.total<=c.man.total,mel=rm?c.red:c.man,ex=parseBR(F.extra)||0,bancos=[],cet=num(String(F.cet||'').replace(',','.'));
-  if(F.cet!==''&&F.cet!=null&&cet>=0){const f=financiar({valor:t.liq,cetAA:cet/100,meses:mel.meses,sistema:sis,inpc:I.v/100});if(f)bancos.push({n:'CET informado ('+pct(cet)+' ao ano)',aa:cet,total:f.total});}
+function mesDeCen(E,c){const v=Math.floor(num((E.cm||{})[c]));return v>=1?Math.min(240,v):mesesPadrao(E.bestN)[c];}
+function listaFin(E){ // taxas a comparar: o CET informado e os bancos escolhidos (aa = mostrada; tx = usada na conta)
+  const F=S.fin||{},ex=parseBR(F.extra)||0,cet=num(String(F.cet||'').replace(',','.')),L=[];
+  if(F.cet!==''&&F.cet!=null&&cet!=null&&cet>=0)L.push({n:'CET informado ('+pct(cet)+' ao ano)',aa:cet,tx:cet});
   const k=E.tipo==='Imobiliário'?'imovel':'veiculo',T=S.taxas&&S.taxas[k];
-  if(T&&T.lista&&T.lista.length)pickBancos(k,T).forEach(x=>{const f=financiar({valor:t.liq,cetAA:(x.aa+ex)/100,meses:mel.meses,sistema:sis,inpc:I.v/100});if(f)bancos.push({n:nomeBanco(x.b),aa:x.aa,total:f.total,bcb:true});});
+  if(T&&T.lista&&T.lista.length)pickBancos(k,T).forEach(x=>L.push({n:nomeBanco(x.b),aa:x.aa,tx:x.aa+ex,bcb:true}));
+  return L;}
+function varFin(liq,m,L,sis,inpc){ // um prazo do consórcio contra financiar o MESMO bem com a MESMA entrada, no MESMO prazo
+  const ent=m.lance;
+  const fins=L.map(x=>{const f=finComEntrada({liq,entrada:ent,cetAA:x.tx/100,meses:m.meses,sistema:sis,inpc});return f?{...x,f}:null;}).filter(Boolean);
+  const eq=taxaEquivalente({liq,entrada:ent,meses:m.meses,totalCons:m.total,sistema:sis,inpc});
+  const vira=L.length?pontoVirada({liq,custoCons:m.custoCredito,meses:m.meses,cetAA:L[0].tx/100,sistema:sis}):null;
+  return {m,ent,fins,eq,vira,refN:L.length?L[0].n:null};}
+function sorteioDe(b,E,R,I){ // mesmo crédito líquido, sem lance e sem embutido (menos cotas), contemplação no cenário conservador: hipótese, nunca previsão
+  const lin=b.r.linhas,M0=mesDeCen(E,'con'),sgOn=E.sg!=='0';let liqT=0,cartaT=0;
+  lin.forEach(l=>{liqT+=l.credLiq*l.n;cartaT+=l.carta*l.n;});
+  if(!(cartaT>0)||!(liqT>0))return null;
+  const s=liqT/cartaT,it=[];let meses=0;
+  for(const l of lin){
+    if(l.sd0==null||!(l.prazo>0))return null;
+    const seg=l.real?(sgOn?(l.seg||0):0):((l.est&&sgOn)?R*l.sd0:0),parcSS=l.real?(l.parcIni-seg):l.parcIni,ss=l.real?(l.sd0+(l.red||0)):l.sd0,nr=l.prazo-M0,sA=ss-parcSS*M0;
+    if(!(parcSS>0)||nr<1||sA<0)return null;
+    it.push([projetar({M:M0,N:nr,parcPre:parcSS+seg,bolso:0,saldoApos:sA,taxaSeg:(seg>0&&ss>0)?seg/ss:0,credito:l.carta,ago:agoDe(num(l.g&&l.g.pt),l.prazo),inpc:I.v/100}),l.n*s]);
+    meses=Math.max(meses,l.prazo);}
+  return {M:M0,r:somar(it),meses};}
+function dadosCam(E,b,I,R,cli,fgU){const t=b.r.tot,M=mesC(),c=custoVar(b.r,M,E.sg!=='0',R,I.v/100);if(!c)return null;
+  const F=S.fin||{},sis=F.sis||(E.tipo==='Imobiliário'?'sac':'price'),rm=c.red.total<=c.man.total,mel=rm?c.red:c.man,ex=parseBR(F.extra)||0,cet=num(String(F.cet||'').replace(',','.')),inpc=I.v/100;
+  const L=listaFin(E);
+  const vars=[['red','Quitar mais rápido',c.red],['man','Parcela mais leve',c.man]].map(([k,nome,m])=>({k,nome,...varFin(t.liq,m,L,sis,inpc)}));
+  const sr=sorteioDe(b,E,R,I),so=sr?{...sr,fins:L.map(x=>{const f=finComEntrada({liq:t.liq,entrada:0,cetAA:x.tx/100,meses:sr.meses,sistema:sis,inpc});return f?{...x,f}:null;}).filter(Boolean)}:null;
   const saldo=parseBR(F.saldo),parc=parseBR(F.parc),rest=Math.floor(num(F.rest)||0);
   const fe=saldo>0&&parc>0&&rest>=1?{saldo,parc,rest,manter:parc*rest,quitar:parc*Math.min(M,rest)+mel.total,novo:t.liq-saldo}:null;
-  return {_ex:ex,t,c,rm,mel,M,cen:cenAtual(),liq:t.liq,emb:t.emb,lance:cli(t),fgts:fgU(t),bancos,fe,cet,sis};}
+  return {_ex:ex,t,c,rm,mel,M,cen:cenAtual(),liq:t.liq,emb:t.emb,lance:cli(t),fgts:fgU(t),L,vars,so,fe,cet,sis};}
 const _seg=(n,v,c)=>({n,v,c});
 function barraH(segs,max,desc){const ss=segs.filter(x=>x.v>0.005);return `<div class="bar" role="img" aria-label="${esc(desc)}">${ss.map(x=>`<i class="sg ${x.c}" style="width:${(x.v/max*100).toFixed(2)}%"></i>`).join('')}</div><ul class="leg">${ss.map(x=>`<li><i class="sw ${x.c}"></i><span>${esc(x.n)}</span><b>${brl(x.v)}</b></li>`).join('')}</ul>`;}
 function caminhoHtml(D,cine){if(!D)return '';const m=D.mel,fe=D.fe,pre=m.soPre,pos=m.soPos,N=Math.max(0,m.meses-D.M);
@@ -412,36 +438,42 @@ function caminhoHtml(D,cine){if(!D)return '';const m=D.mel,fe=D.fe,pre=m.soPre,p
   <p class="cl">Você devolve e dá</p>${barraH(paga,max,'O que você paga no total: '+brl(m.total))}
   <p class="cl">Você recebe</p>${barraH(recebe,max,'O que você recebe: '+brl(D.liq))}
   <p class="cl">Linha do tempo</p>${tl}${fe?`<p class="cs">Até contemplar você segue pagando ${brl2(fe.parc)} por mês do financiamento atual (custo de esperar).</p>`:''}</section>`;}
-function economiaHtml(D,cine){if(!D)return '';const m=D.mel,ex=D._ex||0;
-  const cons={n:'Consórcio Caixa',quando:`dinheiro no mês ${D.M}`,total:m.total,c:'c-novo',ano:m.custoAno==null?null:m.custoAno*100};
-  const bs=D.bancos.map(x=>({n:x.n,quando:'dinheiro hoje',total:x.total,c:'c-fin',ano:x.aa+ex,bcb:x.bcb}));
-  if(!bs.length&&!D.fe)return '';
-  const items=[cons,...bs],max=Math.max(...items.map(x=>x.total),D.fe?Math.max(D.fe.manter,D.fe.quitar):0)||1;
-  const lin=x=>`<div class="eco"><span>${esc(x.n)}<small>${x.quando}${x.ano!=null?' · custo ao ano <b>'+pct(x.ano)+'</b>':''}${x.bcb?' (média BCB, sem tarifas)':''}</small></span><div class="bar"><i class="sg ${x.c}" style="width:${(x.total/max*100).toFixed(2)}%"></i></div><b>${brl(x.total)}</b></div>`;
-  const carta=D.t.bruto,lanceT=(D.lance||0)+(D.emb||0),pctL=carta>0?lanceT/carta*100:0;
-  const dif=bs.map(x=>{const d=x.total-m.total;return d>=0?`Consórcio: <b>${brl(d)}</b> a menos que ${x.n.startsWith('CET')?'o financiamento com o seu CET':'financiar no '+esc(x.n)}.`:`Financiar no ${esc(x.n)} sai <b>${brl(-d)}</b> mais barato no total.`;});
-  const alto=cons.ano!=null&&bs.some(x=>cons.ano>x.ano);
-  const porque=bs.length?`<p class="cs">${alto?'Aqui o consórcio custa mais ao ano porque ':'O custo do consórcio depende do lance: '}o lance total é <b>${pct(pctL)}</b> da carta (${brl(D.lance)} do bolso${D.emb>0?' + '+brl(D.emb)+' embutido':''}) e sai no começo. Contemplação por sorteio, sem lance, custa bem menos ao ano.</p>`:'';
+function economiaHtml(D,cine){if(!D)return '';
+  if(!D.L.length&&!D.fe)return '';
+  const ent=D.vars[0].m.lance,todos=[...D.vars.flatMap(v=>[v.m.total,...v.fins.map(x=>x.f.total)]),...(D.so?[D.so.r.total,...D.so.fins.map(x=>x.f.total)]:[]),...(D.fe?[D.fe.manter,D.fe.quitar]:[])];
+  const max=Math.max(...todos)||1;
+  const lin=x=>`<div class="eco"><span>${esc(x.n)}<small>${x.quando}</small></span><div class="bar"><i class="sg ${x.c}" style="width:${(x.total/max*100).toFixed(2)}%"></i></div><b>${brl(x.total)}</b></div>`;
+  const menor=(fins,tot)=>{if(!fins.length)return '';const bm=fins.reduce((a,x)=>x.f.total<a.f.total?x:a),d=bm.f.total-tot;return d>=0?`Consórcio: <b>${brl(d)}</b> a menos que financiar no ${esc(bm.n)}.`:`Financiar no ${esc(bm.n)} sai <b>${brl(-d)}</b> mais barato.`;};
+  const bloco=v=>{const m=v.m;
+    const cons={n:'Consórcio Caixa',quando:`dinheiro no mês ${D.M} · parcela ${brl2(D.t.p1)} → ${brl2(m.parcela1)}${v.eq!=null?' · equivale a financiar a '+pct(v.eq*100)+' ao ano':''}`,total:m.total,c:'c-novo'};
+    const bs=v.fins.map(x=>({n:x.n,quando:`dinheiro hoje · parcela ${brl2(x.f.parcela1)} · taxa ${pct(x.aa)} ao ano${x.bcb?' (média BCB, sem tarifas)':''}`,total:x.f.total,c:'c-fin'}));
+    const vira=v.vira==null?'':v.vira<=0.001?` Com ${esc(v.refN)}, neste prazo o consórcio custa mais que financiar mesmo sem entrada.`:v.vira>=0.999?` Com ${esc(v.refN)}, o consórcio custa menos que financiar mesmo com entrada total.`:` Ponto de virada, com ${esc(v.refN)}: o consórcio custa menos se a entrada for de até <b>${pct(v.vira*100)}</b> do crédito (aqui: ${pct(ent/D.liq*100)}). Estimativa.`;
+    return `<p class="cl" style="margin-top:12px">Em ${m.meses} meses · ${v.nome}</p>${[cons,...bs].map(lin).join('')}<p class="cs">${menor(v.fins,m.total)}${vira}</p>`;};
+  const so=D.so?(()=>{const r=D.so.r,custo=r.total-r.creditoM;
+    const cons={n:'Consórcio, se vier por sorteio',quando:`sem lance, mês ${D.so.M} (hipótese) · parcela depois ${brl2(r.parcela1)} · custo ${brl(custo)} (${pct(custo/r.creditoM*100)} do crédito)`,total:r.total,c:'c-novo'};
+    const bs=D.so.fins.map(x=>({n:x.n,quando:`sem entrada · parcela ${brl2(x.f.parcela1)} · taxa ${pct(x.aa)} ao ano`,total:x.f.total,c:'c-fin'}));
+    return `<p class="cl" style="margin-top:14px">Sem lance, sem entrada, em ${D.so.meses} meses (mesmo crédito líquido)</p>${[cons,...bs].map(lin).join('')}<p class="cs">${menor(D.so.fins,r.total)} Sorteio não tem mês garantido: o mês ${D.so.M} é hipótese.</p>`;})():'';
   let fe='';if(D.fe){const f=D.fe,dq=f.quitar-f.manter;fe=`<p class="cl" style="margin-top:14px">Já tem financiamento: manter × quitar com a carta</p>${lin({n:'Manter o financiamento',quando:`${f.rest} parcelas de ${brl2(f.parc)}`,total:f.manter,c:'c-fin'})}${lin({n:'Quitar com a carta',quando:'inclui o que paga até contemplar',total:f.quitar,c:'c-pos'})}<p class="cs">${dq<=0?`Quitar custa <b>${brl(-dq)}</b> a menos no total`:`Quitar custa <b>${brl(dq)}</b> a mais no total`}${f.novo>=0?` e ainda deixa <b>${brl(f.novo)}</b> de dinheiro novo na mão`:` e faltam <b>${brl(-f.novo)}</b> para quitar o saldo com a carta`}.</p>`;}
-  return `<section class="cam eco-s"><p class="ck">Quanto custa cada caminho · mesmo crédito líquido de ${brl(D.liq)}</p>${items.length>1?items.map(lin).join(''):''}${dif.length?`<p class="cs">${dif.join('<br>')}</p>`:''}${porque}${fe}<p class="nota">Financiamento libera o dinheiro hoje; o consórcio, só na contemplação (mês ${D.M}, sem garantia). Taxa média do BCB: estimativa, não é oferta nem o CET (fica de fora tarifa, seguro e IOF).</p></section>`;}
+  return `<section class="cam eco-s"><p class="ck">Quanto custa cada caminho · mesmo crédito líquido de ${brl(D.liq)}, mesma entrada de ${brl(ent)}</p>${D.L.length?D.vars.map(bloco).join(''):''}${D.L.length?so:''}${fe}<p class="nota">A entrada é a mesma nos dois lados: no consórcio sai no mês ${D.M}, no financiamento sai hoje. Financiamento libera o dinheiro hoje; o consórcio, só na contemplação (sem garantia). "Equivale a financiar a" é a taxa que faria o financiamento custar o mesmo total. Taxa média do BCB: estimativa, não é oferta nem o CET (fica de fora tarifa, seguro e IOF). Lance alvo é histórico do grupo, não previsão.</p></section>`;}
 function blocoFin(E,t,c,I,P1){
   const F=S.fin||(S.fin={cet:'',prazo:'',sis:'',extra:''}),cet=num(String(F.cet).replace(',','.'));
-  const sis=F.sis||(E.tipo==='Imobiliário'?'sac':'price'),pz=Math.floor(num(F.prazo)||0);
-  const fin=m=>financiar({valor:t.liq,cetAA:cet/100,meses:m,sistema:sis,inpc:I.v/100});
-  const bx=blocoTaxas(E,t,c.red.total<=c.man.total?c.red:c.man,I,sis,F);
+  const sis=F.sis||(E.tipo==='Imobiliário'?'sac':'price'),pz=Math.floor(num(F.prazo)||0),inpc=I.v/100;
+  const bx=blocoTaxas(E,t,c,I,sis,F);
   let tab='';
   if(F.cet!==''&&cet!=null&&cet>=0){
-    const ca=x=>x.custoAno==null?'—':pct(x.custoAno*100);
+    const fin=m=>finComEntrada({liq:t.liq,entrada:m.lance,cetAA:cet/100,meses:m.meses,sistema:sis,inpc});
+    const eqx=x=>taxaEquivalente({liq:t.liq,entrada:x.lance,meses:x.meses,totalCons:x.total,sistema:sis,inpc});
     const lin=(n,par,tot,cc,ano)=>`<tr><td>${n}</td><td class="num">${par}</td><td class="num">${tot}</td><td class="num">${cc}</td><td class="num">${ano}</td></tr>`;
-    const cons=(n,x)=>lin(`${n} · ${x.meses} meses`,`${brl(P1)} → ${brl(x.parcela1)}`,brl(x.total),'+ '+brl(x.custoCredito),ca(x));
-    const fl=f=>lin(`Financiamento · ${sis==='sac'?'SAC':'Price'} · ${f.meses} meses`,sis==='sac'?`${brl(f.parcela1)} → ${brl(f.parcelaN)}`:brl(f.parcela1),brl(f.total),'+ '+brl(f.custo),pct(cet));
+    const cons=(n,x)=>{const e=eqx(x);return lin(`${n} · ${x.meses} meses`,`${brl(P1)} → ${brl(x.parcela1)}`,brl(x.total),'+ '+brl(x.custoCredito),e==null?'—':pct(e*100));};
+    const fl=(f,nome)=>lin(`${nome||'Financiamento'} · ${sis==='sac'?'SAC':'Price'} · ${f.meses} meses`,f.semFin?'—':sis==='sac'?`${brl(f.parcela1)} → ${brl(f.parcelaN)}`:brl(f.parcela1),brl(f.total),'+ '+brl(f.custo),pct(cet));
     const mais=(a,b)=>{const d=a-b;return `${brl(Math.abs(d))} ${d>0?'mais caro':'mais barato'}`;};
-    const fr=fin(c.red.meses),fm=fin(c.man.meses);let linhas=cons('Consórcio · quitar mais rápido',c.red)+fl(fr)+cons('Consórcio · parcela mais leve',c.man)+fl(fm);
-    let vd=`Em reais, no mesmo prazo, o financiamento sai ${mais(fr.total,c.red.total)} que "quitar mais rápido" e ${mais(fm.total,c.man.total)} que "parcela mais leve". O custo ao ano pesa quando cada real é pago: no consórcio o lance sai todo no começo.`;
-    if(pz>0&&pz!==c.red.meses&&pz!==c.man.meses){const f=fin(pz),melhor=c.red.total<=c.man.total?c.red:c.man;linhas+=fl(f).replace('Financiamento ·','Financiamento (prazo dele) ·');vd+=` No prazo informado, de ${pz} meses, sai ${mais(f.total,melhor.total)} que o melhor consórcio.`;}
-    tab=`<div class="cmp-wrap"><table class="cmp" style="font-size:12px;margin-top:10px"><thead><tr><th></th><th>Parcela</th><th>Total pago</th><th>Custo do crédito</th><th>Custo ao ano</th></tr></thead><tbody>${linhas}</tbody></table></div><p class="vd">${vd}</p>`;}
-  return `<details class="adv no-present" ${tab||bx?'open':''}><summary>Comparar com financiamento</summary><p class="sub" style="margin-top:6px">Mesmo crédito líquido, ${brl(t.liq)}. O CET informado é o do financiamento que o cliente tem em mãos: o simulador não inventa taxa.</p>${bx||tab?'':'<p class="sub">Sem comparação ainda: preencha o CET ou escolha bancos em Pedido > Avançado > Comparar com financiamento.</p>'}${bx}${tab}
-  <div class="nota">Financiamento libera o dinheiro hoje; o consórcio, só na contemplação (mês ${mesC()}, sem garantia), e pede o lance do bolso. "Custo ao ano" do consórcio é a taxa que iguala o que o cliente paga ao que recebe, supondo contemplação no mês estimado; fica sem valor quando a espera é longa demais para existir taxa.</div></details>`;}
+    const fr=fin(c.red),fm=fin(c.man);if(!fr||!fm)return '';
+    let linhas=cons('Consórcio · quitar mais rápido',c.red)+fl(fr)+cons('Consórcio · parcela mais leve',c.man)+fl(fm);
+    let vd=`Com a mesma entrada (${brl(c.red.lance)}) e no mesmo prazo, o financiamento sai ${mais(fr.total,c.red.total)} que "quitar mais rápido" e ${mais(fm.total,c.man.total)} que "parcela mais leve". O consórcio também pede a entrada, só que no mês ${mesC()}.`;
+    if(pz>0&&pz!==c.red.meses&&pz!==c.man.meses){const melhor=c.red.total<=c.man.total?c.red:c.man,f=finComEntrada({liq:t.liq,entrada:melhor.lance,cetAA:cet/100,meses:pz,sistema:sis,inpc});if(f){linhas+=fl(f,'Financiamento (prazo dele)');vd+=` No prazo informado, de ${pz} meses, sai ${mais(f.total,melhor.total)} que o melhor consórcio.`;}}
+    tab=`<div class="cmp-wrap"><table class="cmp" style="font-size:12px;margin-top:10px"><thead><tr><th></th><th>Parcela</th><th>Total pago</th><th>Custo do crédito</th><th>Equivale a (ao ano)</th></tr></thead><tbody>${linhas}</tbody></table></div><p class="vd">${vd}</p>`;}
+  return `<details class="adv no-present" ${tab||bx?'open':''}><summary>Comparar com financiamento</summary><p class="sub" style="margin-top:6px">Mesmo crédito líquido, ${brl(t.liq)}, e a mesma entrada. O CET informado é o do financiamento que o cliente tem em mãos: o simulador não inventa taxa.</p>${bx||tab?'':'<p class="sub">Sem comparação ainda: preencha o CET ou escolha bancos em Pedido > Avançado > Comparar com financiamento.</p>'}${bx}${tab}
+  <div class="nota">Financiamento libera o dinheiro hoje; o consórcio, só na contemplação (mês ${mesC()}, sem garantia). "Equivale a" é a taxa anual de financiamento (mesma entrada, mesmo prazo) que custaria o mesmo total que o consórcio; fica sem valor quando o consórcio sai mais barato que juro zero.</div></details>`;}
 function blocoEspera(r,E,R,I){
   const M0=mesC(),pdn=mesesPadrao(E.bestN),cmE=E.cm||{},mm=k=>Math.floor(num(cmE[k]))>=1?Math.floor(num(cmE[k])):pdn[k],ms=[...new Set([mm('oti'),mm('fac'),mm('con'),M0])].sort((a,b)=>a-b),nomesM=M=>CEN.filter(([k])=>mm(k)===M).map(c=>c[1]).join(' / ');
   const rows=ms.map(M=>{const c=custoVar(r,M,E.sg!=='0',R,I.v/100);return `<tr${M===M0?' style="font-weight:600"':''}><td>Mês ${M}${nomesM(M)?' <span class="tag muted">'+nomesM(M)+'</span>':''}${M===M0?' <span class="tag ok">em uso</span>':''}</td><td class="num">${c?mil(c.red.total):'—'}</td><td class="num">${c?mil(c.man.total):'—'}</td></tr>`;}).join('');
@@ -530,7 +562,7 @@ function cenasCine(d){const m=(v,c)=>`<span class="cn" data-v="${v}" data-c="${c
   const op=(n,x,w)=>`<div class="co${w?' win':''}"><p class="cl">${n}</p><h3 class="cb2">${m(x.total)}</h3><p class="cs">total pago</p><p class="cs">parcela depois: <b>${brl2(x.parcela1)}</b><br>quita em <b>${x.meses} meses</b></p></div>`;
   const dN=Math.abs(d.c.man.total-d.c.red.total);
   cn.push(`<p class="ck">Depois de contemplar, você escolhe</p><div class="cd">${op('Quitar mais rápido',d.c.red,d.rm)}${op('Parcela mais leve',d.c.man,!d.rm)}</div><p class="cs">${d.rm?'Quitar mais rápido':'Parcela mais leve'} custa ${brl(dN)} a menos no total.</p>`);
-  if(d.fn){const fd=d.fn.total-d.mel.total;cn.push(`<p class="ck">Para comparar</p><p class="cl">No mesmo prazo (${d.mel.meses} meses), com o CET que você informou (${pct(d.cet)} ao ano)</p><div class="cd"><div class="co win"><p class="cl">Consórcio</p><h3 class="cb2">${m(d.mel.total)}</h3><p class="cs">total pago</p></div><div class="co"><p class="cl">Financiamento</p><h3 class="cb2">${m(d.fn.total)}</h3><p class="cs">total pago</p></div></div><p class="cs">Em reais, o financiamento sai ${brl(Math.abs(fd))} ${fd>0?'mais caro':'mais barato'}. Financiamento libera o dinheiro hoje; o consórcio só na contemplação, sem garantia de quando.</p>`);}
+  if(d.fns&&d.fns.length){cn.push(`<p class="ck">Para comparar</p><p class="cl">Com a mesma entrada de ${m(d.fns[0].m.lance)} e o CET que você informou (${pct(d.cet)} ao ano)</p>${d.fns.map(x=>{const fd=x.f.total-x.m.total;return `<p class="cs"><b>${x.n}</b> · ${x.m.meses} meses</p><div class="cd"><div class="co${fd>=0?' win':''}"><p class="cl">Consórcio</p><h3 class="cb2">${m(x.m.total)}</h3><p class="cs">total pago</p></div><div class="co${fd<0?' win':''}"><p class="cl">Financiamento</p><h3 class="cb2">${m(x.f.total)}</h3><p class="cs">total pago</p></div></div><p class="cs">Em reais, o financiamento sai ${brl(Math.abs(fd))} ${fd>0?'mais caro':'mais barato'}.</p>`;}).join('')}<p class="cs">Financiamento libera o dinheiro hoje; o consórcio só na contemplação, sem garantia de quando.</p>`);}
   if(d.cam){cn.push(caminhoHtml(d.cam,true));const ec=economiaHtml(d.cam,true);if(ec)cn.push(ec);}
   cn.push(`<p class="ck">O que você precisa saber</p><ul class="cw">${(document.querySelector('#e-out .avisos ul')||{innerHTML:''}).innerHTML}</ul>`);
   return cn;}
@@ -548,12 +580,23 @@ function abrirCine(){if(!_cine){toast('Nada para apresentar ainda: monte o pedid
   let x0=null;o.addEventListener('touchstart',e=>{x0=e.touches[0].clientX;},{passive:true});o.addEventListener('touchend',e=>{if(x0==null)return;const dx=e.changedTouches[0].clientX-x0;x0=null;if(Math.abs(dx)>50)irCine(_cineI+(dx<0?1:-1));});
   document.addEventListener('keydown',_cineKey);irCine(0);o.querySelector('.cnext').focus();}
 let _re=false;
-function renderOferta(){const E=S.estr;const out=$('#e-out');const nAntes=E.bestN;let CAMH='',CENH='',ECOH='',ACOES='';
+function semaforoHtml(D){ // só para o gerente (no-present): não aparece no Apresentar nem na impressão
+  if(!D||!D.L.length)return '';
+  const pe=D.liq>0?D.vars[0].m.lance/D.liq*100:0;
+  const ms=D.vars.map(v=>{if(!v.fins.length)return null;const bm=v.fins.reduce((a,x)=>x.f.total<a.f.total?x:a);return {v,d:bm.f.total-v.m.total};}).filter(Boolean);
+  if(!ms.length)return '';
+  const topo=ms.reduce((a,x)=>x.d>a.d?x:a),ganha=topo.d>0,sorG=!!(D.so&&D.so.fins.length&&D.so.fins.some(x=>x.f.total>D.so.r.total));
+  let cor,tit,txt;
+  if(ganha){cor='ok';tit='Ofertar';txt=`Com a mesma entrada, o consórcio custa ${brl(topo.d)} a menos que financiar em ${topo.v.m.meses} meses.`;}
+  else if(sorG){cor='warn';tit='Ofertar com ressalva';txt=`Com este lance, financiar sai ${brl(-topo.d)} mais barato (${topo.v.m.meses} meses). O consórcio vale se o cliente aceitar esperar o sorteio, não tiver a entrada ou o banco recusar.`;}
+  else{cor='warn';tit='Pensar antes de ofertar';txt=`Com este lance, financiar sai ${brl(-topo.d)} mais barato, e sem lance também não compensa. Só faz sentido se o banco recusar o cliente.`;}
+  return `<div class="gate ${cor} no-present"><b>${tit}</b> · entrada de ${pct(pe)} do crédito. ${txt}<br><small>Precisa do bem rápido? Só com lance arrojado, acima do histórico do grupo, e sem garantia: o cliente topa dar esse lance? Painel só do gerente, não vai para o cliente.</small></div>`;}
+function renderOferta(){const E=S.estr;const out=$('#e-out');const nAntes=E.bestN;let CAMH='',CENH='',ECOH='',ACOES='',SEMH='';
   if(!E.feito||!(num(E.valor)>0)){out.innerHTML=`<div class="card empty">Monte um pedido primeiro. <a href="#" data-go="estrategia">Ir para Pedido</a></div>`;return;}
   const vars=[['Menor lance do bolso','bolso'],['Mais cartas','mais'],['Menor parcela','parcela'],['Sem lance (só sorteio)','semlance'],['Menos cartas','cotas'],['Menor prazo','prazo']].map(([nome,pr])=>[nome,nome,pr]).map(([k,nome,pr])=>({k,nome,r:montarAuto(E,pr)}));
   const I=inpcAtual();const R=E.sg!=='0'?((num(E.sgp)>0?num(E.sgp):segTaxaDe(E.tipo))/100):0;const K=R;const segE=t=>R*(t.sdEst||0),segI=t=>segE(t)+(t.segReal||0);const P1=t=>t.p1+segE(t),P2=t=>t.p2+(t.p1>0?segE(t)*t.p2/t.p1:0);
   const depoisOld=t=>`<table class="cmp" style="margin-top:8px;font-size:12px"><thead><tr><th>Depois de contemplar (mês ${t.mes})</th><th>Parcela</th><th>Por mais</th></tr></thead><tbody><tr><td><b>Manter o prazo</b><br><span style="font-size:11px">parcela mais leve</span></td><td class="num" style="white-space:nowrap">~ ${brl2(P2(t))}</td><td class="num" style="white-space:nowrap">${faixaM(t.pmMin,t.pmMax)} meses</td></tr>${t.mrMax!=null?`<tr><td><b>Reduzir o prazo</b><br><span style="font-size:11px">mesma parcela, quita antes</span></td><td class="num" style="white-space:nowrap">${brl2(P1(t))}</td><td class="num" style="white-space:nowrap">~ ${faixaM(t.mrMin,t.mrMax)} meses</td></tr>`:''}</tbody></table>`;
-  const depois=(t,r,pri)=>{const c=custoVar(r,mesC(),E.sg!=='0',R,I.v/100);return c?(pri?blocoDecisao(c,I):blocoMini(c)):depoisOld(t);};
+  const depois=(t,r,pri)=>{const c=custoVar(r,mesC(),E.sg!=='0',R,I.v/100);return c?(pri?blocoDecisao(c,I,t):blocoMini(c)):depoisOld(t);};
   const extras=(t,r)=>{const c=custoVar(r,mesC(),E.sg!=='0',R,I.v/100);return c?blocoFin(E,t,c,I,P1(t))+blocoEspera(r,E,R,I)+comoCalc(r,E,R,I,c):'';};
   const rec=num(E.rec),p1=num(E.p1),p2=num(E.p2);
   const fg=E.tipo==='Imobiliário'?Math.max(0,num(E.fgts)||0):0;const fgU=t=>Math.min(fg,t.bolso),cli=t=>t.bolso-fgU(t); // FGTS cobre parte do lance livre
@@ -578,11 +621,11 @@ function renderOferta(){const E=S.estr;const out=$('#e-out');const nAntes=E.best
     <details class="adv"><summary>Grupos e cotas</summary><table class="cmp" style="margin-top:4px;font-size:12px"><thead><tr><th>Grupo</th><th>Cotas</th><th>Carta</th><th>Lance bolso</th><th>Últ. assembleia</th></tr></thead><tbody>${r.linhas.map(l=>`<tr><td>${esc(l.g.cod)}<br><span style="font-size:11px;color:var(--muted);font-weight:400">alvo ${l.alvo!=null?pct(l.alvo):'—'} · emb ${pct(l.le)} · TA ${pct(num(l.g.ta))}${l.real?' · vagas '+(l.ultimas?'últimas':l.vagas):''}${l.x&&l.x.plano==='Reduzida'?' · plano reduzido':''}${l.x&&l.x.derivada?' · carta calculada':''}${l.camp?' · <b>código '+esc(l.camp.cod)+'</b>':''}</span></td><td class="num">${l.n}</td><td class="num">${brl(l.carta)}</td><td class="num">${brl(l.bolso*l.n)}</td><td class="num" style="font-size:11px">${l.g.cs!==''&&l.g.cs!=null?`${l.g.cs} sorteio · ${l.g.cl} lance`:'—'}${(t=>t?`<br><span style="color:${t.sobe?'var(--warn)':'var(--muted)'}">${esc(t.txt)}</span>`:'')(tendencia(l.g))}</td></tr>`).join('')}</tbody></table></details>
     <div class="alerts">${probs.map(a=>`<div class="al">Não cabe: ${esc(a)}</div>`).join('')}${(()=>{const s=[...new Set(r.linhas.filter(l=>(tendencia(l.g)||{}).sobe).map(l=>l.g.cod))];return s.length?`<div class="al">Lance subindo no grupo ${esc(s.join(', '))}: o alvo do mês passado pode ficar curto. Histórico, não previsão.</div>`:'';})()}${(()=>{const l=r.linhas.find(l=>l.x&&l.x.plano==='Reduzida');if(!l)return '';const c=S.comp[compK(l.x)]||compDoGrupo(l.x.gid,'Reduzida')||{},n=compDoGrupo(l.x.gid,'Normal');return `<div class="al info">Plano reduzido: parcela menor, mas taxa adm ${pct(c.ta)}${n?` (normal ${pct(n.ta)})`:''}${c.aCobrarPct>0?` e ${pct(c.aCobrarPct)} do crédito fica a cobrar (já somado no saldo de depois; quando é cobrado: sem fonte confirmada)`:''}.</div>`;})()}${informou&&!probs.length?'<div class="al ok">Cabe no bolso</div>':''}${r.linhas.some(l=>l.sobra)?`<div class="al info">Fechou com cota cheia; sobram ${brl(r.linhas.find(l=>l.sobra).sobra)} de crédito.</div>`:''}</div></div>`;};
   const b=best>=0?vars[best]:null;const PR=prontidao(b,I);
-  const DC=b&&!b.r.erro?dadosCam(E,b,I,R,cli,fgU):null;CAMH=caminhoHtml(DC,false);ECOH=economiaHtml(DC,false);CENH=b?blocoCenarios(E):'';ACOES=`<div class="acoes no-present"><div class="ac-res">${b&&!PR.bloq?`<span>Como terminou?</span><button class="chip" data-res="fechou">Fechou</button><button class="chip" data-res="negociando">Negociando</button><button class="chip" data-res="nao_fechou">Não fechou</button>`:''}</div><div class="ac-btns">${b?`<button class="btn" id="o-msg" ${PR.bloq?'disabled':''}>Copiar mensagem</button>`:''}<button class="btn" id="o-share" ${PR.bloq?'disabled':''}>Copiar link</button><button class="btn" id="o-print" ${PR.bloq?'disabled':''}>PDF / Imprimir</button><button class="btn primary" id="o-present" ${PR.bloq?'disabled':''}>Apresentar</button></div></div>`;
+  const DC=b&&!b.r.erro?dadosCam(E,b,I,R,cli,fgU):null;CAMH=caminhoHtml(DC,false);ECOH=economiaHtml(DC,false);SEMH=semaforoHtml(DC);CENH=b?blocoCenarios(E):'';ACOES=`<div class="acoes no-present"><div class="ac-res">${b&&!PR.bloq?`<span>Como terminou?</span><button class="chip" data-res="fechou">Fechou</button><button class="chip" data-res="negociando">Negociando</button><button class="chip" data-res="nao_fechou">Não fechou</button>`:''}</div><div class="ac-btns">${b?`<button class="btn" id="o-msg" ${PR.bloq?'disabled':''}>Copiar mensagem</button>`:''}<button class="btn" id="o-share" ${PR.bloq?'disabled':''}>Copiar link</button><button class="btn" id="o-print" ${PR.bloq?'disabled':''}>PDF / Imprimir</button><button class="btn primary" id="o-present" ${PR.bloq?'disabled':''}>Apresentar</button></div></div>`;
   const C=E.conf||(E.conf={});const confIt=b?[['p1','Parcela até contemplar',P1(b.r.tot)],['liq','Crédito líquido',b.r.tot.liq],['sd','Saldo após o lance (sem seguro)',b.r.tot.sdApos]]:[];
   const confHtml=`<details class="adv no-present" style="margin-top:14px" ${confIt.some(([k])=>num(C[k])>0)?'open':''}><summary>Conferir com a proposta oficial</summary><p class="sub" style="margin-top:6px">Digite os números da proposta do sistema para a oferta recomendada (proposta por cota: some as cotas). Diferença acima de 1% fica marcada. Confere a conta, não substitui a proposta.</p><div class="cmp-wrap"><table class="cmp" style="font-size:12px"><thead><tr><th></th><th>Simulador</th><th>Oficial</th><th>Diferença</th></tr></thead><tbody>${confIt.map(([k,n,v])=>`<tr><td>${n}</td><td class="num">${brl2(v)}</td><td><input data-conf="${k}" type="number" min="0" step="0.01" inputmode="decimal" value="${esc(C[k]??'')}" style="width:105px"></td><td class="num" id="conf-${k}">—</td></tr>`).join('')}</tbody></table></div><div id="conf-res" class="hint" style="margin-top:6px"></div></details>`;
   out.innerHTML=`<div class="hero"><h1>Proposta · ${titulo}</h1><p>${E.nome&&!document.body.classList.contains('present')?esc(E.nome)+' · ':''}${esc(E.tipo||'qualquer tipo')} · ${new Date().toLocaleDateString('pt-BR')} · valores estimativos, a confirmar no sistema oficial${E.ger?' · Gerente: '+esc(E.ger):''}</p></div>
-  ${PR.html}${ACOES}${CENH}${fonteOferta(vars)}${campOferta(vars)}
+  ${PR.html}${SEMH}${ACOES}${CENH}${fonteOferta(vars)}${campOferta(vars)}
   ${b?'':`<div class="concl none" style="margin:0 0 14px">Nenhuma variante fechou${informou?' dentro do bolso':''}. Cole mais grupos, aumente o máximo de cotas ou ajuste o bolso.</div>`}
   ${b?card(b,best,true):''}
   ${b?confHtml:''}
@@ -596,9 +639,9 @@ function renderOferta(){const E=S.estr;const out=$('#e-out');const nAntes=E.best
   $$('[data-cen]').forEach(el=>el.onclick=()=>{E.cen=el.dataset.cen;save();renderOferta();});
   proposta();
   _cine=null;if(b&&!PR.bloq){const t=b.r.tot,c=custoVar(b.r,mesC(),E.sg!=='0',R,I.v/100);if(c){const F=S.fin||{},cet=num(String(F.cet||'').replace(',','.')),rm=c.red.total<=c.man.total,mel=rm?c.red:c.man,sis=F.sis||(E.tipo==='Imobiliário'?'sac':'price');
-    const fn=F.cet!==''&&F.cet!=null&&cet>=0?financiar({valor:t.liq,cetAA:cet/100,meses:mel.meses,sistema:sis,inpc:I.v/100}):null;
-    _cine={liq:t.liq,bruto:t.bruto,cotas:t.cotas,nG:new Set(b.r.linhas.map(l=>l.g.cod)).size,lance:cli(t),fgts:fgU(t),emb:t.emb,p1:P1(t),seg:E.sg!=='0'&&K>0,c,rm,mel,fn,cet,sis,mes:mesC(),tipo:E.tipo||'',ger:E.ger||'',titulo,I:I.fonte?I.v:null,cam:DC};}}
-  if(b&&!PR.bloq){const k=[E.valor,E.tipo,E.max,mesC(),E.modo].join('|'),prim=_ult!==k;_ult=k;if(prim&&_cine)logar('proposta',{tipo:E.tipo,liq:Math.floor(_cine.liq/5000)*5000,lancePct:_cine.liq>0?_cine.lance/_cine.liq*100:null,cotas:_cine.cotas,grupos:_cine.nG,mes:_cine.mes,inpc:I.v,rm:_cine.rm,fin:!!_cine.fn,real:b.r.linhas.some(l=>l.real)});}
+    const fns=F.cet!==''&&F.cet!=null&&cet>=0?[['Quitar mais rápido',c.red],['Parcela mais leve',c.man]].map(([n,mm])=>({n,m:mm,f:finComEntrada({liq:t.liq,entrada:mm.lance,cetAA:cet/100,meses:mm.meses,sistema:sis,inpc:I.v/100})})).filter(x=>x.f):null;
+    _cine={liq:t.liq,bruto:t.bruto,cotas:t.cotas,nG:new Set(b.r.linhas.map(l=>l.g.cod)).size,lance:cli(t),fgts:fgU(t),emb:t.emb,p1:P1(t),seg:E.sg!=='0'&&K>0,c,rm,mel,fns,cet,sis,mes:mesC(),tipo:E.tipo||'',ger:E.ger||'',titulo,I:I.fonte?I.v:null,cam:DC};}}
+  if(b&&!PR.bloq){const k=[E.valor,E.tipo,E.max,mesC(),E.modo].join('|'),prim=_ult!==k;_ult=k;if(prim&&_cine)logar('proposta',{tipo:E.tipo,liq:Math.floor(_cine.liq/5000)*5000,lancePct:_cine.liq>0?_cine.lance/_cine.liq*100:null,cotas:_cine.cotas,grupos:_cine.nG,mes:_cine.mes,inpc:I.v,rm:_cine.rm,fin:!!(_cine.fns&&_cine.fns.length),real:b.r.linhas.some(l=>l.real)});}
   if(b){const updConf=()=>{let n=0,ok1=0;confIt.forEach(([k,,v])=>{const o=num(C[k]),cel=$('#conf-'+k);if(!(o>0)||v==null){cel.textContent='—';return;}n++;const d=v-o,p=Math.abs(d)/o;if(p<=0.01)ok1++;cel.innerHTML=`${d>=0?'+':'−'} ${brl2(Math.abs(d))} <span class="tag ${p<=0.01?'ok':'warn'}">${pct(p*100)}</span>`;});
       $('#conf-res').textContent=n<confIt.length?`Pendente: ${n} de ${confIt.length} valores oficiais.`:ok1===n?`✔ Os ${n} valores batem dentro de 1%.`:`⚠ ${n-ok1} valor(es) com diferença acima de 1%: confira grupo, carta, lance, seguro e mês da contemplação.`;};
     $$('[data-conf]').forEach(el=>el.oninput=()=>{C[el.dataset.conf]=el.value;save();updConf();});updConf();}
