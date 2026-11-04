@@ -29,7 +29,7 @@
 <!-- ================= ESTRATÉGIA ================= -->
 <section class="screen" id="s-estrategia">
   <div class="wiz"><div class="card inputs no-present">
-    <h1 class="q">Quanto o cliente precisa?<small>Valor líquido, o que ele recebe. O app escolhe os grupos e diz onde buscar no vendas.seguridade.</small></h1>
+    <h1 class="q">Quanto o cliente precisa?<small>Digite o valor líquido, o que ele recebe. O app mostra as faixas de carta para pesquisar no vendas.seguridade.</small></h1>
     <div id="e-aviso"></div>
     <div class="f"><label for="e-valor">Valor líquido</label><div class="money-wrap big"><input id="e-valor" class="bigin" type="text" inputmode="numeric" autocomplete="off" data-money></div></div>
     <div class="f so-admin"><label for="e-modo">Esse valor é</label><select id="e-modo"><option value="liquido">Líquido (o que ele recebe)</option><option value="bruto">Bruto (total das cartas)</option></select></div>
@@ -76,6 +76,7 @@
   <div class="wiz" style="max-width:760px">
     <div class="card">
       <h1 class="q" style="margin-bottom:6px">Busque no vendas.seguridade</h1>
+      <p class="agora">Agora: pesquise cada faixa no sistema e cole o resultado mais abaixo.</p>
       <div id="c-busca" class="why">Monte um pedido primeiro: a busca aparece aqui.</div>
       <div class="sec" style="margin-top:8px">Cole o que veio</div>
       <div class="f"><label for="c-paste">Lista e detalhamento juntos <span class="hint">do jeito que vieram · sem nome nem CPF do cliente</span></label><textarea id="c-paste" rows="6" placeholder="Cole aqui a lista Grupos Disponíveis e o detalhamento das cotas."></textarea><div class="hint" id="c-msg" role="status"></div></div>
