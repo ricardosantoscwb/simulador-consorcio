@@ -115,3 +115,17 @@ export function financiar({ valor, cetAA, meses, sistema = "price", inpc = 0 }) 
   parcelas.forEach((v, k) => { vp += emValorDeHoje(v, k + 1, inpc); });
   return { parcelas, parcela1: parcelas[0], parcelaN: parcelas[meses - 1], total, custo: total - valor, vp, custoHoje: vp - valor, meses, custoAno: cetAA, sistema };
 }
+
+/**
+ * Cenários de lance de um plano: quanto sai do bolso se cada grupo exigir o menor, a média ou o maior lance
+ * contemplado na última assembleia (histórico do grupo, não previsão). itens: [{k cotas, carta, emb %, lmin, lmed, lmax %}].
+ * Devolve null no nível em que algum grupo não tem o dado.
+ */
+export function cenariosLance(itens) {
+  const nivel = (campo) => {
+    let s = 0, ok = 0, n = 0;
+    for (const i of itens) { n += i.k; const x = i[campo]; if (!(x > 0)) continue; s += (i.k * Math.max(0, x - (i.emb || 0)) / 100) * i.carta; ok += i.k; }
+    return n > 0 && ok === n ? s : null;
+  };
+  return { ousado: nivel("lmin"), central: nivel("lmed"), conservador: nivel("lmax") };
+}

@@ -88,6 +88,18 @@ r = await dados(new Request(O + "/api/dados")); assert.equal(r.status, 401);
   } finally { globalThis.fetch = redeReal; usarRelogio(null); }
 }
 
+// 7c. Log anônimo: só faixas e categorias; nada que identifique; leitura só do admin
+{
+  const log = (await import("../funcoes/log.mjs")).default;
+  assert.equal((await log(new Request(O + "/api/log", { method: "POST", headers: { "Content-Type": "application/json", Origin: O }, body: "{}" }))).status, 401);
+  let q = await log(post("/api/log", { sid: "abc12345xyz", ev: "proposta", tipo: "Veículos Leves", liq: 131570.21, lancePct: 42.3, cotas: 3, grupos: 1, mes: 2, inpc: 4.29, rm: true, fin: true, real: true, dif: 0.4, nome: "Fulano", email: "x@y.com", cpf: "00000000000" }));
+  assert.equal(q.status, 200);
+  assert.equal((await log(post("/api/log", { sid: "ruim", ev: "proposta" }))).status, 400, "sid inválido");
+  assert.equal((await log(post("/api/log", { sid: "abc12345xyz", ev: "usou", acao: "hackear" }))).status, 400, "ação fora da lista");
+  await log(post("/api/log", { sid: "abc12345xyz", ev: "resultado", res: "fechou" }));
+  assert.equal((await log(get("/api/log"))).status, 403, "quem não é admin não lê o log");
+}
+
 // 8. limite de tentativas: 3 erros matam o código
 r = await codigo(post("/api/codigo", { email: "ricardo@exemplo.com" }), ctx); guarda(r); const cod2 = caixa[1].assunto.match(/(\d{8})/)[1];
 for (let i = 0; i < 3; i++) await entrar(post("/api/entrar", { email: "ricardo@exemplo.com", codigo: "12345678" }), ctx);
@@ -115,6 +127,15 @@ r = await codigo(post("/api/codigo", { email: "maria@exemplo.com" }), ctx); guar
 r = await codigo(post("/api/codigo", { email: "ricardo@exemplo.com" }), ctx); guarda(r); const c4 = caixa.at(-1).assunto.match(/(\d{8})/)[1];
 r = await entrar(post("/api/entrar", { email: "ricardo@exemplo.com", codigo: c4 }), ctx); guarda(r); assert.equal(r.status, 200);
 r = await admin(get("/admin")); assert.equal(r.status, 200); assert.ok((await r.text()).includes("Usuários"));
+{
+  const log = (await import("../funcoes/log.mjs")).default;
+  const rl = await log(get("/api/log")); const lido = await rl.json(); assert.equal(rl.status, 200, JSON.stringify(lido));
+  assert.equal(lido.eventos.length, 2);
+  const p = lido.eventos[0]; assert.equal(p.faixa, "100 a 150 mil"); assert.equal(p.lancePct, 40); assert.equal(p.conf, "bate");
+  const bruto = JSON.stringify(lido); for (const x of ["Fulano", "x@y.com", "00000000000", "131570", "ricardo@exemplo.com"]) assert.ok(!bruto.includes(x), "não grava: " + x);
+  const bx = await log(get("/api/log?baixar=1")); assert.ok((bx.headers.get("content-disposition") || "").includes("attachment"));
+}
+
 r = await admin(post("/api/usuarios", { acao: "incluir", email: "Maria@Exemplo.com", nome: "Maria" })); j = await r.json(); assert.ok(j.ok); assert.ok(j.usuarios.some((u) => u.email === "maria@exemplo.com" && u.ativo && !u.fixo));
 r = await admin(post("/api/usuarios", { acao: "incluir", email: "ricardo@exemplo.com" })); assert.equal(r.status, 400);
 // maria entra

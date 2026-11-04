@@ -31,7 +31,7 @@
     <div id="e-aviso"></div>
     <div class="f"><label for="e-valor">Valor líquido</label><div class="money-wrap big"><input id="e-valor" class="bigin" type="text" inputmode="numeric" autocomplete="off" data-money></div></div>
     <div class="f so-admin"><label for="e-modo">Esse valor é</label><select id="e-modo"><option value="liquido">Líquido (o que ele recebe)</option><option value="bruto">Bruto (total das cartas)</option></select></div>
-    <div class="f" role="group" aria-labelledby="l-tipo"><span class="f-l" id="l-tipo" style="font-size:13px;color:var(--ink-2);font-weight:500">Tipo do bem</span><div class="chips" id="e-tipo-chips"><button type="button" class="chip" data-v="Imobiliário">Imóvel</button><button type="button" class="chip" data-v="Veículos Leves">Veículo leve</button><button type="button" class="chip" data-v="Veículos Pesados">Pesado</button><button type="button" class="chip" data-v="">Qualquer</button></div><select id="e-tipo" hidden><option>Imobiliário</option><option>Veículos Leves</option><option>Veículos Pesados</option><option value="">Qualquer</option></select></div>
+    <div class="f" role="group" aria-labelledby="l-tipo"><span class="f-l" id="l-tipo" style="font-size:13px;color:var(--ink-2);font-weight:500">Tipo do bem</span><div class="chips" id="e-tipo-chips"><button type="button" class="chip" data-v="Imobiliário">Imóvel</button><button type="button" class="chip" data-v="Veículos Leves">Veículo leve</button><button type="button" class="chip" data-v="Veículos Pesados">Pesado</button></div><select id="e-tipo" hidden><option>Imobiliário</option><option>Veículos Leves</option><option>Veículos Pesados</option></select></div>
     <details class="adv" id="e-bolso"><summary><span>Cabe no bolso? <span class="hint">opcional · o app marca o que não cabe</span></span></summary>
     <div class="two">
       <div class="f"><label for="e-rec">Tem para o lance</label><div class="money-wrap"><input id="e-rec" type="text" inputmode="numeric" autocomplete="off" data-money></div></div>
@@ -52,7 +52,7 @@
         <div class="f"><label for="e-red">Plano reduzido</label><select id="e-red"><option value="">Não usar</option><option value="1">Usar, se o detalhamento foi colado</option></select></div>
       </div>
       <div class="two">
-        <div class="f"><label for="e-mc">Contemplação estimada no mês <span class="hint">vazio = 1 · estimativa</span></label><input id="e-mc" type="number" min="1" max="240" step="1" inputmode="numeric" placeholder="1"></div>
+        <div class="f"><label for="e-mc">Contemplação estimada no mês <span class="hint">preencha: sem ele a proposta não fica pronta</span></label><input id="e-mc" type="number" min="1" max="240" step="1" inputmode="numeric" placeholder="1"></div>
         <div class="f"><label for="e-sg">Seguro prestamista</label><select id="e-sg"><option value="">Incluir (como no sistema)</option><option value="0">Não incluir</option></select></div>
       </div>
       <div class="two">
@@ -66,7 +66,7 @@
       <div class="f"><label for="e-nome">Nome do cliente <span class="hint">fica só neste aparelho, não vai no link</span></label><input id="e-nome" autocomplete="off"></div>
     </details>
     <div class="wiz-actions"><span></span><button class="btn primary" id="e-go">Ver onde buscar →</button></div>
-  </div></div>
+  </div><div id="e-lista" class="no-present"></div></div>
 </section>
 
 <!-- ================= BUSCA ================= -->
@@ -79,6 +79,7 @@
       <div class="f"><label for="c-paste">Lista e detalhamento juntos <span class="hint">do jeito que vieram · sem nome nem CPF do cliente</span></label><textarea id="c-paste" rows="6" placeholder="Cole aqui a lista Grupos Disponíveis e o detalhamento das cotas."></textarea><div class="hint" id="c-msg" role="status"></div></div>
       <div class="wiz-actions" style="margin-top:4px"><button class="btn ghost small" id="c-clear">Limpar o que foi lido</button><button class="btn primary" id="c-save">Ler e montar a proposta</button></div>
     </div>
+    <div id="c-lance" style="margin-top:18px"></div>
     <details class="adv" style="margin-top:18px"><summary id="c-lista-t">O que foi lido</summary>
       <p class="sub">Parcela e carta são as do sistema. Guardado só neste aparelho. Confirme vagas e parcela no sistema antes de vender.</p>
       <div id="c-lista" class="empty">Nada colado ainda.</div>
