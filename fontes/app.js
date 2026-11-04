@@ -354,15 +354,15 @@ function blocoDecisao(c,I){const {man,red}=c,rm=red.total<=man.total;
   const frase=`${rm?'Reduzir o prazo':'Manter o prazo'} custa ${mil(dN)} a menos no total.`+((I.v>0&&dH<dN*0.9)?` Em valores de hoje a diferença é ${mil(dH)}: o resto é o INPC sobre parcelas que ficam mais tempo a pagar.`:'');
   return `<div class="opts">${opcaoHtml('red','Quitar mais rápido',red,rm)}${opcaoHtml('man','Parcela mais leve',man,!rm)}</div><p class="vd">${frase}</p>`;}
 /* ===== taxas médias de financiamento por banco (BCB; não é oferta nem CET) ===== */
-const BANCOS_PADRAO=[/CAIXA ECON/,/SANTANDER/,/ITA[UÚ]/];
+const BANCOS_PADRAO=[/SANTANDER/,/BRADESCO S/,/VOTORANTIM/,/ITA[UÚ]/]; // bancos que operam dentro das lojas; Itaú só completa quando falta um (imóvel não tem BV)
 async function puxarTaxas(){if(!temServidor())return;try{const r=await fetch('/api/taxas',{cache:'no-store'});if(!r.ok)return;const j=await r.json();if(!j.ok||!j.veiculo||!j.imovel)return;S.taxas={veiculo:j.veiculo,imovel:j.imovel,velho:!!j.velho};save();renderOferta();}catch(e){}}
 function refTaxa(k,ref){if(k==='imovel'){const m=/^(\d{4})-(\d{2})$/.exec(ref||'');return m?refMes(ref):'';}const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(ref||'');return m?`semana de ${m[3]}/${m[2]}/${m[1]}`:'';}
-const nomeBanco=b=>/CAIXA ECON/.test(b)?'Caixa':/SANTANDER/.test(b)?'Santander':/ITA[UÚ]/.test(b)?'Itaú':/BRADESCO/.test(b)?'Bradesco':/DO BRASIL/.test(b)?'Banco do Brasil':b.toLowerCase().replace(/(^|\s)\S/g,c=>c.toUpperCase());
+const nomeBanco=b=>/CAIXA ECON/.test(b)?'Caixa':/SANTANDER/.test(b)?'Santander':/ITA[UÚ]/.test(b)?'Itaú':/BRADESCO/.test(b)?'Bradesco':/VOTORANTIM/.test(b)?'BV':/DO BRASIL/.test(b)?'Banco do Brasil':b.toLowerCase().replace(/(^|\s)\S/g,c=>c.toUpperCase());
 function blocoTaxas(E,t,mel,I,sis,F){
   const k=E.tipo==='Imobiliário'?'imovel':'veiculo',T=S.taxas&&S.taxas[k];if(!T||!T.lista||!T.lista.length||!mel)return '';
   const tag=x=>x.m==='TR'?' <span class="hint">+ TR</span>':'';
   const chv=x=>x.b+'|'+x.m,sel=(S.bancos||{})[k];
-  let pick;if(sel)pick=T.lista.filter(x=>sel.includes(chv(x)));else{pick=[];BANCOS_PADRAO.forEach(re=>{const x=T.lista.find(y=>re.test(y.b));if(x&&!pick.includes(x))pick.push(x);});}
+  let pick;if(sel)pick=T.lista.filter(x=>sel.includes(chv(x)));else{pick=[];BANCOS_PADRAO.forEach(re=>{const x=T.lista.find(y=>re.test(y.b));if(x&&!pick.includes(x)&&pick.length<3)pick.push(x);});}
   const ex=num(String(F.extra||'').replace(',','.'))||0,aas=T.lista.map(x=>x.aa).sort((a,b)=>a-b),md=aas[Math.floor(aas.length/2)];
   const lin=pick.map(x=>{const f=financiar({valor:t.liq,cetAA:(x.aa+ex)/100,meses:mel.meses,sistema:sis,inpc:I.v/100});if(!f)return '';const d=f.total-mel.total;
     return `<tr><td>${esc(nomeBanco(x.b))}${tag(x)}</td><td class="num">${pct2(x.aa)}<br><small>média BCB</small></td><td class="num">${sis==='sac'?brl(f.parcela1)+' → '+brl(f.parcelaN):brl(f.parcela1)}</td><td class="num">${brl(f.total)}</td><td class="num">${brl(Math.abs(d))}<br><small>${d>=0?'mais caro':'mais barato'}</small></td><td><button type="button" class="btn-mini" data-usar="${x.aa}" title="Usar esta taxa como CET">usar</button></td></tr>`;}).join('');
