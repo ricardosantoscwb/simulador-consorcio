@@ -88,11 +88,11 @@ const clamp=(v,g)=>Math.min(Math.max(v,num(g.cmin)||0),num(g.cmax)||v);
 const PASSOS=[['estrategia','','Pedido'],['cotas','busca','Buscar'],['cotas','cota','Cota'],['cotas','lance','Lance'],['oferta','','Proposta']];
 const subAtual=()=>{const v=S.estr&&S.estr.sub;return ['busca','cota','lance'].includes(v)?v:'busca';};
 function passoAtual(){const on=document.querySelector('.screen.on');const id=on?on.id.slice(2):'';const i=PASSOS.findIndex(p=>p[0]===id&&(id!=='cotas'||p[1]===subAtual()));return i<0?0:i+1;}
-function passo(n){const p=PASSOS[n-1];if(!p)return;if(p[1]){S.estr.sub=p[1];save();}go(p[0]);}
+function passo(n){{const tt0=$('#toast');if(tt0)tt0.classList.remove('on');}const p=PASSOS[n-1];if(!p)return;if(p[1]){S.estr.sub=p[1];save();}go(p[0]);}
 function proximoCota(){const cf=($('#cf-carta')||{}).value||'',pt=(($('#c-paste')||{}).value||'').trim();if(cf.trim())$('#cf-go').click();else if(pt)$('#c-save').click();else if(S.estr.bestReal)passo(4);else toast('Digite a cota que achou ou cole a lista');}
 const RODAPE={1:[null,'Buscar as cotas →',()=>$('#e-go').click()],2:['← Pedido','Já achei a cota →',()=>passo(3)],3:['← Buscar','Próximo: lance →',proximoCota],4:['← Cota','Ver a proposta →',()=>passo(5)],5:['← Lance','Apresentar',()=>{const o=$('#o-present');if(o&&!o.disabled)o.click();}]};
 const DICA={1:'Quanto o cliente precisa receber',2:'Pesquise cada faixa no sistema',3:'Digite a cota que achou',4:'Escolha o lance e o prestamista',5:'Resumo, comparação e conferência'};
-function trilha(){const t=$('#trilha'),r=$('#rodape');if(!t||!r)return;const n=passoAtual();document.body.classList.toggle('passos',n>0);
+function trilha(){const t=$('#trilha'),r=$('#rodape');if(typeof sgChips==='function')sgChips();if(!t||!r)return;const n=passoAtual();document.body.classList.toggle('passos',n>0);
   $$('#s-cotas [data-sub]').forEach(el=>{el.hidden=el.dataset.sub!==subAtual();});
   if(!n){t.innerHTML='';r.innerHTML='';return;}
   t.innerHTML=`<ol>${PASSOS.map((p,i)=>`<li><button type="button" aria-label="Passo ${i+1}: ${p[2]}" data-passo="${i+1}" class="${i+1===n?'on':i+1<n?'ok':''}" ${i+1===n?'aria-current="step"':''}><b>${i+1<n?'✓':i+1}</b><span>${p[2]}</span></button></li>`).join('')}</ol><p class="dica">Passo ${n} de 5 · ${DICA[n]}</p>`;
@@ -378,7 +378,7 @@ function blocoMini(c){const rm=c.red.total<=c.man.total;return `<div class="mini
 function blocoDecisao(c,I,t){const {man,red}=c,rm=red.total<=man.total;
   const dN=Math.abs(man.total-red.total),dH=Math.abs(man.vp-red.vp);
   const frase=`${rm?'Reduzir o prazo':'Manter o prazo'} custa ${mil(dN)} a menos no total.`+((I.v>0&&dH<dN*0.9)?` Em valores de hoje a diferença é ${mil(dH)}: o resto é o INPC sobre parcelas que ficam mais tempo a pagar.`:'');
-  return `<div class="opts">${opcaoHtml('red','Quitar mais rápido',red,rm,t&&t.bruto)}${opcaoHtml('man','Parcela mais leve',man,!rm,t&&t.bruto)}</div><p class="vd">${frase}</p>`;}
+  return `<div class="opts">${opcaoHtml('red','Quitar mais rápido',red,rm,t&&t.bruto)}${opcaoHtml('man','Parcela mais leve',man,!rm,t&&t.bruto)}</div>${dN<0.5?'':`<p class="vd">${frase}</p>`}`;}
 /* ===== taxas médias de financiamento por banco (BCB; não é oferta nem CET) ===== */
 const BANCOS_PADRAO=[/SANTANDER/,/BRADESCO S/,/VOTORANTIM/,/ITA[UÚ]/]; // bancos que operam dentro das lojas; Itaú só completa quando falta um (imóvel não tem BV)
 async function puxarTaxas(){if(!temServidor())return;try{const r=await fetch('/api/taxas',{cache:'no-store'});if(!r.ok)return;const j=await r.json();if(!j.ok||!j.veiculo||!j.imovel)return;S.taxas={veiculo:j.veiculo,imovel:j.imovel,velho:!!j.velho};save();renderOferta();renderFinForm();}catch(e){}}
@@ -411,10 +411,10 @@ const condsHtml=(E,b)=>{const c=E.campL||{},ec=econCamp(b);
   const sw=(k,on,bloq)=>`<button type="button" class="sw${on?' on':''}${bloq?' bloq':''}" data-tg="${k}" role="switch" aria-checked="${on}" aria-label="${TG[k].n}"><i></i><b>${on?'LIGADO':'DESLIGADO'}</b></button>`;
   const linha=(k,tit,efeito,extra)=>{const f=TG[k].falta?TG[k].falta(E):'',on=TG[k].on(E)&&!f;return `<div class="cd-row${on?' on':''}"><div class="cd-t"><b>${tit}</b><span>${efeito(on,f)}</span>${extra||''}</div>${sw(k,on,!!f&&k!=='dsc')}</div>`;};
   const sg=linha('sg','Prestamista (seguro)',(on)=>on?'Incluído: a parcela já vem com o seguro.':'Fora da conta: a parcela vem sem seguro.');
-  const campExtra=`<div class="cd-in"><label for="cm-desc">Desconto na taxa adm.</label><input id="cm-desc" inputmode="decimal" placeholder="ex.: 20" value="${c.desc!=null?String(c.desc).replace('.',','):''}" aria-describedby="cm-nota"><span>%</span>${c.desc!=null?'<button type="button" class="btn ghost" id="cm-rm">Remover</button>':''}</div><small id="cm-nota" class="cd-nota">Digite o % que o banco lançou. Fica como “informado pelo gerente, a confirmar”.</small>`;
+  const campExtra=`<div class="cd-in"><label for="cm-desc">Desconto na taxa adm.</label><input id="cm-desc" inputmode="decimal" placeholder="%" value="${c.desc!=null?String(c.desc).replace('.',','):''}" aria-describedby="cm-nota"><span>%</span>${c.desc!=null?'<button type="button" class="btn ghost" id="cm-rm">Remover</button>':''}</div><small id="cm-nota" class="cd-nota">% que o banco lançou (a confirmar).</small>`;
   const camp=linha('dsc','Campanha do banco',(on,f)=>on&&c.desc!=null?`−${String(c.desc).replace('.',',')}% na taxa adm.${ec>0.5?` Economiza <b>${brl(ec)}</b> no plano.`:''}`:'Sem desconto aplicado.',campExtra);
   const red=(existeReduzida(E)||E.red==='1')?linha('red','Parcela reduzida',(on,f)=>f?'Falta o detalhamento da cota reduzida (passo 3).':on?'Parcela menor agora; parte do crédito fica a cobrar.':'Plano normal.'):'';
-  return `<div class="conds no-present" role="group" aria-label="Condições da simulação"><div class="cd-h">Condições da simulação <span>ligue ou desligue e veja o número mudar</span></div>${sg}${camp}${red}</div>`;};
+  return `<div class="conds no-present" role="group" aria-label="Condições da simulação"><div class="cd-h">Condições da simulação</div>${sg}${camp}${red}</div>`;};
 const econCamp=b=>b&&b.r&&!b.r.erro?b.r.linhas.reduce((x,l)=>x+(l.camp&&l.real&&l.red>0?l.red*(l.n||1):0),0):0;
 function blocoCenarios(E,b){const k=cenAtual(),pd=mesesPadrao(E.bestN),cm=E.cm||{};
   const bt=CEN.map(([c,nome])=>{const v=Math.floor(num(cm[c]))>=1?Math.floor(num(cm[c])):pd[c];return `<button type="button" class="cenb${c===k?' on':''}" data-cen="${c}" aria-pressed="${c===k}"><b>${nome}</b><small>mês ${v}</small></button>`;}).join('');
@@ -496,9 +496,9 @@ function blocoOutroBanco(E,t){
   return `<div class="ob no-present"><b>O cliente trouxe a simulação de outro banco?</b><p class="sub">Copie 3 números da tela do banco. O simulador calcula a taxa sozinho.</p>
   <div class="three">${inp('valor','Valor financiado, R$','ex.: '+Math.round(t.liq),'decimal')}${inp('prazo','Prazo, meses','ex.: 60','numeric')}${inp('parc','1ª parcela, R$','ex.: 2800','decimal')}</div>
   <div class="f"><label for="ob-sis">A parcela do banco</label><select id="ob-sis" data-ob="sis"><option value="price"${sis==='price'?' selected':''}>Fica igual todo mês (Price)</option><option value="sac"${sis==='sac'?' selected':''}>Vai caindo (SAC)</option></select></div>${res}
-  <details class="adv"><summary>Já sei o CET: digitar direto</summary><div class="f"><label for="cet-in">CET do financiamento, % ao ano</label><input id="cet-in" inputmode="decimal" placeholder="ex.: 12,5" value="${esc(String(F.cet||''))}"></div></details>
-  <details class="adv"><summary>Comparar com a taxa média dos bancos (Banco Central)</summary><div class="chks">${bancosHtml(E)}</div></details>
-  <details class="adv"><summary>Cliente já tem financiamento? Manter × quitar</summary><div class="three">${['saldo','Saldo devedor, R$','ex.: 120000','decimal','parc','Parcela atual, R$','ex.: 2800','decimal','rest','Meses que faltam','ex.: 48','numeric'].reduce((a,_,i,r)=>i%4?a:a+`<div class="f"><label for="ff-${r[i]}">${r[i+1]}</label><input id="ff-${r[i]}" data-ff="${r[i]}" inputmode="${r[i+3]}" placeholder="${r[i+2]}" value="${esc(String(F[r[i]]??''))}"></div>`,'')}</div></details></div>`;}
+  <details class="adv"><summary>Outras formas de comparar</summary>  <p class="ob-h">Já sei o CET: digitar direto</p><div class="f"><label for="cet-in">CET do financiamento, % ao ano</label><input id="cet-in" inputmode="decimal" placeholder="ex.: 12,5" value="${esc(String(F.cet||''))}"></div>
+  <p class="ob-h">Comparar com a taxa média dos bancos (Banco Central)</p><div class="chks">${bancosHtml(E)}</div>
+  <p class="ob-h">Cliente já tem financiamento? Manter × quitar</p><div class="three">${['saldo','Saldo devedor, R$','ex.: 120000','decimal','parc','Parcela atual, R$','ex.: 2800','decimal','rest','Meses que faltam','ex.: 48','numeric'].reduce((a,_,i,r)=>i%4?a:a+`<div class="f"><label for="ff-${r[i]}">${r[i+1]}</label><input id="ff-${r[i]}" data-ff="${r[i]}" inputmode="${r[i+3]}" placeholder="${r[i+2]}" value="${esc(String(F[r[i]]??''))}"></div>`,'')}</div></details></div>`;}
 function blocoFin(E,t,c,I,P1){
   const F=S.fin||(S.fin={cet:'',prazo:'',sis:'',extra:''}),cet=num(String(F.cet).replace(',','.'));
   const sis=F.sis||(E.tipo==='Imobiliário'?'sac':'price'),pz=Math.floor(num(F.prazo)||0),inpc=I.v/100;
@@ -516,8 +516,7 @@ function blocoFin(E,t,c,I,P1){
     let vd=`Com a mesma entrada (${brl(c.red.lance)}) e no mesmo prazo, o financiamento sai ${mais(fr.total,c.red.total)} que "quitar mais rápido" e ${mais(fm.total,c.man.total)} que "parcela mais leve". O consórcio também pede a entrada, só que no mês ${mesC()}.`;
     if(pz>0&&pz!==c.red.meses&&pz!==c.man.meses){const melhor=c.red.total<=c.man.total?c.red:c.man,f=finComEntrada({liq:t.liq,entrada:melhor.lance,cetAA:cet/100,meses:pz,sistema:sis,inpc});if(f){linhas+=fl(f,'Financiamento (prazo dele)');vd+=` No prazo informado, de ${pz} meses, sai ${mais(f.total,melhor.total)} que o melhor consórcio.`;}}
     tab=`<div class="cmp-wrap"><table class="cmp" style="font-size:12px;margin-top:10px"><thead><tr><th></th><th>Parcela</th><th>Total pago</th><th>Custo do crédito</th><th>Equivale a (ao ano)</th></tr></thead><tbody>${linhas}</tbody></table></div><p class="vd">${vd}</p>`;}
-  return `<details class="adv no-present"  open><summary>Comparar com financiamento</summary><p class="sub" style="margin-top:6px">Mesmo crédito líquido, ${brl(t.liq)}, e a mesma entrada. O CET informado é o do financiamento que o cliente tem em mãos: o simulador não inventa taxa.</p>${blocoOutroBanco(E,t)}${bx||tab?'':'<p class="sub">Sem comparação ainda: preencha os 3 números do outro banco acima.</p>'}${bx}${tab}
-  <div class="nota">Financiamento libera o dinheiro hoje; o consórcio, só na contemplação (mês ${mesC()}, sem garantia). "Equivale a" é a taxa anual de financiamento (mesma entrada, mesmo prazo) que custaria o mesmo total que o consórcio; fica sem valor quando o consórcio sai mais barato que juro zero.</div></details>`;}
+  return `<details class="adv no-present"  open><summary>Comparar com financiamento</summary>${blocoOutroBanco(E,t)}${bx||tab?`<details class="adv pdet"><summary>Tabelas da comparação com financiamento</summary>${bx}${tab}<div class="nota">Financiamento libera o dinheiro hoje; o consórcio, só na contemplação (mês ${mesC()}, sem garantia). "Equivale a" é a taxa anual de financiamento (mesma entrada, mesmo prazo) que custaria o mesmo total que o consórcio; fica sem valor quando o consórcio sai mais barato que juro zero.</div></details>`:'<p class="sub">Sem comparação ainda: preencha os 3 números do outro banco acima.</p>'}</details>`;}
 function limVence(E,t,c,I){ // CET (ao ano) acima do qual o consórcio sai mais barato que financiar, nas duas formas de pagar depois; {sempre:true} se vence até com juro zero
   const F=S.fin||{},sis=F.sis||(E.tipo==='Imobiliário'?'sac':'price'),inpc=I.v/100;
   const tot0=m=>{const f=finComEntrada({liq:t.liq,entrada:m.lance,cetAA:0,meses:m.meses,sistema:sis,inpc});return f?f.total:null;};
@@ -528,9 +527,10 @@ function blocoVence(E,t,c,I,r,R){ // abre a aba Comparar: onde o consórcio ganh
   const F=S.fin||{},sis=F.sis||(E.tipo==='Imobiliário'?'sac':'price'),inpc=I.v/100,cetI=F.cet!==''&&F.cet!=null?num(String(F.cet).replace(',','.')):null;
   const {a,b}=limVence(E,t,c,I);if(!a&&!b)return '';
   const f=(x,n)=>x?(x.sempre?`<li><b>${n}:</b> sai mais barato que financiar mesmo com juro zero.</li>`:`<li><b>${n}:</b> sai mais barato que um financiamento com CET acima de <b>${pct(x.cet)} ao ano</b>.</li>`):'';
-  let lis=f(a,'Quitar mais rápido')+f(b,'Parcela mais leve'),perde='';
+  const igual=a&&b&&!a.sempre&&!b.sempre&&Math.abs(a.cet-b.cet)<0.05,igualS=a&&b&&a.sempre&&b.sempre;
+  let lis=(igual||igualS)?f(a,'Quitar mais rápido ou parcela mais leve'):f(a,'Quitar mais rápido')+f(b,'Parcela mais leve'),perde='';
   const pf=[[a,'quitar mais rápido'],[b,'parcela mais leve']].filter(x=>x[0]&&!x[0].sempre).map(x=>`${x[1]} perde abaixo de ${pct(x[0].cet)}`);
-  if(pf.length)perde=`Onde perde (CET ao ano do financiamento): ${pf.join('; ')}`;
+  if(pf.length)perde=igual?`Onde perde: financiamento com CET abaixo de ${pct(a.cet)} ao ano`:`Onde perde (CET ao ano do financiamento): ${pf.join('; ')}`;
   if(cetI!=null&&cetI>=0){
     const fr=finComEntrada({liq:t.liq,entrada:c.red.lance,cetAA:cetI/100,meses:c.red.meses,sistema:sis,inpc}),fm=finComEntrada({liq:t.liq,entrada:c.man.lance,cetAA:cetI/100,meses:c.man.meses,sistema:sis,inpc});
     if(fr&&fm){const d1=fr.total-c.red.total,d2=fm.total-c.man.total,mel=Math.max(d1,d2);
@@ -680,7 +680,7 @@ function renderOferta(){const E=S.estr;const out=$('#e-out');const nAntes=E.best
     <div ${principal?'data-aba="resumo"':''}>${principal?`<div class="bignum lance">${brl(t.liq)}<small>você recebe de crédito líquido</small></div>`:''}<div class="bignum${principal?' p2':''}">${principal?'':''}${brl(cli(t))}<small>de lance do bolso ${gl('bolso')}${fgU(t)>0?' · + '+brl(fgU(t))+' do FGTS':''}${t.emb>0?' · + '+brl(t.emb)+' embutido ':''}${t.emb>0?gl('embutido'):''}</small></div>
     <div class="bignum p2">${brl2(P1(t))}<small>por mês até contemplar${E.sg!=='0'&&K>0?' (com seguro)':''}</small></div>
     ${depois(t,r,principal)}</div>
-    <div ${principal?'data-aba="comparar"':''}>${principal?vence(t,r)+CAMH+ECOH:''}</div>
+    <div ${principal?'data-aba="comparar"':''}>${principal?vence(t,r)+`<details class="adv pdet no-present"><summary>Para onde vai o dinheiro e quanto custa cada caminho (detalhe)</summary>${CAMH}${ECOH}</details>`:''}</div>
     <div ${principal?'data-aba="conferir"':''}>${bilhetes}</div><div ${principal?'data-aba="resumo"':''}>${principal?passo(r):''}</div>
     ${principal?extras(t,r):''}
     <details class="adv" ${principal?'data-aba="conferir"':''}><summary>Grupos e cotas</summary><table class="cmp" style="margin-top:4px;font-size:12px"><thead><tr><th>Grupo</th><th>Cotas</th><th>Carta</th><th>Lance bolso</th><th>Últ. assembleia</th></tr></thead><tbody>${r.linhas.map(l=>`<tr><td>${esc(l.g.cod)}<br><span style="font-size:11px;color:var(--muted);font-weight:400">alvo ${l.alvo!=null?pct(l.alvo):'—'} · emb ${pct(l.le)} · TA ${pct(num(l.g.ta))}${l.real?' · vagas '+(l.ultimas?'últimas':l.vagas):''}${l.x&&l.x.plano==='Reduzida'?' · plano reduzido':''}${l.x&&l.x.derivada?' · carta calculada':''}${l.camp?' · <b>código '+esc(l.camp.cod)+'</b>':''}</span></td><td class="num">${l.n}</td><td class="num">${brl(l.carta)}</td><td class="num">${brl(l.bolso*l.n)}</td><td class="num" style="font-size:11px">${l.g.cs!==''&&l.g.cs!=null?`${l.g.cs} sorteio · ${l.g.cl} lance`:'—'}${(t=>t?`<br><span style="color:${t.sobe?'var(--warn)':'var(--muted)'}">${esc(t.txt)}</span>`:'')(tendencia(l.g))}</td></tr>`).join('')}</tbody></table></details>
@@ -692,10 +692,9 @@ function renderOferta(){const E=S.estr;const out=$('#e-out');const nAntes=E.best
   const C=E.conf||(E.conf={});const confIt=b?[['p1','Parcela até contemplar',P1(b.r.tot)],['liq','Crédito líquido',b.r.tot.liq],['sd','Saldo após o lance (sem seguro)',b.r.tot.sdApos]]:[];
   const confHtml=`<details class="adv no-present" style="margin-top:14px" ${confIt.some(([k])=>num(C[k])>0)?'open':''}><summary>Conferir com a proposta oficial</summary><p class="sub" style="margin-top:6px">Digite os números da proposta do sistema para a oferta recomendada (proposta por cota: some as cotas). Diferença acima de 1% fica marcada. Confere a conta, não substitui a proposta.</p><div class="cmp-wrap"><table class="cmp" style="font-size:12px"><thead><tr><th></th><th>Simulador</th><th>Oficial</th><th>Diferença</th></tr></thead><tbody>${confIt.map(([k,n,v])=>`<tr><td>${n}</td><td class="num">${brl2(v)}</td><td><input data-conf="${k}" type="number" min="0" step="0.01" inputmode="decimal" value="${esc(C[k]??'')}" style="width:105px"></td><td class="num" id="conf-${k}">—</td></tr>`).join('')}</tbody></table></div><div id="conf-res" class="hint" style="margin-top:6px"></div></details>`;
   out.innerHTML=`<div class="hero"><h1>Proposta · ${titulo}</h1><p>${E.nome&&!document.body.classList.contains('present')?esc(E.nome)+' · ':''}${esc(E.tipo||'qualquer tipo')} · ${new Date().toLocaleDateString('pt-BR')} · valores estimativos, a confirmar no sistema oficial${E.ger?' · Gerente: '+esc(E.ger):''}</p></div>
-  <div class="abas-wrap" data-ab="${abaAtual()}">${abasBarra()}<div data-aba="resumo">${PR.html}${SEMH}${FALTA}</div><div data-aba="conferir">${fonteOferta(vars)}${campOferta(vars)}</div>
+  <div class="abas-wrap" data-ab="${abaAtual()}">${abasBarra()}<div data-aba="resumo">${CENH}${PR.html}${SEMH}${FALTA}</div><div data-aba="conferir">${fonteOferta(vars)}${campOferta(vars)}</div>
   ${b?'':`<div class="concl none" data-aba="resumo" style="margin:0 0 14px">Nenhuma variante fechou${informou?' dentro do bolso':''}. Cole mais grupos, aumente o máximo de cotas ou ajuste o bolso.</div>`}
   ${b?card(b,best,true):''}
-  <div data-aba="resumo">${CENH}</div>
   <div data-aba="resumo">${ACOES}</div>
   ${b?`<div data-aba="conferir">${confHtml}</div>`:''}
   ${OUTRAS.length?`<details class="adv no-present" data-aba="comparar" style="margin-top:14px"><summary>Ver as outras ${OUTRAS.length} variantes</summary><div class="grid c3" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));margin-top:10px">${OUTRAS.map(([v,i])=>card(v,i,false)).join('')}</div></details>`:''}
@@ -911,7 +910,7 @@ function radarGrupo(g,carta,E){ // o que a base diz do grupo, já cruzado com a 
   const dir=!vl?(vl0?`Histórico curto (${vl0.meses} meses): menor lance foi de ${pct(vl0.de0)} para ${pct(vl0.de1)}. Só indicação, ainda não é tendência.`:'Variação do lance: aparece a partir da 2ª atualização mensal.'):vl.dir==='cai'?`<b class="fav">↓ Lance caindo ${Math.abs(vl.dv).toLocaleString('pt-BR',{maximumFractionDigits:1})} p.p. desde ${vl.de}</b>: o bolso ficou mais leve${pouco}.`:vl.dir==='sobe'?`<b class="aten">↑ Lance subindo ${Math.abs(vl.dv).toLocaleString('pt-BR',{maximumFractionDigits:1})} p.p. desde ${vl.de}</b>: mire acima do menor${pouco}.`:`<b>→ Lance estável desde ${vl.de}</b>${pouco}.`;
   const cl=num(g.cl),cs=num(g.cs),np=num(g.np),sort=cs>0&&np>0?` · sorteados: ${cs} de ${np} (≈ ${pct(cs/np*100)})`:'';
   const ult=(cl>0||cs>0||np>0)?`<div class="hint">Última assembleia: ${cl>0?cl+' por lance':'— por lance'} · ${cs>0?cs+' por sorteio':'— por sorteio'}${np>0?' · '+np+' participantes':''}${sort} (histórico, não previsão).</div>`:'';
-  return `<div class="radar"><div class="radar-cab">Grupo ${esc(g.cod)} · ${esc(g.tipo)} · carta ${num(g.cmin)>0?brl(num(g.cmin))+(num(g.cmax)!==num(g.cmin)?' a '+brl(num(g.cmax)):''):'—'}${num(g.pt)>0?' · prazo total '+num(g.pt):''} · embutido ${pct(num(g.emax)||0)}</div><div class="rds">${[['Menor',num(g.lmin)],['Média 3',num(g.lmed)],['Maior',num(g.lmax)]].map(caixa).join('')}</div><div class="hint">${dir}</div>${ult}</div>`;}
+  return `<div class="radar"><div class="radar-cab">Grupo ${esc(g.cod)} · ${esc(g.tipo)} · carta ${num(g.cmin)>0?brl(num(g.cmin))+(num(g.cmax)!==num(g.cmin)?' a '+brl(num(g.cmax)):''):'—'}${num(g.pt)>0?' · prazo total '+num(g.pt):''} · embutido ${pct(num(g.emax)||0)}</div><div class="rds">${[['Menor',num(g.lmin)],['Média 3',num(g.lmed)],['Maior',num(g.lmax)]].map(caixa).join('')}</div><div class="hint">${dir}</div>${ult?`<details class="adv"><summary>Última assembleia: lance e sorteio</summary>${ult}</details>`:''}</div>`;}
 function vereditoLance(g,k){const a=alvoDe(g,k),mn=num(g.lmin),md=num(g.lmed),mx=num(g.lmax);if(!(a>0)||!(mn>0))return null;
   if(mx>0&&a>=mx)return {ok:true,a,t:'no maior lance contemplado na última: a melhor chance que o histórico dá'};
   if(md>0&&a>=md)return {ok:true,a,t:'na média das 3 últimas: folga sobre o menor contemplado'};
@@ -1015,6 +1014,8 @@ function renderSalvas(){const el=$('#salvas');if(!el)return;const L=S.salvas||[]
   $$('[data-sv-del]').forEach(b=>b.onclick=()=>{const x=S.salvas[+b.dataset.svDel];if(!x||!window.confirm('Excluir a simulação de '+x.nome+'?'))return;S.salvas.splice(+b.dataset.svDel,1);save();renderSalvas();});}
 function render(){renderGrupos();renderRank();renderCampanhas();renderEstrategia();renderSalvas();trilha();}
 editGroup(null);
+function sgChips(){const sel=$('#e-sg');$$('#e-sg-chips [data-sgv]').forEach(b=>{const on=!!sel&&sel.value===b.dataset.sgv;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);});}
+$$('#e-sg-chips [data-sgv]').forEach(b=>b.onclick=()=>{const sel=$('#e-sg');sel.value=b.dataset.sgv;sel.dispatchEvent(new Event('change',{bubbles:true}));sgChips();});
 ['e-alvo','e-sg'].forEach(id=>{const el=$('#'+id);if(el)el.addEventListener('change',()=>setTimeout(()=>{renderOferta();renderCotas();},0));});
 let tab='estrategia';try{tab=localStorage.getItem(KEY+'.tab')||'estrategia';}catch(e){}
 if(!['grupos','estrategia','cotas','oferta'].includes(tab))tab='estrategia';if(location.hash)tab='oferta';
@@ -1022,3 +1023,5 @@ if(IMPORT_PEND)tab='grupos';
 go(tab);
 puxarGrupos();puxarInpc();puxarTaxas();
 try{const bt=document.getElementById('btnTema');if(bt)bt.onclick=()=>{const r=document.documentElement,cur=r.dataset.tema||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'),n=cur==='dark'?'light':'dark';r.dataset.tema=n;try{localStorage.setItem('tema',n);}catch(e){}};}catch(e){}
+
+window.addEventListener('beforeprint',()=>{document.querySelectorAll('#e-out details.pdet').forEach(d=>{d.dataset.was=d.open?'1':'';d.open=true;});});window.addEventListener('afterprint',()=>{document.querySelectorAll('#e-out details.pdet').forEach(d=>{d.open=d.dataset.was==='1';});});

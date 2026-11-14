@@ -45,7 +45,7 @@
       <div class="f"><label for="e-p2">Parcela depois</label><div class="money-wrap"><input id="e-p2" type="text" inputmode="numeric" autocomplete="off" data-money></div></div>
     </div>
     </details>
-    <details class="adv"><summary>Ajustes finos (seguro, INPC, gerente, meses)</summary>
+    <details class="adv"><summary>Ajustes</summary>
       <div class="two">
         <div class="f"><label for="e-max">Máximo de cotas por grupo</label><input id="e-max" type="number" min="1" max="20" step="1" inputmode="numeric" value="3"></div>
       </div>
@@ -115,7 +115,7 @@
       <div class="card">
         <h1 class="q" style="margin-bottom:6px">Escolha a estratégia de lance</h1>
         <p class="agora">Agora: decida em quanto do histórico vamos apostar e se entra o prestamista. Você muda de novo na Proposta.</p>
-        <div class="two"><div class="f"><label for="e-alvo">Lance alvo (histórico do grupo)</label><select id="e-alvo"><option value="lmin">Menor contemplado na última</option><option value="lfolga">Menor + folga (entre o menor e a média)</option><option value="lmed">Média das 3 últimas</option><option value="lmax">Maior contemplado na última</option></select></div><div class="f"><label for="e-sg">Seguro prestamista</label><select id="e-sg"><option value="">Incluir (como no sistema)</option><option value="0">Não incluir</option></select></div></div>
+        <div class="two"><div class="f"><label for="e-alvo">Quanto de lance?</label><select id="e-alvo"><option value="lmin">O menor que ganhou no último mês</option><option value="lfolga">Menor + folga (entre o menor e a média)</option><option value="lmed">Média das 3 últimas</option><option value="lmax">O maior que ganhou no último mês</option></select></div><div class="f"><label for="e-sg">Seguro prestamista</label><div class="sgchips" id="e-sg-chips" role="group" aria-label="Seguro prestamista"><button type="button" class="chip" data-sgv="">Com seguro</button><button type="button" class="chip" data-sgv="0">Sem seguro</button></div><select id="e-sg" hidden><option value="">Incluir (como no sistema)</option><option value="0">Não incluir</option></select></div></div>
       </div>
       <div id="c-lance" style="margin-top:18px"></div>
     </div>

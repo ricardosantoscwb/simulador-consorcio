@@ -462,3 +462,7 @@ body.passos #cf-go,body.passos #c-save{display:none}
 .sw b{min-width:0;flex:1}
 .cd-row{flex-wrap:wrap}.cd-t{flex:1 1 170px}
 #s-oferta .abas-wrap>.cens,#s-oferta .abas-wrap .cens{margin-top:16px}
+
+.sgchips{display:flex;gap:8px;flex-wrap:wrap}.sgchips .chip{min-height:44px}
+.ob-h{margin:12px 0 6px;font-weight:600;font-size:14px}
+.cd-row{padding:10px 14px}.cd-h{padding:8px 14px}.cd-t>b{font-size:16px}.cd-t>span{font-size:13px}
