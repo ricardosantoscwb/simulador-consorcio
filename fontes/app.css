@@ -352,3 +352,70 @@ body.cine-on{overflow:hidden}
 #s-oferta .cens .cenb.on{border-color:var(--ink);background:var(--surface);box-shadow:inset 0 0 0 1px var(--ink)}
 .eco span small b{font-weight:700}
 @media print{.acoes{display:none}}
+
+/* ===== trilha de passos, rodapé fixo e abas da Proposta ===== */
+[data-sub][hidden]{display:none!important}
+.trilha{max-width:760px;margin:0 auto 14px}
+.trilha ol{display:flex;gap:4px;list-style:none;margin:0;padding:0}
+.trilha li{flex:1;min-width:0}
+.trilha button{width:100%;display:flex;flex-direction:column;align-items:center;gap:4px;border:0;background:transparent;color:var(--muted);font:inherit;font-size:12px;font-weight:500;padding:6px 2px;cursor:pointer;border-radius:10px}
+.trilha button b{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);background:var(--card);font-size:13px;font-weight:600}
+.trilha button.ok b{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.trilha button.on{color:var(--ink)}.trilha button.on b{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.trilha .dica{margin:6px 0 0;text-align:center;font-size:13px;color:var(--muted)}
+@media(max-width:560px){.trilha button span{display:none}.trilha button.on span{display:block}}
+body.passos main{padding-bottom:96px}
+.rodape{display:none}
+body.passos .rodape{display:flex;justify-content:space-between;align-items:center;gap:10px;position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--bar);backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom))}
+body.passos .rodape .btn{min-height:46px;padding:0 20px}
+body.passos .rodape .btn.primary{flex:1;max-width:360px;margin-left:auto}
+body.passos #s-estrategia .wiz-actions{display:none}
+body.present .rodape,body.present .trilha{display:none!important}
+.abas{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0 0 16px;position:sticky;top:0;z-index:5;background:var(--bg,var(--card));padding:6px 0}
+.abas .aba{min-height:44px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--muted);font:inherit;font-weight:600;cursor:pointer}
+.abas .aba.on{color:var(--ink);border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.abas-wrap[data-ab="resumo"] [data-aba]:not([data-aba="resumo"]),
+.abas-wrap[data-ab="comparar"] [data-aba]:not([data-aba="comparar"]),
+.abas-wrap[data-ab="conferir"] [data-aba]:not([data-aba="conferir"]){display:none!important}
+@media print{.abas,.trilha,.rodape{display:none!important}.abas-wrap [data-aba]{display:block!important}.abas-wrap details[data-aba]{display:block!important}}
+
+/* radar do grupo, veredito do lance e "onde o consórcio vence" */
+.radar{border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin:12px 0;background:var(--card)}
+.radar-cab{font-size:13px;color:var(--muted);margin-bottom:10px}
+.rds{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.rd{border:1px solid var(--line);border-radius:12px;padding:10px 8px;text-align:center}
+.rd span{display:block;font-size:12px;color:var(--muted)}.rd b{display:block;font-size:22px;letter-spacing:-.02em;margin:2px 0}.rd small{display:block;font-size:11px;color:var(--muted)}
+.rd.ok{border-color:var(--accent)}
+.fav{color:var(--accent)}.aten{color:var(--warn)}
+.vered{font-size:13px;padding:8px 12px;border-radius:10px;border:1px solid var(--line);margin-top:8px}.vered.ok{border-color:var(--accent)}.vered.lim{border-color:var(--warn)}
+.vence{border:1px solid var(--accent);border-radius:var(--radius);padding:14px 16px;margin:0 0 16px;background:var(--card)}
+.vence-t{font-weight:600;font-size:16px;margin-bottom:6px}.vence ul{margin:0;padding-left:18px;font-size:14px}.vence li{margin:4px 0}
+.vence .perde{margin-top:8px;font-size:12px;color:var(--muted)}
+
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+.pill{min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.pill span{display:inline-block;width:16px;text-align:center}
+.pill.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.pill.off{color:var(--muted);font-weight:500}
+
+.econ-camp{margin:-6px 0 14px;font-size:14px;color:var(--accent)}
+@media print{.pills,.econ-camp+*{break-inside:avoid}.pills{display:none!important}}
+
+.sv{display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.sv-i{flex:1 1 160px;min-width:0}.sv-i b{display:block}.sv .btn{min-height:40px;padding:0 14px}
+
+/* revisão: cards de lance clicáveis, toque, impressão */
+.opt-b{font:inherit;color:inherit;text-align:left;cursor:pointer;width:100%}
+.opt-b:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+body.passos .ac-btns #o-present{display:none}
+.pill{min-height:44px}
+.trilha button{min-height:44px}
+.rd small{font-size:12px}
+.busca-t th,.busca-t td{padding-left:8px}.busca-t th:first-child,.busca-t td:first-child{padding-left:0}
+.toast{bottom:112px}
+body.passos #cf-go,body.passos #c-save{display:none}
+@media print{
+.abas-wrap[data-ab] [data-aba]:not(.zz):not(.zz2):not(details){display:block!important}
+.abas-wrap[data-ab] details[data-aba]:not(.zz):not(.zz2):not([open]){display:none!important}
+.abas-wrap[data-ab] details[data-aba][open]:not(.zz):not(.zz2){display:block!important}
+.opt-b .tag{display:none}}

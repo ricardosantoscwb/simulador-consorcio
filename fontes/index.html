@@ -16,7 +16,7 @@
 <script>document.body.classList.toggle('usuario',!!(window.SESSAO&&!window.SESSAO.admin)||(()=>{try{return localStorage.getItem('simcons.verComo')==='1';}catch(e){return false;}})());</script>
 <header class="top"><div class="in">
   <div class="brand"><div class="dot">∑</div><div>Simulador de Consórcio<small>pedido · busca · proposta</small></div></div>
-  <nav class="tabs"><button data-go="grupos" class="so-admin">Grupos</button><button data-go="estrategia">1 Pedido</button><button data-go="cotas">2 Busca</button><button data-go="oferta">3 Proposta</button></nav>
+  <nav class="tabs"><button data-go="grupos" class="so-admin">Grupos</button></nav>
   <button class="btn primary" id="btnPresent">Apresentar</button>
   <button class="btn ghost small" id="btnVer" style="display:none" title="Só muda o que você vê; as permissões continuam de admin">Ver como gerente</button>
   <a class="btn ghost small" id="lnkAdmin" href="/admin" style="display:none">Admin</a>
@@ -26,6 +26,7 @@
 <div class="present-bar"><button class="btn small" onclick="window.print()">PDF</button><button class="btn small" id="btnShare2">Link</button><button class="btn small primary" id="btnExitPresent">Sair</button></div>
 
 <main>
+<div id="trilha" class="trilha no-present"></div>
 <!-- ================= ESTRATÉGIA ================= -->
 <section class="screen" id="s-estrategia">
   <div class="wiz"><div class="card inputs no-present">
@@ -47,14 +48,10 @@
     <details class="adv"><summary>Avançado</summary>
       <div class="two">
         <div class="f"><label for="e-max">Máximo de cotas por grupo</label><input id="e-max" type="number" min="1" max="20" step="1" inputmode="numeric" value="3"></div>
-        <div class="f"><label for="e-alvo">Lance alvo (histórico do grupo)</label><select id="e-alvo"><option value="lmin">Menor contemplado na última</option><option value="lmed">Média das 3 últimas</option><option value="lmax">Maior contemplado na última</option></select></div>
       </div>
       <div class="two">
         <div class="f"><label for="e-emb">Lance embutido</label><select id="e-emb"><option value="1">Sim (50% imóvel, 30% veículo)</option><option value="0">Não</option></select></div>
         <div class="f"><label for="e-red">Plano reduzido</label><select id="e-red"><option value="">Não usar</option><option value="1">Usar, se o detalhamento foi colado</option></select></div>
-      </div>
-      <div class="two">
-        <div class="f"><label for="e-sg">Seguro prestamista</label><select id="e-sg"><option value="">Incluir (como no sistema)</option><option value="0">Não incluir</option></select></div>
       </div>
       <div class="two">
         <div class="f"><label for="e-sgp">Seguro: % ao mês sobre o saldo <span class="hint">vazio = amostra</span></label><input id="e-sgp" type="number" min="0" max="5" step="0.001" inputmode="decimal" placeholder="vazio = taxa do tipo"></div>
@@ -91,16 +88,20 @@
       <div class="f"><label for="e-nome">Nome do cliente <span class="hint">fica só neste aparelho, não vai no link</span></label><input id="e-nome" autocomplete="off"></div>
     </details>
     <div class="wiz-actions"><span></span><button class="btn primary" id="e-go">Ver onde buscar →</button></div>
-  </div><div id="e-lista" class="no-present"></div></div>
+  </div><div id="e-lista" class="no-present"></div><div id="salvas" class="no-present" style="margin-top:18px"></div></div>
 </section>
 
 <!-- ================= BUSCA ================= -->
 <section class="screen" id="s-cotas">
   <div class="wiz" style="max-width:760px">
-    <div class="card">
+    <div class="card" data-sub="busca">
       <h1 class="q" style="margin-bottom:6px">Busque no vendas.seguridade</h1>
       <p class="agora">Agora: pesquise cada faixa no sistema e digite a cota que achou (ou cole a lista).</p>
       <div id="c-busca" class="why">Monte um pedido primeiro: a busca aparece aqui.</div>
+    </div>
+    <div class="card" data-sub="cota">
+      <h1 class="q" style="margin-bottom:6px">Digite a cota que você achou</h1>
+      <p class="agora">Agora: copie do sistema a cota que serve (ou cole a lista de uma vez).</p>
       <div class="sec" style="margin-top:8px">A cota que você achou</div>
       <p class="sub" style="margin:0 0 10px">Digite do jeito que está no sistema. O app confere com o banco de grupos.</p>
       <div id="cota-form">
@@ -109,6 +110,7 @@
           <div class="f"><label for="cf-cod">Grupo</label><input id="cf-cod" inputmode="numeric" autocomplete="off" placeholder="ex.: 010018"></div>
           <div class="f"><label for="cf-vagas">Cotas vagas <span class="hint">opcional</span></label><input id="cf-vagas" type="number" min="0" step="1" inputmode="numeric" placeholder="vazio = não sei"></div>
         </div>
+        <div id="cf-radar" role="status"></div>
         <div class="two">
           <div class="f"><label for="cf-carta">Carta de crédito</label><div class="money-wrap"><input id="cf-carta" type="text" inputmode="numeric" autocomplete="off" data-money></div></div>
           <div class="f"><label for="cf-parc">Parcela <span class="hint">da lista, sem seguro</span></label><div class="money-wrap"><input id="cf-parc" type="text" inputmode="numeric" autocomplete="off" data-money></div></div>
@@ -126,8 +128,15 @@
       <div class="wiz-actions" style="margin-top:4px"><button class="btn ghost small" id="c-clear">Limpar o que foi lido</button><button class="btn primary" id="c-save">Ler e montar a proposta</button></div>
       </details>
     </div>
-    <div id="c-lance" style="margin-top:18px"></div>
-    <details class="adv" style="margin-top:18px"><summary id="c-lista-t">O que foi lido</summary>
+    <div data-sub="lance">
+      <div class="card">
+        <h1 class="q" style="margin-bottom:6px">Escolha a estratégia de lance</h1>
+        <p class="agora">Agora: decida em quanto do histórico vamos apostar e se entra o prestamista. Você muda de novo na Proposta.</p>
+        <div class="two"><div class="f"><label for="e-alvo">Lance alvo (histórico do grupo)</label><select id="e-alvo"><option value="lmin">Menor contemplado na última</option><option value="lfolga">Menor + folga (entre o menor e a média)</option><option value="lmed">Média das 3 últimas</option><option value="lmax">Maior contemplado na última</option></select></div><div class="f"><label for="e-sg">Seguro prestamista</label><select id="e-sg"><option value="">Incluir (como no sistema)</option><option value="0">Não incluir</option></select></div></div>
+      </div>
+      <div id="c-lance" style="margin-top:18px"></div>
+    </div>
+    <details class="adv" data-sub="cota" style="margin-top:18px"><summary id="c-lista-t">O que foi lido</summary>
       <p class="sub">Parcela e carta são as do sistema. Guardado só neste aparelho. Confirme vagas e parcela no sistema antes de vender.</p>
       <div id="c-lista" class="empty">Nada colado ainda.</div>
     </details>
@@ -214,7 +223,7 @@
 </section>
 </main>
 
-<nav class="bnav"><button data-go="grupos" class="so-admin"><b>·</b>Grupos</button><button data-go="estrategia"><b>1</b>Pedido</button><button data-go="cotas"><b>2</b>Busca</button><button data-go="oferta"><b>3</b>Proposta</button></nav>
+<div id="rodape" class="rodape no-present"></div>
 <div class="toast" id="toast"></div>
 
 <script>/*MOTOR_CUSTOS*/</script>
